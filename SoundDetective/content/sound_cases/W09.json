@@ -1,0 +1,12 @@
+{
+  "id": "W09", "category": "noise", "recipe": "harmonic", "seed": 2026,
+  "scoring": "harmonic_groups",
+  "title": {"en": "The Wire Ghost", "zh-Hant": "電線裡的幽靈"},
+  "story": {
+    "en": "An old game console sent a hollow electronic hum: richer than a whistle, with mainly odd upper harmonics, but no sharp edge. Build it with the harmonic faders. Pitch, envelope and effects are fixed. The notebook accepts a family of sounds, not one secret preset. Start with H2 and H3; more controls open at higher difficulties.",
+    "zh-Hant": "舊遊戲機傳來一個空心的電子嗡聲：比哨音豐富，高次諧波主要偏向奇數，但不尖銳。用諧波推桿重建它；音高、包絡與效果固定。筆記接受一類合理音色，而非唯一秘密預設。入門先調 H2、H3，較高難度開放更多控制。"
+  },
+  "initial": {"h1": 1, "h2": 0.75, "h3": 0.04, "h4": 0.55, "h5": 0.04},
+  "target": {"h1": 1, "h2": 0.15, "h3": 0.55, "h4": 0.13, "h5": 0.28},
+  "bands": {"odd_upper": [0.78, 0.95], "upper_power": [0.20, 0.40], "spectral_center": [1.50, 2.05]}
+}

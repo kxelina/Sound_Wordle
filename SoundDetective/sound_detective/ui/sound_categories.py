@@ -17,7 +17,8 @@ from ..audio.playback import AudioPlayer, PlaybackItem
 from ..audio.source_preview import SourcePreviewRenderer
 from ..audio.sound_sources import CONTROLS, SourcePatch
 from ..game.sound_categories import (SourceSession, assess_source, load_source_session,
-    save_source_session, source_clue)
+    save_source_session, source_clue, score_specs, score_values)
+from ..game.harmonic_rules import is_silent
 from ..game.storage import SessionStore
 from ..game.playtest import PlaytestLog
 from ..game.source_learning import (DIFFICULTIES,with_difficulty,source_path,
@@ -200,8 +201,9 @@ class SourceEditor(QWidget):
             column = QWidget()
             row = QVBoxLayout(column)
             row.setContentsMargins(2,2,2,2)
-            label, knob, spin = QLabel(), RotaryKnob(), QDoubleSpinBox()
-            knob.setFixedSize(72,72)
+            label, spin = QLabel(), QDoubleSpinBox()
+            knob = QSlider(Qt.Orientation.Vertical) if patch.recipe=='harmonic' else RotaryKnob()
+            knob.setFixedSize(54,100) if patch.recipe=='harmonic' else knob.setFixedSize(72,72)
             label.setAlignment(Qt.AlignmentFlag.AlignCenter)
             label.setWordWrap(True)
             knob.setRange(0,1000)
@@ -399,6 +401,10 @@ class SourceCaseWindow(QMainWindow):
         self.editor = SourceEditor(self.session.current)
         self.editor.changed.connect(self._changed)
         right.addWidget(self.editor,1)
+        self.feature_readout=QLabel()
+        self.feature_readout.setWordWrap(True)
+        self.feature_readout.setMaximumHeight(78)
+        right.addWidget(self.feature_readout)
         self.unused = QLabel()
         self.unused.setWordWrap(True)
         right.addWidget(self.unused)
@@ -412,7 +418,7 @@ class SourceCaseWindow(QMainWindow):
         self.spectrum, self.envelope = SourcePlot(),SourcePlot()
         self.plots.addTab(self.spectrum,"")
         self.plots.addTab(self.envelope,"")
-        self.spectrum.setXRange(0,10000)
+        self.spectrum.setXRange(0,1400 if self.case.scoring=='harmonic_groups' else 10000)
         self.spectrum.setYRange(-75,0)
         self.envelope.setYRange(0,1.05)
         graphs.addWidget(self.plots,1)
@@ -564,6 +570,21 @@ class SourceCaseWindow(QMainWindow):
         if s.solved:
             self.review.setText(self.text("Reference settings: ","參考設定：")+" · ".join(
                 f"{spec.labels[self.zh]} {dict(self.case.target.values)[spec.key]:g}" for spec in CONTROLS[s.current.recipe]))
+        grouped=self.case.scoring=='harmonic_groups'
+        self.feature_readout.setVisible(grouped and (s.hints>=2 or s.solved) and self.device_kind=='synth')
+        if grouped:
+            values=score_values(s.current)
+            rows=[]
+            for spec in score_specs(self.case):
+                shown='—' if spec.key=='odd_upper' and values['upper_power']==0 else f'{values[spec.key]:.2f}'
+                text=f'{spec.labels[self.zh]}: {shown}'
+                if s.hints>=3 or s.solved:
+                    low,high=self.case.bands[spec.key]
+                    text+=f'  [{low:.2f}–{high:.2f}]'
+                rows.append(text)
+            self.feature_readout.setText('\n'.join(rows))
+            self.feature_readout.setToolTip(self.text('Model features from squared relative amplitudes. Brackets show accepted bands, not unique slider values. These are construction requirements, not a perceptual similarity percentage.',
+                '以相對振幅平方計算的模型特徵；方括號為可接受範圍，不是唯一推桿答案。這是合成要求，不是人耳相似度百分比。'))
         self.play_reference.setText(self.text("Play target","播放目標") if s.solved else self.text("Target · hidden","目標 · 未揭曉"))
         self.play_reference.setEnabled(s.solved); self.play_ab.setEnabled(s.solved)
         set_help(self.play_reference,"hidden_target",self._language)
@@ -584,6 +605,7 @@ class SourceCaseWindow(QMainWindow):
         self.device_kind = device
         self.editor.setVisible(device == "synth")
         self.analysis.setVisible(device == "analyzer")
+        self.feature_readout.setVisible(device=='synth' and self.case.scoring=='harmonic_groups' and (self.session.hints>=2 or self.session.solved))
         self.unused.setVisible(device not in ("synth","analyzer","tape"))
         self.unused.setText(self.text("This case uses the sound-source synthesizer. Open Sound sources to adjust it; extra Delay and Reverb are not used.","本案件使用聲源合成器。點「聲源設備」即可調整；此關不使用額外 Delay 或 Reverb。"))
         self.analysis_note.setText(self.text("Play your sound to update these measurements. Gold: yours; green: target (after solving). Scores use accepted sound-attribute bands, not waveform similarity.","試聽後更新實測圖表。金色：你的聲音；綠色：目標（通關後）。進度依聲音特徵的可接受範圍計算，不是波形相似度。"))
@@ -618,6 +640,9 @@ class SourceCaseWindow(QMainWindow):
             self._restore_edit(SourcePatch.from_dict(self.session.records[row]["patch"]),record=True)
 
     def _submit(self):
+        if is_silent(self.session.current):
+            self.status.setText(source_clue(self.case,self.session.current,0,self._language))
+            return
         was_solved = self.session.solved
         self.stop()
         result = self.session.submit()
@@ -625,7 +650,7 @@ class SourceCaseWindow(QMainWindow):
         self._refresh();self._save()
         if not was_solved and self.session.solved:
             self.case_completed.emit()
-        parts = " · ".join(f"{spec.labels[self.zh]} {result.scores[spec.key]:.0f}" for spec in CONTROLS[self.session.current.recipe] if spec.key in result.scores)
+        parts = " · ".join(f"{spec.labels[self.zh]} {result.scores[spec.key]:.0f}" for spec in score_specs(self.case) if spec.key in result.scores)
         self.status.setText(self.text("Passed! ","通關！")+parts if result.passed else
             self.text("Goal: 90 overall and 85 per attribute. ","目標：總分 90，各項至少 85。")+parts)
         QTimer.singleShot(0,lambda:self.note_scroll.ensureWidgetVisible(self.score) if not self._closed else None)
@@ -638,6 +663,10 @@ class SourceCaseWindow(QMainWindow):
 
     def _prepare(self,mode):
         if self._closed or mode in ("target","ab") and not self.session.solved:
+            return
+        if mode not in ('target','example') and is_silent(self.session.current):
+            self.stop()
+            self.status.setText(source_clue(self.case,self.session.current,0,self._language))
             return
         if mode=='current' and self.loop_button.isChecked():mode='loop'
         self.stop(keep_loop=mode=='loop')

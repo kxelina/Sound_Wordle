@@ -11,6 +11,7 @@ from pathlib import Path
 from ..audio.sc_client import ROOT
 from ..audio.sound_sources import CONTROLS, SourcePatch
 from .storage import atomic_json_write
+from .catalog import SOURCE_IDS
 
 CATEGORIES = {"all": ("All sounds", "全部聲音"), "nature": ("Nature", "自然聲音"),
               "instrument": ("Instruments", "樂器聲音"), "noise": ("Noise / electronics", "噪聲與電子"),
@@ -29,16 +30,19 @@ class SourceCase:
     bands: dict
     difficulty: str = "advanced"
     editable_parameters: tuple = ()
+    scoring: str = "control_bands"
 
     def __post_init__(self):
-        if self.category not in ("nature", "instrument", "noise") or self.id not in ("W03", "W04", "W05", "W06"):
+        if self.category not in ("nature", "instrument", "noise") or self.id not in SOURCE_IDS:
             raise ValueError("Invalid sound category case")
+        if self.scoring not in ('control_bands','harmonic_groups') or (self.scoring=='harmonic_groups') != (self.target.recipe=='harmonic'):
+            raise ValueError('Invalid source scoring rule')
         if self.initial.recipe != self.target.recipe or self.initial.seed != self.target.seed:
             raise ValueError("Initial and target sources must share recipe and seed")
         for text in (self.title, self.story):
             if set(text) != {"en", "zh-Hant"} or any(not isinstance(v, str) or not v for v in text.values()):
                 raise ValueError("Category case needs bilingual text")
-        if set(self.bands) != {s.key for s in CONTROLS[self.target.recipe]}:
+        if set(self.bands) != {s.key for s in score_specs(self)}:
             raise ValueError("Missing sound attribute bands")
         values = dict(self.target.values)
         keys = {s.key for s in CONTROLS[self.target.recipe]}
@@ -50,12 +54,33 @@ class SourceCase:
             raise ValueError('Invalid editable source controls')
         if any(dict(self.initial.values)[key]!=values[key] for key in keys-set(self.editable_parameters)):
             raise ValueError('Locked source controls must match the target')
-        for spec in CONTROLS[self.target.recipe]:
+        measured = score_values(self.target)
+        for spec in score_specs(self):
             band = self.bands[spec.key]
             if not isinstance(band, list) or len(band) != 2:
                 raise ValueError("Invalid sound attribute band")
-            if not spec.low <= band[0] <= values[spec.key] <= band[1] <= spec.high:
+            if not spec.low <= band[0] <= measured[spec.key] <= band[1] <= spec.high:
                 raise ValueError("Target must be inside the valid attribute band")
+
+    @property
+    def fingerprint(self):
+        import hashlib
+        from dataclasses import asdict
+        return hashlib.sha256(json.dumps(asdict(self),sort_keys=True,allow_nan=False).encode()).hexdigest()
+
+
+def score_specs(case):
+    if case.scoring=='harmonic_groups':
+        from .harmonic_rules import FEATURES
+        return FEATURES
+    return CONTROLS[case.target.recipe]
+
+
+def score_values(patch):
+    if patch.recipe=='harmonic':
+        from .harmonic_rules import features
+        return features(patch)
+    return dict(patch.values)
 
 
 def load_source_cases(directory=None):
@@ -69,6 +94,8 @@ def load_source_cases(directory=None):
         result.append(SourceCase(**data))
     if len({case.id for case in result}) != len(result):
         raise ValueError("Duplicate source case IDs")
+    if {case.id for case in result} != set(SOURCE_IDS):
+        raise ValueError('Missing category sound cases')
     return tuple(result)
 
 
@@ -86,26 +113,37 @@ class SourceMatch:
 def assess_source(case, patch):
     if patch.recipe != case.target.recipe or patch.seed != case.target.seed:
         raise ValueError("Patch belongs to another source case")
+    for key,value in patch.values:
+        if key not in case.editable_parameters and value != dict(case.target.values)[key]:
+            raise ValueError('A locked source control was changed')
     scores, directions = {}, {}
-    for spec in CONTROLS[patch.recipe]:
-        value = dict(patch.values)[spec.key]
-        if spec.key not in case.editable_parameters:
-            if value != dict(case.target.values)[spec.key]:
-                raise ValueError('A locked source control was changed')
+    values = score_values(patch)
+    for spec in score_specs(case):
+        value = values[spec.key]
+        if case.scoring=='control_bands' and spec.key not in case.editable_parameters:
             continue
         low, high = case.bands[spec.key]
         direction = -1 if value < low else 1 if value > high else 0
         distance = max(spec.position(low)-spec.position(value), spec.position(value)-spec.position(high), 0)
+        if case.scoring=='harmonic_groups':
+            from .harmonic_rules import DISTANCE_SCALES
+            distance = max(low-value,value-high,0)/DISTANCE_SCALES[spec.key]
         # Goal bands receive 100. Distance is measured on the control's audible
         # scale (log for noise bandwidth), with no penalty for valid alternatives.
-        scores[spec.key] = max(0., 100*(1-distance)**2)
+        scores[spec.key] = 100*max(0., 1-distance)**2
         directions[spec.key] = direction
+    from .harmonic_rules import is_silent
+    if is_silent(patch):
+        scores = dict.fromkeys(scores,0.)
     return SourceMatch(sum(scores.values())/len(scores), scores, directions)
 
 
 def source_clue(case, patch, tier, language="en"):
     zh = language == "zh-Hant"
     result = assess_source(case, patch)
+    if case.scoring=='harmonic_groups':
+        from .harmonic_rules import clue
+        return clue(case,patch,result,tier,language)
     key = min(result.scores, key=result.scores.get)
     if result.directions[key] == 0:
         return "各項聲音特徵已進入目標範圍，提交記錄這個版本。" if zh else "The sound attributes are inside the goal bands. Submit to record this version."
@@ -141,6 +179,9 @@ class SourceSession:
         self.current = patch
 
     def submit(self):
+        from .harmonic_rules import is_silent
+        if is_silent(self.current):
+            raise ValueError('Current sound is silent; raise at least one harmonic')
         result = assess_source(self.case, self.current)
         self.attempts += 1
         self.last = self.current
@@ -151,21 +192,32 @@ class SourceSession:
         return result
 
     def to_dict(self):
-        return {"schema_version": 2, "case": self.case.id, "scoring_version": SCORING_VERSION,
+        data = {"schema_version": 2, "case": self.case.id, "scoring_version": SCORING_VERSION,
                 "difficulty":self.case.difficulty,
                 "current": self.current.to_dict(), "attempts": self.attempts, "hints": self.hints,
                 "solved": self.solved, "best": self.best,
                 "last": self.last.to_dict() if self.last else None, "records": self.records}
+        if self.case.scoring=='harmonic_groups':
+            from .harmonic_rules import VERSION
+            data.update(scoring_version=VERSION,case_fingerprint=self.case.fingerprint)
+        return data
 
     @classmethod
     def from_dict(cls, data, case):
         fields={"schema_version", "case", "scoring_version", "current", "attempts", "hints", "solved", "best", "last", "records"}
+        version=SCORING_VERSION
+        if case.scoring=='harmonic_groups':
+            from .harmonic_rules import VERSION
+            version=VERSION
+            fields=fields|{'case_fingerprint'}
+            if not isinstance(data,dict) or data.get('case_fingerprint')!=case.fingerprint:
+                raise ValueError('Harmonic case definition has changed')
         if not isinstance(data, dict) or set(data) not in (fields,fields|{'difficulty'}):
             raise ValueError("Invalid category progress")
         if (type(data['schema_version']) is not int or data['schema_version'] not in (1,2)
             or (data['schema_version']==2)!=('difficulty' in data)
             or data.get('difficulty','advanced')!=case.difficulty
-            or data["case"] != case.id or data["scoring_version"] != SCORING_VERSION):
+            or data["case"] != case.id or data["scoring_version"] != version):
             raise ValueError("Incompatible category progress")
         if type(data["attempts"]) is not int or not 0 <= data["attempts"] <= 10**9 or type(data["hints"]) is not int or not 0 <= data["hints"] <= 3 or type(data["solved"]) is not bool:
             raise ValueError("Invalid category counters")

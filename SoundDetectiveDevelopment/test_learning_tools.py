@@ -39,7 +39,7 @@ def app():
     result.setFont(QFont('Microsoft YaHei UI',10));return result
 
 
-@pytest.mark.parametrize('base',CASES,ids=lambda c:c.id)
+@pytest.mark.parametrize('base',[c for c in CASES if c.scoring=='control_bands'],ids=lambda c:c.id)
 @pytest.mark.parametrize('difficulty,count',[('beginner',2),('standard',4),('advanced',5)])
 def test_difficulty_is_solvable_and_locked_controls_cannot_change(base,difficulty,count):
     case=with_difficulty(base,difficulty)

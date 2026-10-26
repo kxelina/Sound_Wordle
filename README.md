@@ -7,7 +7,7 @@ A Windows desktop sound-construction game built with Python, PySide6 and SuperCo
 - **T01–T09:** recreate timbres with harmonics, ADSR, filters, delay and reverb.
 - **Sound Wordle:** build hidden sounds from witness clues, with unlimited submissions and free hints.
   W01/W02 cover a signal and a melody. W03/W04 cover rain and bird-like chirps,
-  W05 a plucked string-like note, and W06 radio static. W07 is an original two-note doorbell; W08 reconstructs a rhythm with a required silent beat.
+  W05 a plucked string-like note, and W06 radio static. W07 is an original two-note doorbell; W08 reconstructs a rhythm with a required silent beat. W09 builds a hollow electronic tone using harmonic faders and grouped, multi-solution requirements.
 - **T09 · The Extra Knock:** use one short source event and Delay to reconstruct fading repeats, with an optional ungraded cause question.
 - **Free composition:** write a melody using draggable piano-roll notes.
 - **M01 music restoration:** included as code/configuration; song recordings are local-only and are not distributed here.
@@ -51,7 +51,7 @@ Read [environment notes](SoundDetective/docs/ENVIRONMENT.md) for engine path con
 After installing the dependencies, run the source-only Wordle and piano-roll checks from the repository root:
 
 ```powershell
-.\SoundDetective\.venv\Scripts\python.exe -m pytest SoundDetectiveDevelopment/test_after_hours.py SoundDetectiveDevelopment/test_learning_tools.py SoundDetectiveDevelopment/test_player_journey.py SoundDetectiveDevelopment/test_sound_categories.py SoundDetectiveDevelopment/test_note_dragging.py -q
+.\SoundDetective\.venv\Scripts\python.exe -m pytest SoundDetectiveDevelopment/test_wire_ghost.py SoundDetectiveDevelopment/test_after_hours.py SoundDetectiveDevelopment/test_learning_tools.py SoundDetectiveDevelopment/test_player_journey.py SoundDetectiveDevelopment/test_sound_categories.py SoundDetectiveDevelopment/test_note_dragging.py -q
 ```
 
 These checks include actual SuperCollider rendering. Some additional music-restoration
@@ -79,7 +79,7 @@ with those assets present. See the dated validation notes for exact counts and s
 - **自由創作：**拖曳音符編寫旋律，調整音色並匯出 WAV。
 - **M01 音樂修復：**保留程式與設定，原曲及證物錄音僅保存在本機。
 
-新增 T09「多出來的一聲」、W07「會說話的門鈴」及 W08「空白的一拍」，不需要歌曲素材，各自保存進度並支援首次作品收藏。
+新增 T09「多出來的一聲」、W07「會說話的門鈴」及 W08「空白的一拍」，不需要歌曲素材，各自保存進度並支援首次作品收藏。另有 W09「電線裡的幽靈」，用諧波推桿和群組能量規則接受多組合理答案。
 
 [完整玩家指南：英文及繁體中文](SoundDetective/README.md)
 

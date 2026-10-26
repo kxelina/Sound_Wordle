@@ -18,7 +18,7 @@ from ..game.music_cases import load_music_case
 from ..game.availability import music_availability
 from ..game.player_journey import JourneyStore
 from ..game.evidence import EvidenceStore
-from ..game.catalog import MELODY_IDS
+from ..game.catalog import MELODY_IDS,SOURCE_IDS
 from .case_board import CaseBoard
 from .hardware import InlineChoices
 from .hover_help import set_help, show_scene_help
@@ -570,7 +570,7 @@ class StudioWindow(QMainWindow):
         for key, item in self.device_hotspots.items():
             role = "device_melody" if key == "synth" and self.preferences.active_case in MELODY_IDS else (
                 "device_music" if key == "synth" and (self.preferences.active_case or "").startswith("M") else f"device_{key}")
-            if self.preferences.active_case in ("W03","W04","W05","W06"):
+            if self.preferences.active_case in SOURCE_IDS:
                 if key == "synth":
                     role = "source_workshop"
                 elif key == "analyzer":
@@ -767,7 +767,7 @@ class StudioWindow(QMainWindow):
             key = "melody_synth"
         elif key == "synth" and self.preferences.active_case == "W01":
             key = "wordle_synth"
-        elif key == "synth" and self.preferences.active_case in ("W03","W04","W05","W06"):
+        elif key == "synth" and self.preferences.active_case in SOURCE_IDS:
             key = "source_synth"
         return TEXT[self.language][key]
 
@@ -836,7 +836,7 @@ class StudioWindow(QMainWindow):
                     volume=self.preferences.volume / 100, embedded=True)
                 candidate.device_requested.connect(self._wordle_device)
                 candidate.mode_changed.connect(self._melody_mode_changed)
-            elif case_id in ("W03","W04","W05","W06"):
+            elif case_id in SOURCE_IDS:
                 from .sound_categories import SourceCaseWindow
                 case = next(case for case in self.board.source_cases if case.id == case_id)
                 candidate = SourceCaseWindow(case=case,

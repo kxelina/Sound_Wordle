@@ -57,8 +57,6 @@ def collect_diagnostics(*, root=None, probe_audio=True):
         sources = load_source_cases(root/'content/sound_cases')
         from .game.melody import load_melody_cases
         melodies=load_melody_cases(root/'content/melody_cases')
-        if len(sources) != 4:
-            raise ValueError('Missing category sound cases')
         return {'timbre_cases': len(cases), 'category_cases': len(sources), 'melody_cases':len(melodies), 'assets_verified': True}
     check('content', assets, 'Levels, scene art and audio files', '關卡、場景與音源',
           'Reinstall the game files, scene art and synthesized case definitions.',

@@ -45,6 +45,10 @@ def control(key, low, high, step, en, zh, help_en, help_zh, low_en, low_zh, high
 
 
 CONTROLS = {
+    "harmonic": tuple(control(f"h{k}", 0, 1, .01, f"H{k} · {220*k} Hz", f"H{k} · {220*k} Hz",
+        f"Changes harmonic {k}, at {220*k} Hz. Relative amplitudes shape the colour; playback level is matched.",
+        f"調整第 {k} 次諧波（{220*k} Hz）。各成分的相對強度塑造音色，試聽會匹配電平。",
+        "", "", "", "") for k in range(1, 6)),
     "rain": (
         control("density", 3, 25, .5, "Drop density", "雨點密度", "More drops per second make a busier shower.", "每秒雨點越多，雨勢聽起來越密集。", "The rain is too sparse.", "雨點太稀疏。", "The rain is too dense.", "雨點太密集。", unit=" /s"),
         control("brightness", 500, 9000, 10, "Brightness", "明亮度", "Raises the noise filter cutoff; higher values sound sharper.", "提高噪聲濾波截止頻率，聲音會更尖亮。", "The rain sounds too muffled.", "雨聲太悶。", "The rain is too sharp and bright.", "雨聲太尖亮。", log=True, unit=" Hz"),
@@ -122,7 +126,12 @@ def source_events(patch):
     def add(time, name, **args):
         args["seed"] = patch.seed + len(events)
         events.append((float(time), name, args))
-    if patch.recipe == "rain":
+    if patch.recipe == "harmonic":
+        # Reuse the existing deterministic additive synthesizer, with fixed
+        # pitch/envelope and all processors off. No separate audio algorithm.
+        events.append((.16, "soundDetective", dict(v, freq=220, attack=.03,
+            decay=.12, sustain=.7, release=.25, noteOff=1.2, duration=3.44)))
+    elif patch.recipe == "rain":
         add(0, "sdRainBed", cutoff=v["brightness"], amp=v["bed"] * .16,
             variation=v["variation"], duration=SOURCE_DURATION)
         count = round(v["density"] * 3.2)

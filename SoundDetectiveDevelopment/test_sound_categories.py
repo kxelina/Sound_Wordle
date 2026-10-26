@@ -40,7 +40,7 @@ def app():
     return app
 
 
-@pytest.mark.parametrize('case',CASES,ids=lambda c:c.id)
+@pytest.mark.parametrize('case',[c for c in CASES if c.scoring=='control_bands'],ids=lambda c:c.id)
 def test_reference_alternatives_and_progress_directions(case):
     assert assess_source(case,case.target).total == 100
     assert not assess_source(case,case.initial).passed
@@ -61,7 +61,7 @@ def test_reference_alternatives_and_progress_directions(case):
     assert SourcePatch.from_dict(patch.to_dict()) == patch
 
 
-@pytest.mark.parametrize('case',CASES,ids=lambda c:c.id)
+@pytest.mark.parametrize('case',[c for c in CASES if c.scoring=='control_bands'],ids=lambda c:c.id)
 def test_single_attribute_hint_and_quiet_near_match(case):
     for spec in CONTROLS[case.target.recipe]:
         for value,direction in ((spec.low,-1),(spec.high,1)):
@@ -205,8 +205,8 @@ def test_case_board_filters_scene_and_preferences(app,tmp_path):
     w.resize(1280,720);w.volume_slider.setValue(0);w.show()
     try:
         w.board.open(None,'en');w.board.set_mode('wordle')
-        assert set(w.board.cards) == {'W01','W02','W03','W04','W05','W06','W07','W08'}
-        for category,ids in {'nature':{'W03','W04'},'instrument':{'W05'},'noise':{'W06'},'classic':{'W01','W02','W07','W08'}}.items():
+        assert set(w.board.cards) == {'W01','W02','W03','W04','W05','W06','W07','W08','W09'}
+        for category,ids in {'nature':{'W03','W04'},'instrument':{'W05'},'noise':{'W06','W09'},'classic':{'W01','W02','W07','W08'}}.items():
             w.board.set_category(category)
             assert set(w.board.cards) == ids
         for case in CASES:

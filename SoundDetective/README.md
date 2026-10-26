@@ -8,7 +8,7 @@
 
 Welcome to your sound detective's workspace. Listen to evidence, investigate what has changed, and use the equipment on your desk to reconstruct sounds and restore music. You can also enter the music studio to compose your own melody.
 
-The game currently includes **nine timbre cases, one music-restoration case, eight hidden-sound challenges, and free composition**.
+The game currently includes **nine timbre cases, one music-restoration case, nine hidden-sound challenges, and free composition**.
 
 ### Start playing
 
@@ -66,6 +66,9 @@ On the wall board, choose **Sound Wordle**, then a sound category. The original 
 | **W04 · Nature** | Short, rising bird-like whistles | Centre pitch, pitch glide, chirp length, spacing and harmonic colour |
 | **W05 · Instruments** | A plucked string-like note | Pitch, decay, brightness, body tone and pick noise |
 | **W06 · Noise / electronics** | An untuned radio | Noise bandwidth, pink-noise blend, flutter depth/speed and crackles |
+| **W09 · Noise / electronics** | The Wire Ghost: a hollow console-like hum | H1–H5 harmonic faders; fixed pitch, envelope and effects |
+
+**W09** accepts different harmonic balances. Build a sound richer than a pure whistle, with mostly odd upper harmonics and a moderate frequency centre. Beginner opens H2/H3, Standard H2–H5, and Advanced H1–H5. Its score uses three grouped features: odd share of upper-harmonic power, upper-harmonic power and spectral centre. Changing all amplitudes together does not improve it. Silent drafts can be saved, but cannot be played or submitted. Help tier 2 shows your model features; tier 3 adds their accepted bands. These features guide construction; they are not a percentage of perceptual similarity. Completing the case unlocks the target, review and collection.
 
 Accept a case, open the desk's **Synthesizer**, and use **Sound sources** to shape it. Each case starts with a rough sound and five relevant controls. These are stylized synthesized sounds; no bird or rain recording is played underneath.
 
@@ -75,13 +78,13 @@ The witness description is available immediately. **More help** gives three free
 
 Each submission shows **construction progress**, with attribute results below. The score rewards moving toward accepted ranges for the sound's construction controls, rather than comparing audio waveforms. Multiple settings can pass. Reach **90 overall and at least 85 for every attribute** to reveal the reference and unlock A/B playback. This value is not a listening-similarity percentage.
 
-**Analysis / versions** shows the measured spectrum and RMS envelope from your last audition. Open its **Versions** tab to restore one of your last 30 submissions. Gold is your sound; green is the revealed target. Play again after editing to update the plots. Reference settings appear here after completion. Extra Delay and Reverb are unused in these four cases.
+**Analysis / versions** shows the measured spectrum and RMS envelope from your last audition. Open its **Versions** tab to restore one of your last 30 submissions. Gold is your sound; green is the revealed target. Play again after editing to update the plots. Reference settings appear here after completion. Extra Delay and Reverb are unused in these category cases.
 
 **Export my WAV** saves the full 3.6-second stereo passage under **userdata/wordle/exports**. Export uses the same synthesized sound as auditioning and excludes your playback-volume setting. **Reset sound** resets controls while keeping attempts, clues and completion. Undo/redo works for these edits; progress is saved automatically.
 
 ### Difficulty, examples and continuous audition
 
-The four category cases offer **Beginner (2 controls)**, **Standard (4)** and **Advanced (5)** at the top of the workshop. New players start with Beginner. Other controls are already set for that task. Each difficulty keeps its own draft, attempts and first-clear review. Existing five-control saves continue under Advanced.
+The category cases offer **Beginner (2 controls)**, **Standard (4)** and **Advanced (5)** at the top of the workshop. New players start with Beginner. Other controls are already set for that task. Each difficulty keeps its own draft, attempts and first-clear review. Existing five-control saves continue under Advanced.
 
 **Hear example** plays a neutral teaching sound twice, first with a lower setting and then a higher setting. Only that control changes. It does not reveal the hidden target, change your patch or add an attempt. Text clues also explain what the control does.
 
@@ -180,7 +183,7 @@ If something is wrong:
 
 歡迎來到你的聲音偵探工作室。聆聽證物、找出聲音的變化，再使用桌上的設備還原音色、修復音樂。你也可以進入音樂工作室，創作自己的旋律。
 
-目前遊戲包含 **9 個音色案件、1 個音樂修復案件、8 個隱藏聲音挑戰，以及自由創作**。
+目前遊戲包含 **9 個音色案件、1 個音樂修復案件、9 個隱藏聲音挑戰，以及自由創作**。
 
 ### 開始遊戲
 
@@ -238,6 +241,9 @@ W07／W08 各自保存三層提示、草稿、提交歷史與目標解鎖。「�
 | **W04 · 自然聲音** | 短促上滑的鳥鳴般哨音 | 中心音高、音高滑動、鳥鳴長度、間隔、諧波色彩 |
 | **W05 · 樂器聲音** | 撥弦般的單音 | 音高、衰減、明亮度、琴身厚度、撥弦雜音 |
 | **W06 · 噪聲與電子** | 未調準的收音機 | 噪聲頻寬、粉紅噪聲比例、顫動深度／速度、爆裂聲 |
+| **W09 · 噪聲與電子** | 電線裡的幽靈：空心的遊戲機嗡聲 | H1–H5 諧波推桿；音高、包絡與效果固定 |
+
+**W09** 接受多組諧波比例。製作比純哨音豐富、以奇數高次諧波為主、頻率重心適中的音色。入門開放 H2／H3，標準開放 H2–H5，進階開放 H1–H5。進度比較三項群組特徵：高次諧波的奇數能量比例、高次諧波能量、頻譜中心；整體調大所有振幅不會提高分數。靜音可作草稿儲存，但不能試聽或提交。二級幫助顯示目前模型特徵，三級加入可接受範圍。這些數值用來指引合成，不是人耳相似度百分比。完成後解鎖目標、復盤與收藏。
 
 接受案件後，點桌上的「**合成器**」，使用「**聲源設備**」製作聲音。每關從一個粗略聲音開始，開放五個相關控制項。這些是具有相應特徵的合成聲音，沒有在底下播放真實鳥叫或雨聲錄音。
 
@@ -253,7 +259,7 @@ W04 的音高曲線可以直接操作：上下拖曳兩個端點改變音高，�
 
 ### 難度、示例與循環試聽
 
-四個分類案件的工作台上方可選 **入門（2 個控制）**、**標準（4 個）**、**進階（5 個）**。新玩家先從入門開始，其餘控制已代為設定。各難度的草稿、提交和首次復盤獨立保存；原有五控制存檔保留在進階。
+分類案件的工作台上方可選 **入門（2 個控制）**、**標準（4 個）**、**進階（5 個）**。新玩家先從入門開始，其餘控制已代為設定。各難度的草稿、提交和首次復盤獨立保存；原有五控制存檔保留在進階。
 
 「**聽控制示例**」用中性教學聲音先播放較低設定，再播放較高設定，只有一項控制不同。不揭露隱藏答案、不改草稿，也不增加提交。文字提示也會解釋控制影響什麼。
 

@@ -205,8 +205,8 @@ class CaseBoard(QFrame):
                            "Accept a case, then return to the workbench to investigate.") if available else
                           ("目前沒有可用的音樂案件。" if zh else "No music cases available."))
         if self.mode == "wordle":
-            self.note.setText("依口供合成聲音；W07 門鈴與 W08 空白一拍位於信號與旋律類。不限提交、免費提示，目標於通關後揭曉。" if zh else
-                              "Build from witness clues. Find W07 Doorbell and W08 Silent Beat under Signals / melody. Unlimited submissions and free clues; targets unlock after solving.")
+            self.note.setText("依口供合成聲音；W09 電線裡的幽靈位於噪聲與電子類，門鈴與節奏位於信號與旋律類。不限提交、免費提示，目標於通關後揭曉。" if zh else
+                              "Build from witness clues. Find W09 Wire Ghost under Noise / electronics, or doorbell and rhythm cases under Signals / melody. Unlimited submissions; targets unlock after solving.")
         elif self.mode == "music":
             self.note.setText("選擇音樂修復案件或自由創作，接受後進入音樂工作室；創作不評分，草稿獨立儲存。" if zh else
                               "Choose a restoration case or free composition, then accept to enter the music studio. Free drafts are saved separately, without grading.")

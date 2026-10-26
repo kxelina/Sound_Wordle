@@ -22,3 +22,6 @@ $testRun = Join-Path (Get-Location) ('.runtime/test-' + [guid]::NewGuid().ToStri
 ```
 
 測試使用獨立進度，Qt 介面檢查採 offscreen，關閉 UI 點擊音；不會播放到使用者喇叭。
+
+- `test_wire_ghost.py`：W09 群組特徵、多解、音量縮放、方向提示、靜音、存檔指紋、難度、推桿、收藏，以及實際頻譜核對。既有逐控制測試只參數化舊規則，W09 以獨立群組規則檢查；共用流程仍包含 W09。
+- `validate_wire_ghost_ui.py`：實際場景座標拖推桿，真實引擎、靜音完成示例／試聽／A/B、雙語、通關與收藏 WAV 匯出；可用 SOUND_DETECTIVE_QA_GAME 指定安裝目錄。

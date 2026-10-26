@@ -10,6 +10,7 @@ DIFFICULTIES={'beginner':('Beginner · 2 controls','入門 · 2 個控制'),
               'standard':('Standard · 4 controls','標準 · 4 個控制'),
               'advanced':('Advanced · 5 controls','進階 · 5 個控制')}
 ORDER={'rain':('density','brightness','drop_length','bed','variation'),
+       'harmonic':('h2','h3','h4','h5','h1'),
        'bird':('pitch','length','sweep','spacing','brightness'),
        'pluck':('pitch','decay','brightness','body','noise'),
        'static':('brightness','flutter','colour','rate','crackle')}
@@ -65,5 +66,9 @@ def concept_pair(recipe,key):
 
 def example_control(case,patch):
     from .sound_categories import assess_source
-    scores=assess_source(case,patch).scores
+    result=assess_source(case,patch)
+    if case.scoring=='harmonic_groups':
+        from .harmonic_rules import suggested_control
+        return suggested_control(case,patch,result)
+    scores=result.scores
     return min(scores,key=scores.get)

@@ -31,8 +31,6 @@ def check_environment():
     melodies=load_melody_cases()
     from .game.sound_categories import load_source_cases
     source_cases = load_source_cases()
-    if len(source_cases) != 4:
-        raise ValueError("The four category sound cases are missing")
     music = music_availability()
     return {"project": str(ROOT), "python": sys.version.split()[0], "python_executable": sys.executable,
             "pyside": qt_version, "timbre_cases": len(cases), "music_case": music.case_id if music.available else None,

@@ -127,7 +127,9 @@ class Debrief:
     def label(self,key,zh=False):
         if self.kind=='source':
             patch = SourcePatch.from_dict(self.clips['target']['patch'])
-            spec = next((s for s in CONTROLS[patch.recipe] if s.key==key),None)
+            from .harmonic_rules import FEATURES
+            specs = FEATURES if patch.recipe=='harmonic' else CONTROLS[patch.recipe]
+            spec = next((s for s in specs if s.key==key),None)
             if spec:
                 return spec.labels[zh]
         return LABELS.get(key,(key,key))[zh]
@@ -135,7 +137,9 @@ class Debrief:
     def explanation(self,key,zh=False):
         if self.kind=='source':
             patch = SourcePatch.from_dict(self.clips['target']['patch'])
-            spec = next((s for s in CONTROLS[patch.recipe] if s.key==key),None)
+            from .harmonic_rules import FEATURES
+            specs = FEATURES if patch.recipe=='harmonic' else CONTROLS[patch.recipe]
+            spec = next((s for s in specs if s.key==key),None)
             if spec:
                 return spec.help[zh]
         return MEANINGS.get(key,('This part is closer to the case requirements.','這部分更接近案件要求。'))[zh]
@@ -190,6 +194,10 @@ def build_debrief(case,session,*,seconds=None):
         note=('Only the retained submission history is shown.','僅顯示仍保留的提交記錄。')
         if final is None:
             note=('The historical cleared answer is no longer retained. Final audio and component values are unavailable.','歷史通關答案已不在保留記錄中，無法試聽最終答案或還原當時的分項分數。')
+        if case.scoring=='harmonic_groups':
+            conclusion=('Signal traced: a stylized old console. Odd upper harmonics give a hollow colour, while some upper energy keeps it richer than a pure whistle. Several slider balances can meet these requirements.',
+                        '訊號來源：風格化老式遊戲機。奇數高次諧波帶來空心感，適量高次能量讓它比純哨音豐富。多組推桿比例可以符合要求。')
+            note=tuple(conclusion[i]+' '+note[i] for i in range(2))
         return Debrief(cid,'source',case.title,record['number'] if record else session.attempts,('Highest clue tier: '+str(session.hints),'最高提示層級：'+str(session.hints)),seconds,before,after,clips,rows,note)
     if cid=='M01':
         from .music_cases import MusicSettings
