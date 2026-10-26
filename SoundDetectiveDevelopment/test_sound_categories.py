@@ -179,6 +179,7 @@ def test_long_feedback_never_hides_transport(app,case,language,tmp_path):
         assert w._accept_case(case.id)
         w._show_page('desk');w._activate_device('synth')
         c=w.controller
+        c.difficulty.setCurrentIndex(c.difficulty.findData('advanced'))
         w.preferences.language=language;w._translate()
         c._restore_edit(case.target,record=True);c._submit()
         c._restore_edit(case.initial,record=True)
@@ -212,6 +213,7 @@ def test_case_board_filters_scene_and_preferences(app,tmp_path):
             assert w._accept_case(case.id)
             w._show_page('desk');w._activate_device('synth');app.processEvents()
             c = w.controller
+            c.difficulty.setCurrentIndex(c.difficulty.findData('advanced'))
             assert c.case == case and w.scene_key == 'office'
             assert w.device_proxy.size().height() <= 610
             for field in c.editor.controls.values():
@@ -224,7 +226,7 @@ def test_case_board_filters_scene_and_preferences(app,tmp_path):
             c.analysis_button.click();assert c.device_kind == 'analyzer'
             app.processEvents()
             assert c.spectrum.parentWidget().rect().contains(c.spectrum.geometry())
-            assert c.plots.count() == 3
+            assert c.plots.count() == 4
             c.source_button.click();assert c.device_kind == 'synth'
             assert DesktopPreferences.from_dict(w.preferences.to_dict()).active_case == case.id
         w.board.open('W04','zh-Hant')

@@ -27,6 +27,8 @@ class SourceCase:
     initial: SourcePatch
     target: SourcePatch
     bands: dict
+    difficulty: str = "advanced"
+    editable_parameters: tuple = ()
 
     def __post_init__(self):
         if self.category not in ("nature", "instrument", "noise") or self.id not in ("W03", "W04", "W05", "W06"):
@@ -39,6 +41,15 @@ class SourceCase:
         if set(self.bands) != {s.key for s in CONTROLS[self.target.recipe]}:
             raise ValueError("Missing sound attribute bands")
         values = dict(self.target.values)
+        keys = {s.key for s in CONTROLS[self.target.recipe]}
+        if self.difficulty not in ('beginner','standard','advanced'):
+            raise ValueError('Unknown source difficulty')
+        if not self.editable_parameters:
+            object.__setattr__(self,'editable_parameters',tuple(s.key for s in CONTROLS[self.target.recipe]))
+        if len(set(self.editable_parameters)) != len(self.editable_parameters) or not set(self.editable_parameters)<=keys:
+            raise ValueError('Invalid editable source controls')
+        if any(dict(self.initial.values)[key]!=values[key] for key in keys-set(self.editable_parameters)):
+            raise ValueError('Locked source controls must match the target')
         for spec in CONTROLS[self.target.recipe]:
             band = self.bands[spec.key]
             if not isinstance(band, list) or len(band) != 2:
@@ -78,6 +89,10 @@ def assess_source(case, patch):
     scores, directions = {}, {}
     for spec in CONTROLS[patch.recipe]:
         value = dict(patch.values)[spec.key]
+        if spec.key not in case.editable_parameters:
+            if value != dict(case.target.values)[spec.key]:
+                raise ValueError('A locked source control was changed')
+            continue
         low, high = case.bands[spec.key]
         direction = -1 if value < low else 1 if value > high else 0
         distance = max(spec.position(low)-spec.position(value), spec.position(value)-spec.position(high), 0)
@@ -96,6 +111,7 @@ def source_clue(case, patch, tier, language="en"):
         return "各項聲音特徵已進入目標範圍，提交記錄這個版本。" if zh else "The sound attributes are inside the goal bands. Submit to record this version."
     spec = next(s for s in CONTROLS[patch.recipe] if s.key == key)
     text = spec.directions[result.directions[key] > 0][zh]
+    text += ' '+spec.help[zh]
     if tier >= 2:
         text += (f" 試著{'提高' if result.directions[key] < 0 else '降低'}「{spec.labels[zh]}」。" if zh else
                  f" Try {'raising' if result.directions[key] < 0 else 'lowering'} {spec.labels[zh]}.")
@@ -135,16 +151,21 @@ class SourceSession:
         return result
 
     def to_dict(self):
-        return {"schema_version": 1, "case": self.case.id, "scoring_version": SCORING_VERSION,
+        return {"schema_version": 2, "case": self.case.id, "scoring_version": SCORING_VERSION,
+                "difficulty":self.case.difficulty,
                 "current": self.current.to_dict(), "attempts": self.attempts, "hints": self.hints,
                 "solved": self.solved, "best": self.best,
                 "last": self.last.to_dict() if self.last else None, "records": self.records}
 
     @classmethod
     def from_dict(cls, data, case):
-        if not isinstance(data, dict) or set(data) != {"schema_version", "case", "scoring_version", "current", "attempts", "hints", "solved", "best", "last", "records"}:
+        fields={"schema_version", "case", "scoring_version", "current", "attempts", "hints", "solved", "best", "last", "records"}
+        if not isinstance(data, dict) or set(data) not in (fields,fields|{'difficulty'}):
             raise ValueError("Invalid category progress")
-        if data["schema_version"] != 1 or data["case"] != case.id or data["scoring_version"] != SCORING_VERSION:
+        if (type(data['schema_version']) is not int or data['schema_version'] not in (1,2)
+            or (data['schema_version']==2)!=('difficulty' in data)
+            or data.get('difficulty','advanced')!=case.difficulty
+            or data["case"] != case.id or data["scoring_version"] != SCORING_VERSION):
             raise ValueError("Incompatible category progress")
         if type(data["attempts"]) is not int or not 0 <= data["attempts"] <= 10**9 or type(data["hints"]) is not int or not 0 <= data["hints"] <= 3 or type(data["solved"]) is not bool:
             raise ValueError("Invalid category counters")
@@ -186,6 +207,13 @@ def load_source_session(path, case):
 
 
 def save_source_session(path, session):
+    path=Path(path)
     data = session.to_dict()
     SourceSession.from_dict(data, session.case)
+    if path.exists():
+        try:previous=json.loads(path.read_text('utf-8'))
+        except (ValueError,UnicodeError):previous=None
+        if isinstance(previous,dict) and previous.get('schema_version')==1:
+            import shutil,uuid
+            shutil.copy2(path,path.with_name(path.stem+'.before-difficulty-v2-'+uuid.uuid4().hex[:8]+'.json'))
     atomic_json_write(path, data)

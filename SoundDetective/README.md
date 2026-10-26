@@ -71,6 +71,20 @@ Each submission shows **construction progress**, with attribute results below. T
 
 **Export my WAV** saves the full 3.6-second stereo passage under **userdata/wordle/exports**. Export uses the same synthesized sound as auditioning and excludes your playback-volume setting. **Reset sound** resets controls while keeping attempts, clues and completion. Undo/redo works for these edits; progress is saved automatically.
 
+### Difficulty, examples and continuous audition
+
+The four category cases offer **Beginner (2 controls)**, **Standard (4)** and **Advanced (5)** at the top of the workshop. New players start with Beginner. Other controls are already set for that task. Each difficulty keeps its own draft, attempts and first-clear review. Existing five-control saves continue under Advanced.
+
+**Hear example** plays a neutral teaching sound twice, first with a lower setting and then a higher setting. Only that control changes. It does not reveal the hidden target, change your patch or add an attempt. Text clues also explain what the control does.
+
+Enable **Loop mine · auto update** to repeat your sound. Pause editing briefly to generate and hear the latest version. This is a refreshed preview, rather than instantaneous continuous synthesis. Stop, changing difficulty, leaving the page and focus loss cancel the loop and pending updates. Target and A/B playback remain locked until completion.
+
+### Your evidence cabinet
+
+Use **Cabinet** at the top of the room or desk to browse collected synthetic first-clear answers. Replay their sounds, inspect the controls or export the saved answer to WAV. Category difficulties are collected separately; practice edits do not overwrite the first answer. Music recordings are not collected. Existing first-clear reviews with available audio are imported when the game opens.
+
+The **Playtest log** tab under **Analysis / versions** is optional. Enable it to record local anonymous timings, edits, assistance and submissions, including unsuccessful attempts. Export the events as CSV when needed. It records neither names nor microphone audio, and does not upload anything. Each activation creates a new anonymous log.
+
 ### Get to know the equipment
 
 Hover over buttons and controls for a short explanation of what they do.
@@ -220,6 +234,20 @@ W04 的音高曲線可以直接操作：上下拖曳兩個端點改變音高，�
 「**分析與版本**」顯示上次試聽的實測頻譜和 RMS 包絡；切換至「**版本記錄**」頁籤可恢復最近 30 次提交中的控制值。金色是你的聲音，綠色是通關後揭曉的目標；修改後請重新試聽以更新圖表。通關後此處也會顯示參考設定。這四關不使用額外的 Delay 或 Reverb。
 
 「**匯出我的 WAV**」將完整 3.6 秒雙聲道片段存到 **userdata/wordle/exports**，與試聽使用相同合成結果，不套用播放音量。「**重設聲音**」只重設控制，保留提交、提示及通關記錄；可以撤銷／重做修改，進度會自動儲存。
+
+### 難度、示例與循環試聽
+
+四個分類案件的工作台上方可選 **入門（2 個控制）**、**標準（4 個）**、**進階（5 個）**。新玩家先從入門開始，其餘控制已代為設定。各難度的草稿、提交和首次復盤獨立保存；原有五控制存檔保留在進階。
+
+「**聽控制示例**」用中性教學聲音先播放較低設定，再播放較高設定，只有一項控制不同。不揭露隱藏答案、不改草稿，也不增加提交。文字提示也會解釋控制影響什麼。
+
+啟用「**循環我的聲音 · 自動更新**」後會重複自己的聲音。暫停調參片刻後，程式生成並播放最新版；這是更新預覽，並非瞬間連續合成。停止、切換難度、離開頁面及失焦均會取消循環和待更新請求。目標和 A/B 仍要通關才開放。
+
+### 聲音證物收藏櫃
+
+點房間或工作桌頂部的「**收藏櫃**」，即可瀏覽首次通關的合成作品，試聽、查看設定或匯出 WAV。分類案件各難度分開收藏，後續練習不覆蓋首次作品。音樂錄音不收入收藏。原有首次復盤若保留了答案音訊設定，開啟遊戲時會匯入。
+
+「分析與版本」中的「**試玩記錄**」可自行啟用本機匿名操作、時間、提示、示例和所有提交記錄，未通過的嘗試也保留，並可匯出 CSV。不記錄姓名或麥克風聲音，也不會上傳。每次啟用會建立新的匿名記錄。
 
 ### 認識桌上的設備
 

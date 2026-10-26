@@ -7,6 +7,7 @@ from ..game.storage import SessionStore
 from ..game.hidden_sound import load_hidden_case, load_hidden_session
 from ..game.melody import MelodyCase, load_melody_session
 from ..game.sound_categories import CATEGORIES, load_source_cases, load_source_session
+from ..game.source_learning import selected_difficulty,source_path,with_difficulty,DIFFICULTIES
 from .hover_help import set_help
 
 
@@ -158,7 +159,9 @@ class CaseBoard(QFrame):
                         loader = load_hidden_session if case.id == "W01" else load_melody_session
                         session = loader(path)
                     else:
-                        session = load_source_session(path,case)
+                        difficulty=selected_difficulty(path)
+                        session = load_source_session(source_path(path,difficulty),with_difficulty(case,difficulty))
+                        status=DIFFICULTIES[difficulty][zh]
                     if session.solved:
                         status = "已揭曉 · 可練習" if zh else "Revealed · practice available"
                     status += f" · {session.attempts} " + ("次提交" if zh else "submissions")

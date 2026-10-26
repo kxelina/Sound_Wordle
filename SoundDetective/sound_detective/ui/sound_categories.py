@@ -19,8 +19,11 @@ from ..audio.sound_sources import CONTROLS, SourcePatch
 from ..game.sound_categories import (SourceSession, assess_source, load_source_session,
     save_source_session, source_clue)
 from ..game.storage import SessionStore
+from ..game.playtest import PlaytestLog
+from ..game.source_learning import (DIFFICULTIES,with_difficulty,source_path,
+    selected_difficulty,remember_difficulty,concept_pair,example_control)
 from .edit_history import EditHistoryBar
-from .hardware import PlaybackDeck, RackFace, RotaryKnob
+from .hardware import PlaybackDeck, RackFace, RotaryKnob, InlineChoices
 from .hover_help import set_help
 
 
@@ -102,6 +105,7 @@ class ChirpCurve(QWidget):
         self.values = {"pitch": 86., "sweep": 7., "length": .18}
         self.drag = None
         self.language = "en"
+        self.editable = {'pitch','sweep','length'}
 
     def points(self):
         v = self.values
@@ -153,7 +157,13 @@ class ChirpCurve(QWidget):
         else:
             end = value
         length = v["length"] if self.drag == 0 else min(.5,max(.08,(event.position().x()-42)/max(1,self.width()-70)*.5))
-        self.edited.emit((start+end)/2, end-start, length)
+        pitch,sweep=(start+end)/2,end-start
+        if 'sweep' not in self.editable:
+            sweep=v['sweep']
+            pitch=min(100,max(60,value+(sweep/2 if self.drag==0 else -sweep/2)))
+        if 'pitch' not in self.editable:pitch=v['pitch']
+        if 'length' not in self.editable:length=v['length']
+        self.edited.emit(pitch, sweep, length)
         event.accept()
 
     def mouseReleaseEvent(self, event):
@@ -171,6 +181,7 @@ class SourceEditor(QWidget):
         super().__init__()
         self.patch = patch
         self.controls, self.knobs, self.labels = {}, {}, {}
+        self.editable = {s.key for s in CONTROLS[patch.recipe]}
         layout = QVBoxLayout(self)
         layout.setContentsMargins(0,0,0,0)
         self.curve = ChirpCurve() if patch.recipe == "bird" else None
@@ -232,7 +243,7 @@ class SourceEditor(QWidget):
 
     def _curve_edit(self,pitch,sweep,length):
         values = dict(self.patch.values)
-        values.update(pitch=round(pitch,1),sweep=round(sweep,1),length=round(length,3))
+        values.update({key:value for key,value in dict(pitch=round(pitch,1),sweep=round(sweep,1),length=round(length,3)).items() if key in self.editable})
         self.set_patch(SourcePatch.make("bird",values,self.patch.seed))
         self.changed.emit()
 
@@ -250,7 +261,7 @@ class SourceEditor(QWidget):
         for spec in CONTROLS[self.patch.recipe]:
             self.labels[spec.key].setText(spec.labels[zh])
             for widget in (self.labels[spec.key],self.controls[spec.key],self.knobs[spec.key]):
-                widget.setToolTip(spec.help[zh])
+                widget.setToolTip(spec.help[zh]+('' if spec.key in self.editable else (' 此難度已代為設定，無需調整。' if zh else ' Already set for this difficulty; no adjustment is needed.')))
         if self.curve:
             self.curve.language = language
             self.curve.setToolTip("上下拖曳端點改變音高；左右拖動右端點改變鳥鳴長度。" if zh else
@@ -258,18 +269,31 @@ class SourceEditor(QWidget):
             self.curve.update()
 
 
+    def set_editable(self,keys):
+        self.editable=set(keys)
+        for key in self.controls:
+            self.controls[key].setEnabled(key in self.editable)
+            self.knobs[key].setEnabled(key in self.editable)
+        if self.curve:self.curve.editable=self.editable
+
+
 class SourceCaseWindow(QMainWindow):
     case_completed = Signal()
+    difficulty_changing = Signal()
+    difficulty_changed = Signal()
     device_requested = Signal(str)
 
-    def __init__(self, *, case, save_path, language="en", volume=.35, embedded=True, renderer=None, player=None):
+    def __init__(self, *, case, save_path, language="en", volume=.35, embedded=True, renderer=None, player=None,difficulty='advanced'):
         super().__init__()
-        self.case, self.save_path, self.embedded = case, Path(save_path), embedded
+        self.base_case,self.base_save_path=case,Path(save_path)
+        difficulty=selected_difficulty(save_path) if difficulty is None else difficulty
+        self.case, self.save_path, self.embedded = with_difficulty(case,difficulty),source_path(save_path,difficulty),embedded
         self._language, self._closed, self._save_blocked = language, False, False
         self._revision, self._armed, self._warning = -1, None, ""
+        self.playtest_log=None;self._recording=False
         self.device_kind = "synth"
         try:
-            self.session = load_source_session(self.save_path,case)
+            self.session = load_source_session(self.save_path,self.case)
         except (OSError,ValueError,TypeError,KeyError):
             try:
                 SessionStore(self.save_path).preserve_invalid()
@@ -277,7 +301,9 @@ class SourceCaseWindow(QMainWindow):
             except OSError:
                 self._save_blocked = True
                 self._warning = "blocked"
-            self.session = SourceSession(case)
+            self.session = SourceSession(self.case)
+        self.update_timer=QTimer(self);self.update_timer.setSingleShot(True);self.update_timer.setInterval(400)
+        self.update_timer.timeout.connect(lambda:self._prepare('loop') if self.loop_button.isChecked() else None)
         self.renderer = renderer or SourcePreviewRenderer(self)
         self.player = player or AudioPlayer(self)
         self.renderer.ready.connect(self._ready)
@@ -296,6 +322,7 @@ class SourceCaseWindow(QMainWindow):
         self._build()
         self.language.currentIndexChanged.connect(self._language_changed)
         self.edit_bar = EditHistoryBar(self,self.session.current,self._restore_edit)
+        self.editor.set_editable(self.case.editable_parameters)
         self._translate()
 
     @property
@@ -314,6 +341,11 @@ class SourceCaseWindow(QMainWindow):
         header = QHBoxLayout()
         self.title = QLabel()
         header.addWidget(self.title,1)
+        self.difficulty=InlineChoices(columns=3)
+        for key in DIFFICULTIES:self.difficulty.addItem(key,key)
+        self.difficulty.setCurrentIndex(self.difficulty.findData(self.case.difficulty))
+        self.difficulty.currentIndexChanged.connect(self._change_difficulty)
+        header.addWidget(self.difficulty)
         header.addWidget(self.language)
         header.addWidget(self.volume)
         layout.addLayout(header)
@@ -334,6 +366,7 @@ class SourceCaseWindow(QMainWindow):
         self.note_scroll = QScrollArea()
         self.note_scroll.setWidgetResizable(True)
         self.note_scroll.setFrameShape(QFrame.Shape.NoFrame)
+        self.note_scroll.setMinimumHeight(0)
         self.note_scroll.setWidget(notes)
         left.addWidget(self.note_scroll,1)
         self.score.setStyleSheet("font-size: 18px; color: #ecd091;")
@@ -341,6 +374,8 @@ class SourceCaseWindow(QMainWindow):
         self.hint_button = QPushButton()
         self.hint_button.clicked.connect(self._hint)
         left.addWidget(self.hint_button)
+        self.example_button=QPushButton()
+        self.example_button.clicked.connect(lambda:self._prepare('example'))
         self.play_reference, self.play_current, self.stop_button, self.play_ab = [QPushButton() for _ in range(4)]
         self.play_current.clicked.connect(lambda:self._prepare("current"))
         self.play_reference.clicked.connect(lambda:self._prepare("target"))
@@ -349,6 +384,8 @@ class SourceCaseWindow(QMainWindow):
         self.deck = PlaybackDeck(self.play_reference,self.play_current,self.stop_button,self.play_ab,compact=True)
         self.player.state_changed.connect(self.deck.set_state)
         left.addWidget(self.deck)
+        self.loop_button=QPushButton();self.loop_button.setCheckable(True)
+        self.loop_button.toggled.connect(lambda enabled:self._prepare('loop') if enabled else self.stop())
         columns.addWidget(self.notebook,3)
         self.workbench = QGroupBox()
         right = QVBoxLayout(self.workbench)
@@ -357,6 +394,7 @@ class SourceCaseWindow(QMainWindow):
         self.source_button.clicked.connect(lambda:self.device_requested.emit("synth"))
         self.analysis_button.clicked.connect(lambda:self.device_requested.emit("analyzer"))
         nav.addWidget(self.source_button); nav.addWidget(self.analysis_button)
+        nav.addWidget(self.example_button);nav.addWidget(self.loop_button)
         right.addLayout(nav)
         self.editor = SourceEditor(self.session.current)
         self.editor.changed.connect(self._changed)
@@ -392,6 +430,14 @@ class SourceCaseWindow(QMainWindow):
         self.restore_button.clicked.connect(self._restore_record)
         versions_layout.addWidget(self.restore_button)
         self.plots.addTab(versions,"")
+        study=QWidget();study_layout=QVBoxLayout(study)
+        self.playtest_note=QLabel();self.playtest_note.setWordWrap(True)
+        self.record_button=QPushButton();self.record_button.setCheckable(True)
+        self.record_button.toggled.connect(self._record_toggled)
+        self.log_export_button=QPushButton();self.log_export_button.clicked.connect(self._export_log)
+        study_layout.addWidget(self.playtest_note);study_layout.addWidget(self.record_button)
+        study_layout.addWidget(self.log_export_button);study_layout.addStretch()
+        self.plots.addTab(study,'')
         right.addWidget(self.analysis,1)
         columns.addWidget(self.workbench,7)
         layout.addLayout(columns,1)
@@ -418,14 +464,59 @@ class SourceCaseWindow(QMainWindow):
         self._language = self.language.itemData(index)
         self._translate()
 
+    def _change_difficulty(self,index):
+        key=self.difficulty.itemData(index)
+        if key==self.case.difficulty:return
+        self.difficulty_changing.emit();self.stop();self._save()
+        self.case=with_difficulty(self.base_case,key)
+        self.save_path=source_path(self.base_save_path,key)
+        self._warning='';self._save_blocked=False
+        try:self.session=load_source_session(self.save_path,self.case)
+        except (OSError,ValueError,TypeError,KeyError):
+            try:SessionStore(self.save_path).preserve_invalid();self._warning='backup'
+            except OSError:self._warning='blocked';self._save_blocked=True
+            self.session=SourceSession(self.case)
+        self.editor.set_patch(self.session.current);self.editor.set_editable(self.case.editable_parameters)
+        self.edit_bar.reset(self.session.current)
+        self.spectrum.clear();self.envelope.clear()
+        try:remember_difficulty(self.base_save_path,key)
+        except OSError:self._warning='blocked'
+        self._translate();self._save();self._record('difficulty');self.difficulty_changed.emit()
+
+    def _record_toggled(self,enabled):
+        if enabled:
+            self.playtest_log=PlaytestLog(self.base_save_path.parent/'playtests')
+            self._recording=True;self._record('start')
+        else:
+            self._record('end');self._recording=False
+
+    def _record(self,event,**values):
+        if not self._recording or self.playtest_log is None:return
+        try:self.playtest_log.record(self.case,event,attempts=self.session.attempts,**values)
+        except (OSError,ValueError) as error:
+            self._recording=False
+            self.record_button.blockSignals(True);self.record_button.setChecked(False);self.record_button.blockSignals(False)
+            self.status.setText(self.text('Recording stopped: ','記錄已停止：')+str(error))
+
+    def _export_log(self):
+        try:
+            if self.playtest_log is None:raise ValueError(self.text('Enable playtest recording first.','請先啟用試玩記錄。'))
+            self.status.setText(self.text('Exported: ','已匯出：')+str(self.playtest_log.export_csv()))
+        except (OSError,ValueError) as error:self.status.setText(str(error))
+
     def _translate(self):
         self.title.setText(f"{self.case.id} · {self.case.title[self._language]}")
         self.setWindowTitle(self.title.text())
         self.notebook.setTitle(self.text("Witness notebook","證人口供"))
         self.workbench.setTitle(self.text("Sound construction workshop","聲音合成工作台"))
         self.story.setText(self.case.story[self._language])
+        for key,button in zip(DIFFICULTIES,self.difficulty.buttons):
+            button.setText(DIFFICULTIES[key][self.zh])
+            set_help(button,'source_difficulty',self._language)
         captions = (
             (self.hint_button,"More help · free","再給我一點幫助 · 免費","hint"),
+            (self.example_button,"Hear example","聽控制示例","source_example"),
+            (self.loop_button,"Loop mine · auto update","循環我的聲音 · 自動更新","source_loop"),
             (self.play_current,"Play my sound","試聽我的聲音","play_current"),
             (self.play_ab,"A/B · target → mine","A/B · 目標 → 我的聲音","play_ab"),
             (self.stop_button,"Stop · Esc","停止 · Esc","stop"),
@@ -442,6 +533,10 @@ class SourceCaseWindow(QMainWindow):
         self.plots.setTabText(0,self.text("Spectrum","頻譜"))
         self.plots.setTabText(1,self.text("Amplitude envelope","振幅包絡"))
         self.plots.setTabText(2,self.text("Versions","版本記錄"))
+        self.plots.setTabText(3,self.text('Playtest log','試玩記錄'))
+        self.playtest_note.setText(self.text('Optional local observation log: anonymous ID, elapsed time, difficulty, edits, hints, examples and all submissions. Recording is off by default. Logs are not a controlled study or evidence of learning effectiveness.','可選的本機觀察記錄：匿名代碼、時間、難度、調參、提示、示例和所有提交。預設關閉；記錄本身不是受控實驗或學習成效證據。'))
+        for button,en,zh,key in ((self.record_button,'Record this playtest','記錄這次試玩','playtest_record'),(self.log_export_button,'Export events · CSV','匯出事件 · CSV','playtest_export')):
+            button.setText(self.text(en,zh));set_help(button,key,self._language)
         self.spectrum.setLabel("bottom",self.text("Frequency","頻率"),units="Hz")
         self.spectrum.setLabel("left",self.text("Relative power","相對能量"),units="dB")
         self.envelope.setLabel("bottom",self.text("Time","時間"),units="s")
@@ -496,20 +591,26 @@ class SourceCaseWindow(QMainWindow):
             self.analysis_note.setText(self.analysis_note.text()+"\n"+self.review.text())
 
     def _changed(self):
-        self.stop()
+        looping=self.loop_button.isChecked()
+        self.stop(keep_loop=looping)
         self.session.update(self.editor.patch)
         self.edit_bar.record(self.session.current)
         self.spectrum.clear();self.envelope.clear()
         self._refresh();self._save()
+        self._record('edit')
+        if looping:self.update_timer.start()
 
     def _restore_edit(self,patch,*,record=False):
-        self.stop()
+        looping=self.loop_button.isChecked()
+        self.stop(keep_loop=looping)
         self.session.update(patch)
         self.editor.set_patch(patch)
         if record:
             self.edit_bar.record(patch,merge=False)
         self.spectrum.clear();self.envelope.clear()
         self._refresh();self._save()
+        self._record('edit')
+        if looping:self.update_timer.start()
 
     def _restore_record(self):
         row = self.history.currentRow()
@@ -520,10 +621,11 @@ class SourceCaseWindow(QMainWindow):
         was_solved = self.session.solved
         self.stop()
         result = self.session.submit()
+        self._record('submit',score=result.total)
         self._refresh();self._save()
         if not was_solved and self.session.solved:
             self.case_completed.emit()
-        parts = " · ".join(f"{spec.labels[self.zh]} {result.scores[spec.key]:.0f}" for spec in CONTROLS[self.session.current.recipe])
+        parts = " · ".join(f"{spec.labels[self.zh]} {result.scores[spec.key]:.0f}" for spec in CONTROLS[self.session.current.recipe] if spec.key in result.scores)
         self.status.setText(self.text("Passed! ","通關！")+parts if result.passed else
             self.text("Goal: 90 overall and 85 per attribute. ","目標：總分 90，各項至少 85。")+parts)
         QTimer.singleShot(0,lambda:self.note_scroll.ensureWidgetVisible(self.score) if not self._closed else None)
@@ -531,14 +633,22 @@ class SourceCaseWindow(QMainWindow):
     def _hint(self):
         self.session.hints = min(3,self.session.hints+1)
         self._refresh();self._save()
+        self._record('hint')
         QTimer.singleShot(0,lambda:self.note_scroll.ensureWidgetVisible(self.feedback) if not self._closed else None)
 
     def _prepare(self,mode):
         if self._closed or mode in ("target","ab") and not self.session.solved:
             return
-        self.stop()
+        if mode=='current' and self.loop_button.isChecked():mode='loop'
+        self.stop(keep_loop=mode=='loop')
         requests = {"target":self.case.target,"current":self.session.current} if mode == "ab" else {
             "target" if mode == "target" else "current":self.case.target if mode == "target" else self.session.current}
+        if mode=='example':
+            self._example_key=example_control(self.case,self.session.current)
+            low,high=concept_pair(self.case.target.recipe,self._example_key)
+            requests={'low':low,'high':high}
+            self._record('example',control=self._example_key)
+        elif mode=='loop':self._record('loop')
         self._armed = mode,tuple(requests)
         self.busy.show()
         self.status.setText(self.text("Preparing procedural audio…","正在合成聲音……"))
@@ -557,6 +667,7 @@ class SourceCaseWindow(QMainWindow):
         try:
             for key in keys:
                 measurements = previews[key].measurements
+                if mode=='example':continue
                 pen = QPen(QColor("#9cb9a0" if key == "target" else "#e5c37a"),1.4)
                 self.spectrum.plot(measurements["spectrum_hz"],measurements["spectrum_db"],pen=pen)
                 self.envelope.plot(measurements["envelope_seconds"],measurements["envelope"],pen=pen)
@@ -567,25 +678,36 @@ class SourceCaseWindow(QMainWindow):
                 shutil.copyfile(previews["current"].listening_path,path)
                 self.status.setText(self.text("Exported: ","已匯出：")+str(path))
             else:
-                self.player.play([PlaybackItem(previews[key].listening_path,self.text("Target","目標") if key == "target" else self.text("My sound","我的聲音")) for key in keys])
-                self.status.setText(self.text("Playing. Open Analysis & versions for measured spectrum and envelope.","正在播放；點「分析與版本」可查看實測頻譜和包絡。"))
+                if mode=='example':
+                    spec=next(s for s in CONTROLS[self.case.target.recipe] if s.key==self._example_key)
+                    self.player.play([PlaybackItem(previews[key].listening_path,self.text('Lower ','較低的')+spec.labels[self.zh] if key=='low' else self.text('Higher ','較高的')+spec.labels[self.zh]) for key in keys])
+                    self.status.setText(self.text('Example only: lower → higher. ','僅為教學示例：較低 → 較高。')+spec.help[self.zh])
+                else:
+                    self.player.play([PlaybackItem(previews[key].listening_path,self.text("Target","目標") if key == "target" else self.text("My sound","我的聲音"),loop=mode=='loop') for key in keys])
+                    self.status.setText(self.text("Playing. Open Analysis & versions for measured spectrum and envelope.","正在播放；點「分析與版本」可查看實測頻譜和包絡。"))
         except (OSError,ValueError,RuntimeError,KeyError) as error:
-            self.status.setText(str(error))
+            self._failed(self._revision,str(error))
 
     def _failed(self,revision,message):
         if not self._closed and revision == self._revision:
             self._armed = None;self.busy.hide()
+            self.loop_button.blockSignals(True);self.loop_button.setChecked(False);self.loop_button.blockSignals(False)
+            self.update_timer.stop()
             self.status.setText(self.text("Audio error: ","音訊錯誤：")+message)
 
     def _player_state(self,state,label):
         if self._closed or not hasattr(self,"status"):
             return
+        if state=='error':self.stop();return
         if state in ("loading","playing"):
             self.status.setText(self.text("Playing: ","正在播放：")+label)
         elif state == "stopped" and self._armed is None and self.status.text().startswith(("Playing", "正在播放")):
             self.status.setText(self.text("Stopped.","已停止。"))
 
-    def stop(self):
+    def stop(self,*,keep_loop=False):
+        self.update_timer.stop()
+        if not keep_loop:
+            self.loop_button.blockSignals(True);self.loop_button.setChecked(False);self.loop_button.blockSignals(False)
         self._armed = None
         self.renderer.cancel()
         self._revision = self.renderer.revision
@@ -608,6 +730,7 @@ class SourceCaseWindow(QMainWindow):
 
     def closeEvent(self,event):
         if not self._closed:
+            self._record('end');self._recording=False
             self.stop();self._save();self._closed = True
             self.player.close();self.renderer.close()
         event.accept()

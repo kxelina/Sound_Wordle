@@ -224,6 +224,18 @@ WINDOWS = {
 }
 
 
+HELP.update({
+    'source_difficulty':('Choose 2, 4 or 5 editable controls. Each difficulty has its own draft, attempts and first-clear review.','選擇開放 2、4 或 5 個控制；各難度的草稿、提交和首次復盤獨立保存。'),
+    'source_example':('Hear lower then higher values of one control on a neutral teaching sound. This never plays the hidden target or counts as a submission.','以中性教學聲音示範一個控制由低到高的變化；不播放隱藏答案，也不增加提交次數。'),
+    'source_loop':('Loop only your sound. After you pause editing, a fresh version replaces it; Stop, leaving or focus loss cancels updates.','只循環自己的聲音，暫停調參後更新版本；停止、離開或失焦會取消更新。'),
+    'evidence_cabinet':('Browse your collected synthetic first-clear answers, replay their sounds, inspect controls or export WAV.','瀏覽首次通關合成作品，可重播、查看設定或匯出 WAV。'),
+    'evidence_select':('Choose a collected case and difficulty. These saved answers are independent of current drafts.','選擇收藏案件與難度；收藏答案與目前草稿分開保存。'),
+    'evidence_export':('Render the saved cleared answer to WAV without changing the case or adding an attempt.','把保存的通關作品合成為 WAV，不改案件，也不增加提交次數。'),
+    'playtest_record':('Opt in to local anonymous timing, edit, hint and submission logs. No microphone audio or personal name is recorded.','自行啟用本機匿名操作、提示、提交和時間記錄；不錄製麥克風聲音或姓名。'),
+    'playtest_export':('Export recorded events to CSV for manual analysis. Unsuccessful submissions remain in the log.','將已記錄事件匯出 CSV 供分析，未通過的提交也會保留。'),
+})
+
+
 def help_text(key, language):
     return HELP[key][language == "zh-Hant"]
 

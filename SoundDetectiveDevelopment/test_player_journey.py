@@ -251,8 +251,9 @@ def test_studio_auto_review_free_mode_and_first_snapshot(app,tmp_path):
         w._show_page('desk');w._activate_device('synth')
         c=w.controller;c._restore_edit(c.case.target,record=True)
         w._device_started=100.;clock[0]=120.;c._submit();app.processEvents()
-        assert w.page=='review' and w.journey.reviews['W04'].seconds==20
-        saved=w.journey.reviews['W04'].to_dict()
+        assert w.page=='review' and w._case_journey().reviews['W04'].seconds==20
+        saved=w._case_journey().reviews['W04'].to_dict()
+        journey_path=w._case_journey().path
         w._leave_review();c._restore_edit(c.case.initial,record=True);c._submit();app.processEvents()
         assert w.page=='device'
         assert w.open_review() and w.debrief_panel.record.to_dict()==saved
@@ -260,7 +261,7 @@ def test_studio_auto_review_free_mode_and_first_snapshot(app,tmp_path):
         assert w.open_free_composition()
         assert not w._review_available() and not w.open_review()
     finally:w.close();app.processEvents()
-    assert JourneyStore(tmp_path/'player-journey.json').reviews['W04'].to_dict()==saved
+    assert JourneyStore(journey_path).reviews['W04'].to_dict()==saved
 
 
 def test_tone_signal_opens_new_review(app,tmp_path):

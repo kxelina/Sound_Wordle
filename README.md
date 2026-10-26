@@ -12,6 +12,8 @@ A Windows desktop sound-construction game built with Python, PySide6 and SuperCo
 - **M01 music restoration:** included as code/configuration; song recordings are local-only and are not distributed here.
 - English and Traditional Chinese interfaces, edit history, progress saves and WAV export.
 - A five-step interactive tutorial and persistent first-clear reviews with audio comparisons.
+- Category difficulties with 2/4/5 controls, one-control teaching examples, auto-updating loop auditions and an exportable evidence cabinet.
+- Optional local anonymous playtest logs; no participant data is uploaded.
 
 [Full English / 繁體中文 player guide](SoundDetective/README.md)
 
@@ -48,7 +50,7 @@ Read [environment notes](SoundDetective/docs/ENVIRONMENT.md) for engine path con
 After installing the dependencies, run the source-only Wordle and piano-roll checks from the repository root:
 
 ```powershell
-.\SoundDetective\.venv\Scripts\python.exe -m pytest SoundDetectiveDevelopment/test_player_journey.py SoundDetectiveDevelopment/test_sound_categories.py SoundDetectiveDevelopment/test_note_dragging.py -q
+.\SoundDetective\.venv\Scripts\python.exe -m pytest SoundDetectiveDevelopment/test_learning_tools.py SoundDetectiveDevelopment/test_player_journey.py SoundDetectiveDevelopment/test_sound_categories.py SoundDetectiveDevelopment/test_note_dragging.py -q
 ```
 
 These checks include actual SuperCollider rendering. Some additional music-restoration
@@ -83,6 +85,8 @@ with those assets present. See the dated validation notes for exact counts and s
 環境建立後，也可以使用原生 `SoundDetective.exe`。缺少或無法驗證 M01 音源時，只有歌曲案件暫不可玩，其他合成挑戰與自由創作仍可啟動。此倉庫不提供原曲錄音或完整執行環境；可用 `--public` 建立不帶歌曲的離線安裝包。
 
 主選單「新手練習」提供獨立的五步操作教程，新玩家第一次開始遊戲時會獲得引導。通關後可查看首次結案復盤，比較起點、答案與目標聲音，查看分項進度及參考設定。音樂修復仍保留完整原曲播放，復盤手動開啟。
+
+分類聲音另有入門／標準／進階難度、單控制教學示例、循環更新試聽及首次作品收藏；可選擇啟用本機匿名試玩記錄。
 
 [開發測試與驗證紀錄](SoundDetectiveDevelopment/VALIDATION.md) ·
 [外部資源及 AI 輔助紀錄](SoundDetective/docs/AI_ASSISTANCE.md)
