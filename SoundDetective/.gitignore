@@ -1,0 +1,22 @@
+.venv/
+.python/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.cache/
+.runtime/
+.coverage
+htmlcov/
+.env
+output/*
+!output/.gitkeep
+!output/README.md
+userdata/
+release/
+
+# Local-only recordings and bundled runtimes
+source/*
+!source/README.md
+content/music_cases/assets/M01-evidence.wav
+runtime/
+engine/

@@ -1,0 +1,15 @@
+{
+  "source": "source/u_1thl5d0szy-memeclick-506437.mp3",
+  "source_sha256": "3084f38708f1fb06a93e74b97f1486dfcedd6dad1dea13eefb23b843e69a0295",
+  "provenance": "User-provided local asset; no author or license claim is inferred.",
+  "processing": "Mono, trim outer silence with 8/35 ms margins, 2 ms fades, playback-level preparation, PCM16 WAV.",
+  "source_duration_seconds": 0.39183673469387753,
+  "source_range_seconds": [
+    0.0563718820861678,
+    0.27709750566893426
+  ],
+  "duration_seconds": 0.22072562358276643,
+  "sample_rate": 44100,
+  "output": "assets/audio/ui-click.wav",
+  "output_sha256": "86ecfdd274256dfcc0562b51e2cd93870ff3085567bcde55d3180cd50db328e8"
+}

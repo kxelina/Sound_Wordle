@@ -1,0 +1,149 @@
+{
+  "schema_version": 1,
+  "id": "T08",
+  "revision": 1,
+  "mode": "timbre_match",
+  "title": {
+    "en": "The Final Reconstruction",
+    "zh-Hant": "最終重建"
+  },
+  "description": {
+    "en": "Reconstruct the complete phrase using every available sound control. The notes and rhythm are fixed.",
+    "zh-Hant": "使用全部聲音控制項重建整段樂句，音符與節奏已固定。"
+  },
+  "editable_parameters": [
+    "h1",
+    "h2",
+    "h3",
+    "h4",
+    "h5",
+    "h6",
+    "h7",
+    "h8",
+    "attack",
+    "decay",
+    "sustain",
+    "release",
+    "filter_enabled",
+    "filter_mode",
+    "cutoff_hz",
+    "resonance",
+    "delay_enabled",
+    "delay_time",
+    "delay_decay",
+    "delay_mix",
+    "reverb_enabled",
+    "reverb_room",
+    "reverb_damping",
+    "reverb_mix"
+  ],
+  "diagnostic_profile": "combined",
+  "reference_settings": {
+    "patch": {
+      "harmonics": [
+        1,
+        0.45,
+        0.3,
+        0.2,
+        0.13,
+        0.09,
+        0.06,
+        0.04
+      ],
+      "attack": 0.03,
+      "decay": 0.15,
+      "sustain": 0.65,
+      "release": 0.2
+    },
+    "effects": {
+      "filter": {
+        "enabled": true,
+        "mode": "lowpass",
+        "cutoff_hz": 2000,
+        "resonance": 0.35
+      },
+      "delay": {
+        "enabled": true,
+        "time_seconds": 0.32,
+        "decay_seconds": 1.2,
+        "mix": 0.22
+      },
+      "reverb": {
+        "enabled": true,
+        "room": 0.4,
+        "damping": 0.45,
+        "mix": 0.18
+      },
+      "bypass": false
+    }
+  },
+  "initial_settings": {
+    "patch": {
+      "harmonics": [
+        1,
+        0.02,
+        0.04,
+        0.5,
+        0.02,
+        0.35,
+        0.05,
+        0.2
+      ],
+      "attack": 0.25,
+      "decay": 0.4,
+      "sustain": 0.25,
+      "release": 0.9
+    },
+    "effects": {
+      "filter": {
+        "enabled": true,
+        "mode": "highpass",
+        "cutoff_hz": 700,
+        "resonance": 0
+      },
+      "delay": {
+        "enabled": true,
+        "time_seconds": 0.12,
+        "decay_seconds": 2.4,
+        "mix": 0.4
+      },
+      "reverb": {
+        "enabled": true,
+        "room": 0.8,
+        "damping": 0.85,
+        "mix": 0.45
+      },
+      "bypass": false
+    }
+  },
+  "sequence": {
+    "schema_version": 1,
+    "events": [
+      {
+        "pitch": 57,
+        "start_seconds": 0.1,
+        "duration_seconds": 0.3,
+        "velocity": 100
+      },
+      {
+        "pitch": 60,
+        "start_seconds": 0.8,
+        "duration_seconds": 0.3,
+        "velocity": 100
+      },
+      {
+        "pitch": 64,
+        "start_seconds": 1.5,
+        "duration_seconds": 0.6,
+        "velocity": 110
+      }
+    ]
+  },
+  "hint_threshold": 75,
+  "comparison": {
+    "focus": "combined",
+    "pass_score": 90,
+    "component_floor": 85,
+    "tail_floor": 85
+  }
+}

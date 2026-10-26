@@ -1,0 +1,8 @@
+{
+  "id": "W03", "category": "nature", "recipe": "rain", "seed": 202603,
+  "title": {"en": "Rain at the Window", "zh-Hant": "窗邊的小雨"},
+  "story": {"en": "A gentle shower outside the office. Separate, short drops sit over a soft, fairly steady rain curtain. Keep the high frequencies gentle.", "zh-Hant": "辦公室窗外正下著小雨。短促、分明的雨點落在柔和而平穩的背景雨幕上，高頻不刺耳。"},
+  "initial": {"density": 23, "brightness": 8000, "drop_length": 0.14, "bed": 0.1, "variation": 0.9},
+  "target": {"density": 8, "brightness": 2600, "drop_length": 0.045, "bed": 0.45, "variation": 0.25},
+  "bands": {"density": [6.5, 9.5], "brightness": [2100, 3200], "drop_length": [0.03, 0.06], "bed": [0.35, 0.55], "variation": [0.15, 0.35]}
+}

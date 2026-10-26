@@ -1,0 +1,2 @@
+# Recreate the verified project environment from one dependency lock.
+-r requirements-lock.txt

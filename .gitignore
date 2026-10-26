@@ -1,0 +1,22 @@
+# Python environments and build/runtime files
+.venv/
+.python/
+.runtime/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.cache/
+.coverage
+htmlcov/
+.env
+.env.*
+!.env.example
+userdata/
+release/
+runtime/
+engine/
+
+# Locally supplied commercial music and its extracted evidence
+SoundDetective/source/*
+!SoundDetective/source/README.md
+SoundDetective/content/music_cases/assets/M01-evidence.wav

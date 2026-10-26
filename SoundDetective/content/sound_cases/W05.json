@@ -1,0 +1,8 @@
+{
+  "id": "W05", "category": "instrument", "recipe": "pluck", "seed": 202605,
+  "title": {"en": "The Loose String", "zh-Hant": "鬆開的一根弦"},
+  "story": {"en": "One plucked note around middle C. It has moderate brightness, a little body and a small pick sound. The string fades in under a second.", "zh-Hant": "一個中央 C 附近的撥弦音。明亮度適中，帶一點厚度和輕微撥弦雜音，弦音在一秒內衰減。"},
+  "initial": {"pitch": 74, "decay": 1.85, "brightness": 0.05, "body": 0.9, "noise": 0.48},
+  "target": {"pitch": 60, "decay": 0.7, "brightness": 0.5, "body": 0.3, "noise": 0.12},
+  "bands": {"pitch": [59.5, 60.5], "decay": [0.55, 0.85], "brightness": [0.35, 0.65], "body": [0.2, 0.4], "noise": [0.06, 0.18]}
+}

@@ -1,0 +1,8 @@
+{
+  "id": "W06", "category": "noise", "recipe": "static", "seed": 202606,
+  "title": {"en": "Between Radio Stations", "zh-Hant": "電台之間的雜音"},
+  "story": {"en": "An untuned radio gives a bright hiss with a little low-frequency weight. Its level flutters quickly and a few crackles break through the background.", "zh-Hant": "未調準的收音機發出明亮嘶聲，帶少量低頻厚度。音量快速顫動，背景中透出幾聲爆裂雜音。"},
+  "initial": {"brightness": 850, "colour": 0.9, "flutter": 0.05, "rate": 2, "crackle": 0.75},
+  "target": {"brightness": 6500, "colour": 0.2, "flutter": 0.65, "rate": 8, "crackle": 0.25},
+  "bands": {"brightness": [5200, 8000], "colour": [0.1, 0.35], "flutter": [0.5, 0.8], "rate": [6.5, 9.5], "crackle": [0.15, 0.35]}
+}

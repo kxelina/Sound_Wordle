@@ -1,0 +1,117 @@
+{
+  "schema_version": 1,
+  "id": "T06",
+  "revision": 1,
+  "mode": "timbre_match",
+  "title": {
+    "en": "The Repeated Message",
+    "zh-Hant": "重複的訊息"
+  },
+  "description": {
+    "en": "Recreate the pattern of repeats. Investigate spacing, decay and wet mix.",
+    "zh-Hant": "還原重複聲的時間圖案，調查間隔、衰減時間與濕聲比例。"
+  },
+  "editable_parameters": [
+    "delay_enabled",
+    "delay_time",
+    "delay_decay",
+    "delay_mix"
+  ],
+  "diagnostic_profile": "delay",
+  "reference_settings": {
+    "patch": {
+      "harmonics": [
+        1,
+        0.5,
+        0.33,
+        0.25,
+        0.2,
+        0.17,
+        0.14,
+        0.125
+      ],
+      "attack": 0.01,
+      "decay": 0.02,
+      "sustain": 0.8,
+      "release": 0.04
+    },
+    "effects": {
+      "filter": {
+        "enabled": false,
+        "mode": "lowpass",
+        "cutoff_hz": 1200,
+        "resonance": 0
+      },
+      "delay": {
+        "enabled": true,
+        "time_seconds": 0.36,
+        "decay_seconds": 1.6,
+        "mix": 0.35
+      },
+      "reverb": {
+        "enabled": false,
+        "room": 0.5,
+        "damping": 0.5,
+        "mix": 0.2
+      },
+      "bypass": false
+    }
+  },
+  "initial_settings": {
+    "patch": {
+      "harmonics": [
+        1,
+        0.5,
+        0.33,
+        0.25,
+        0.2,
+        0.17,
+        0.14,
+        0.125
+      ],
+      "attack": 0.01,
+      "decay": 0.02,
+      "sustain": 0.8,
+      "release": 0.04
+    },
+    "effects": {
+      "filter": {
+        "enabled": false,
+        "mode": "lowpass",
+        "cutoff_hz": 1200,
+        "resonance": 0
+      },
+      "delay": {
+        "enabled": true,
+        "time_seconds": 0.12,
+        "decay_seconds": 0.5,
+        "mix": 0.1
+      },
+      "reverb": {
+        "enabled": false,
+        "room": 0.5,
+        "damping": 0.5,
+        "mix": 0.2
+      },
+      "bypass": false
+    }
+  },
+  "sequence": {
+    "schema_version": 1,
+    "events": [
+      {
+        "pitch": 60,
+        "start_seconds": 0.08,
+        "duration_seconds": 0.14,
+        "velocity": 110
+      }
+    ]
+  },
+  "hint_threshold": 75,
+  "comparison": {
+    "focus": "combined",
+    "pass_score": 90,
+    "component_floor": 85,
+    "tail_floor": 85
+  }
+}

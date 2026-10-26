@@ -1,0 +1,269 @@
+{
+  "schema_version": 1,
+  "case_id": "M01",
+  "case_fingerprint": "2ceb4c3ad0e79dcd4e35cef812b4fd2cec8881de6f960a5b0425434807c2c1b4",
+  "source_sha256": "565a2bd57a555f3d97a7790b0557c0dd2cc9df22e9a9fc58bf6733fb44fd08dc",
+  "seconds": 12,
+  "analysis": "librosa 0.11 CQT, 22.05 kHz, hop 256, C2+84 bins. C3-C7 dominant harmonic salience per marked/onset slice; nominal MIDI. Confidence is relative peak dominance, not a probability. Display estimate in a mixed recording, not melody separation, polyphonic transcription or verified score.",
+  "notes": [
+    {
+      "start_seconds": 0.0,
+      "end_seconds": 0.626938775510204,
+      "midi": 58,
+      "confidence": 0.186198455852253,
+      "region_index": null
+    },
+    {
+      "start_seconds": 0.626938775510204,
+      "end_seconds": 0.9229931972789116,
+      "midi": 66,
+      "confidence": 0.05975640863986899,
+      "region_index": 0
+    },
+    {
+      "start_seconds": 0.9229931972789116,
+      "end_seconds": 1.2480725623582767,
+      "midi": 59,
+      "confidence": 0.16403420472880403,
+      "region_index": null
+    },
+    {
+      "start_seconds": 1.2480725623582767,
+      "end_seconds": 1.5673469387755101,
+      "midi": 66,
+      "confidence": 0.34043464900202103,
+      "region_index": null
+    },
+    {
+      "start_seconds": 1.5673469387755101,
+      "end_seconds": 1.8575963718820863,
+      "midi": 78,
+      "confidence": 0.15138219776166256,
+      "region_index": null
+    },
+    {
+      "start_seconds": 1.8575963718820863,
+      "end_seconds": 2.1710657596371883,
+      "midi": 78,
+      "confidence": 0.15317889695348422,
+      "region_index": null
+    },
+    {
+      "start_seconds": 2.1710657596371883,
+      "end_seconds": 2.513560090702948,
+      "midi": 68,
+      "confidence": 0.4489191003390017,
+      "region_index": null
+    },
+    {
+      "start_seconds": 2.513560090702948,
+      "end_seconds": 2.8328344671201813,
+      "midi": 68,
+      "confidence": 0.4775448550906038,
+      "region_index": null
+    },
+    {
+      "start_seconds": 2.8328344671201813,
+      "end_seconds": 3.128888888888889,
+      "midi": 68,
+      "confidence": 0.2575852241988204,
+      "region_index": null
+    },
+    {
+      "start_seconds": 3.128888888888889,
+      "end_seconds": 3.430748299319728,
+      "midi": 63,
+      "confidence": 0.6315807299473912,
+      "region_index": null
+    },
+    {
+      "start_seconds": 3.430748299319728,
+      "end_seconds": 3.7616326530612243,
+      "midi": 63,
+      "confidence": 0.531131792378173,
+      "region_index": 1
+    },
+    {
+      "start_seconds": 3.7616326530612243,
+      "end_seconds": 4.040272108843538,
+      "midi": 63,
+      "confidence": 0.3585292235766043,
+      "region_index": null
+    },
+    {
+      "start_seconds": 4.040272108843538,
+      "end_seconds": 4.347936507936508,
+      "midi": 63,
+      "confidence": 0.48162815408163523,
+      "region_index": null
+    },
+    {
+      "start_seconds": 4.347936507936508,
+      "end_seconds": 4.6381859410430835,
+      "midi": 63,
+      "confidence": 0.5747137589100346,
+      "region_index": null
+    },
+    {
+      "start_seconds": 4.6381859410430835,
+      "end_seconds": 4.986485260770975,
+      "midi": 66,
+      "confidence": 0.1379326311232341,
+      "region_index": null
+    },
+    {
+      "start_seconds": 4.986485260770975,
+      "end_seconds": 5.294149659863946,
+      "midi": 66,
+      "confidence": 0.47685763191391833,
+      "region_index": 2
+    },
+    {
+      "start_seconds": 5.294149659863946,
+      "end_seconds": 5.601814058956916,
+      "midi": 66,
+      "confidence": 0.32454278045449136,
+      "region_index": null
+    },
+    {
+      "start_seconds": 5.601814058956916,
+      "end_seconds": 5.921088435374149,
+      "midi": 66,
+      "confidence": 0.16584415767336483,
+      "region_index": null
+    },
+    {
+      "start_seconds": 5.921088435374149,
+      "end_seconds": 6.222947845804988,
+      "midi": 59,
+      "confidence": 0.044521252927369796,
+      "region_index": null
+    },
+    {
+      "start_seconds": 6.222947845804988,
+      "end_seconds": 6.542222222222223,
+      "midi": 66,
+      "confidence": 0.37681286017449095,
+      "region_index": 3
+    },
+    {
+      "start_seconds": 6.542222222222223,
+      "end_seconds": 6.861496598639456,
+      "midi": 66,
+      "confidence": 0.08902434404484415,
+      "region_index": 4
+    },
+    {
+      "start_seconds": 6.861496598639456,
+      "end_seconds": 7.157551020408163,
+      "midi": 66,
+      "confidence": 0.027020462724717958,
+      "region_index": 5
+    },
+    {
+      "start_seconds": 7.157551020408163,
+      "end_seconds": 7.465215419501134,
+      "midi": 68,
+      "confidence": 0.40174132322152684,
+      "region_index": null
+    },
+    {
+      "start_seconds": 7.465215419501134,
+      "end_seconds": 7.790294784580499,
+      "midi": 68,
+      "confidence": 0.41550933931431966,
+      "region_index": 6
+    },
+    {
+      "start_seconds": 7.790294784580499,
+      "end_seconds": 8.103764172335602,
+      "midi": 68,
+      "confidence": 0.2124701012656378,
+      "region_index": null
+    },
+    {
+      "start_seconds": 8.103764172335602,
+      "end_seconds": 8.417233560090702,
+      "midi": 63,
+      "confidence": 0.5763106506672728,
+      "region_index": 7
+    },
+    {
+      "start_seconds": 8.417233560090702,
+      "end_seconds": 8.7481179138322,
+      "midi": 63,
+      "confidence": 0.4514735414994052,
+      "region_index": 8
+    },
+    {
+      "start_seconds": 8.7481179138322,
+      "end_seconds": 9.049977324263038,
+      "midi": 63,
+      "confidence": 0.245062522176173,
+      "region_index": null
+    },
+    {
+      "start_seconds": 9.049977324263038,
+      "end_seconds": 9.357641723356009,
+      "midi": 63,
+      "confidence": 0.5080079848647293,
+      "region_index": null
+    },
+    {
+      "start_seconds": 9.357641723356009,
+      "end_seconds": 9.630476190476191,
+      "midi": 63,
+      "confidence": 0.5239771409937747,
+      "region_index": 9
+    },
+    {
+      "start_seconds": 9.630476190476191,
+      "end_seconds": 9.978775510204082,
+      "midi": 61,
+      "confidence": 0.061304659551323575,
+      "region_index": null
+    },
+    {
+      "start_seconds": 9.978775510204082,
+      "end_seconds": 10.27482993197279,
+      "midi": 61,
+      "confidence": 0.021970822336453248,
+      "region_index": 10
+    },
+    {
+      "start_seconds": 10.27482993197279,
+      "end_seconds": 10.913378684807256,
+      "midi": 54,
+      "confidence": 0.08020144315637431,
+      "region_index": 11
+    },
+    {
+      "start_seconds": 10.913378684807256,
+      "end_seconds": 11.23845804988662,
+      "midi": 66,
+      "confidence": 0.018451412348139216,
+      "region_index": 12
+    },
+    {
+      "start_seconds": 11.23845804988662,
+      "end_seconds": 11.563537414965987,
+      "midi": 61,
+      "confidence": 0.0603209069030389,
+      "region_index": 13
+    },
+    {
+      "start_seconds": 11.563537414965987,
+      "end_seconds": 11.859591836734694,
+      "midi": 61,
+      "confidence": 0.28900783850738815,
+      "region_index": 14
+    },
+    {
+      "start_seconds": 11.859591836734694,
+      "end_seconds": 12,
+      "midi": 61,
+      "confidence": 0.002941748845770061,
+      "region_index": 15
+    }
+  ]
+}

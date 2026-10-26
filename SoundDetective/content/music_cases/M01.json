@@ -1,0 +1,140 @@
+{
+  "schema_version": 1,
+  "id": "M01",
+  "title": {
+    "en": "The Shoreline Signal",
+    "zh-Hant": "海邊的失真訊號"
+  },
+  "clues": [
+    {
+      "en": "The recording opens with a repeating keyboard phrase. Some pitches drift, and echoes overlap.",
+      "zh-Hant": "錄音以反覆的鍵盤樂句開場，部分音高偏移，回聲互相重疊。"
+    },
+    {
+      "en": "Look for a Japanese duet with a female voice and a male voice.",
+      "zh-Hant": "這是一首由女聲與男聲合唱的日語歌曲。"
+    },
+    {
+      "en": "Picture a summer shore and lights blooming in the night sky.",
+      "zh-Hant": "想像夏日海邊，以及在夜空中綻放的光。"
+    }
+  ],
+  "accepted_answers": [
+    "打上花火",
+    "Uchiage Hanabi",
+    "Uchiagehanabi",
+    "Fireworks"
+  ],
+  "source_audio": "source/1.打上花火.mp3",
+  "evidence_audio": "content/music_cases/assets/M01-evidence.wav",
+  "source_sha256": "565a2bd57a555f3d97a7790b0557c0dd2cc9df22e9a9fc58bf6733fb44fd08dc",
+  "evidence_sha256": "a516c736a593bde181ff0bbd1df5bee2b3c19852b6340d5e432d3e01b6a3d48e",
+  "excerpt": {
+    "start_seconds": 0,
+    "seconds": 12
+  },
+  "regions": [
+    {
+      "start_seconds": 0.626938775510204,
+      "end_seconds": 0.9229931972789116,
+      "cents": 400
+    },
+    {
+      "start_seconds": 3.430748299319728,
+      "end_seconds": 3.7616326530612243,
+      "cents": 60
+    },
+    {
+      "start_seconds": 4.986485260770975,
+      "end_seconds": 5.294149659863946,
+      "cents": -400
+    },
+    {
+      "start_seconds": 6.222947845804988,
+      "end_seconds": 6.542222222222223,
+      "cents": 60
+    },
+    {
+      "start_seconds": 6.542222222222223,
+      "end_seconds": 6.861496598639456,
+      "cents": -200
+    },
+    {
+      "start_seconds": 6.861496598639456,
+      "end_seconds": 7.157551020408163,
+      "cents": 60
+    },
+    {
+      "start_seconds": 7.465215419501134,
+      "end_seconds": 7.790294784580499,
+      "cents": -400
+    },
+    {
+      "start_seconds": 8.103764172335602,
+      "end_seconds": 8.417233560090702,
+      "cents": -80
+    },
+    {
+      "start_seconds": 8.417233560090702,
+      "end_seconds": 8.7481179138322,
+      "cents": 200
+    },
+    {
+      "start_seconds": 9.357641723356009,
+      "end_seconds": 9.630476190476191,
+      "cents": 60
+    },
+    {
+      "start_seconds": 9.978775510204082,
+      "end_seconds": 10.27482993197279,
+      "cents": 200
+    },
+    {
+      "start_seconds": 10.27482993197279,
+      "end_seconds": 10.913378684807256,
+      "cents": 80
+    },
+    {
+      "start_seconds": 10.913378684807256,
+      "end_seconds": 11.23845804988662,
+      "cents": 300
+    },
+    {
+      "start_seconds": 11.23845804988662,
+      "end_seconds": 11.563537414965987,
+      "cents": 80
+    },
+    {
+      "start_seconds": 11.563537414965987,
+      "end_seconds": 11.859591836734694,
+      "cents": 400
+    },
+    {
+      "start_seconds": 11.859591836734694,
+      "end_seconds": 12.0,
+      "cents": -80
+    }
+  ],
+  "initial_effects": {
+    "filter": {
+      "enabled": true,
+      "mode": "lowpass",
+      "cutoff_hz": 1000,
+      "resonance": 0.18
+    },
+    "delay": {
+      "enabled": true,
+      "time_seconds": 0.33,
+      "decay_seconds": 1.6,
+      "mix": 0.38
+    },
+    "reverb": {
+      "enabled": true,
+      "room": 0.35,
+      "damping": 0.55,
+      "mix": 0.18
+    },
+    "bypass": false
+  },
+  "reveal_gain": 0.4
+}

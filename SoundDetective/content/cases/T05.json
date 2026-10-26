@@ -1,0 +1,116 @@
+{
+  "schema_version": 1,
+  "id": "T05",
+  "revision": 1,
+  "mode": "timbre_match",
+  "title": {
+    "en": "The Frequency Gate",
+    "zh-Hant": "頻率之門"
+  },
+  "description": {
+    "en": "Match the filtering of this evidence using filter type, cutoff and resonance.",
+    "zh-Hant": "使用濾波類型、截止頻率與共振，重建這份證物的頻譜形狀。"
+  },
+  "editable_parameters": [
+    "filter_mode",
+    "cutoff_hz",
+    "resonance"
+  ],
+  "diagnostic_profile": "filter",
+  "reference_settings": {
+    "patch": {
+      "harmonics": [
+        1,
+        0.5,
+        0.33,
+        0.25,
+        0.2,
+        0.17,
+        0.14,
+        0.125
+      ],
+      "attack": 0.02,
+      "decay": 0.18,
+      "sustain": 0.6,
+      "release": 0.25
+    },
+    "effects": {
+      "filter": {
+        "enabled": true,
+        "mode": "highpass",
+        "cutoff_hz": 900,
+        "resonance": 0.65
+      },
+      "delay": {
+        "enabled": false,
+        "time_seconds": 0.25,
+        "decay_seconds": 0.8,
+        "mix": 0.25
+      },
+      "reverb": {
+        "enabled": false,
+        "room": 0.5,
+        "damping": 0.5,
+        "mix": 0.2
+      },
+      "bypass": false
+    }
+  },
+  "initial_settings": {
+    "patch": {
+      "harmonics": [
+        1,
+        0.5,
+        0.33,
+        0.25,
+        0.2,
+        0.17,
+        0.14,
+        0.125
+      ],
+      "attack": 0.02,
+      "decay": 0.18,
+      "sustain": 0.6,
+      "release": 0.25
+    },
+    "effects": {
+      "filter": {
+        "enabled": true,
+        "mode": "lowpass",
+        "cutoff_hz": 1000,
+        "resonance": 0
+      },
+      "delay": {
+        "enabled": false,
+        "time_seconds": 0.25,
+        "decay_seconds": 0.8,
+        "mix": 0.25
+      },
+      "reverb": {
+        "enabled": false,
+        "room": 0.5,
+        "damping": 0.5,
+        "mix": 0.2
+      },
+      "bypass": false
+    }
+  },
+  "sequence": {
+    "schema_version": 1,
+    "events": [
+      {
+        "pitch": 60,
+        "start_seconds": 0.08,
+        "duration_seconds": 1.2,
+        "velocity": 110
+      }
+    ]
+  },
+  "hint_threshold": 75,
+  "comparison": {
+    "focus": "spectrum",
+    "pass_score": 90,
+    "component_floor": 85,
+    "tail_floor": 85
+  }
+}

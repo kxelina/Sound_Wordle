@@ -1,0 +1,115 @@
+{
+  "schema_version": 1,
+  "id": "T03",
+  "revision": 1,
+  "mode": "timbre_match",
+  "title": {
+    "en": "Two Traces",
+    "zh-Hant": "兩道痕跡"
+  },
+  "description": {
+    "en": "Use H2 and H3 to reconstruct the harmonic balance. Other harmonics stay fixed.",
+    "zh-Hant": "使用 H2 和 H3 還原諧波比例，其他諧波維持固定。"
+  },
+  "editable_parameters": [
+    "h2",
+    "h3"
+  ],
+  "diagnostic_profile": "harmonics",
+  "reference_settings": {
+    "patch": {
+      "harmonics": [
+        1,
+        0.7,
+        0.15,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "attack": 0.02,
+      "decay": 0.18,
+      "sustain": 0.6,
+      "release": 0.25
+    },
+    "effects": {
+      "filter": {
+        "enabled": false,
+        "mode": "lowpass",
+        "cutoff_hz": 1200,
+        "resonance": 0
+      },
+      "delay": {
+        "enabled": false,
+        "time_seconds": 0.25,
+        "decay_seconds": 0.8,
+        "mix": 0.25
+      },
+      "reverb": {
+        "enabled": false,
+        "room": 0.5,
+        "damping": 0.5,
+        "mix": 0.2
+      },
+      "bypass": false
+    }
+  },
+  "initial_settings": {
+    "patch": {
+      "harmonics": [
+        1,
+        0.04,
+        0.85,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "attack": 0.02,
+      "decay": 0.18,
+      "sustain": 0.6,
+      "release": 0.25
+    },
+    "effects": {
+      "filter": {
+        "enabled": false,
+        "mode": "lowpass",
+        "cutoff_hz": 1200,
+        "resonance": 0
+      },
+      "delay": {
+        "enabled": false,
+        "time_seconds": 0.25,
+        "decay_seconds": 0.8,
+        "mix": 0.25
+      },
+      "reverb": {
+        "enabled": false,
+        "room": 0.5,
+        "damping": 0.5,
+        "mix": 0.2
+      },
+      "bypass": false
+    }
+  },
+  "sequence": {
+    "schema_version": 1,
+    "events": [
+      {
+        "pitch": 60,
+        "start_seconds": 0.08,
+        "duration_seconds": 1.2,
+        "velocity": 110
+      }
+    ]
+  },
+  "hint_threshold": 75,
+  "comparison": {
+    "focus": "spectrum",
+    "pass_score": 90,
+    "component_floor": 85,
+    "tail_floor": 85
+  }
+}

@@ -1,0 +1,8 @@
+{
+  "id": "W04", "category": "nature", "recipe": "bird", "seed": 202604,
+  "title": {"en": "The Garden Whistle", "zh-Hant": "花園裡的鳥鳴"},
+  "story": {"en": "A small bird answers from the garden: high, short whistles that rise in pitch. There is clear space between calls and only a little harmonic colour.", "zh-Hant": "一隻小鳥從花園回應：高而短促的哨音，音高向上滑動。每次叫聲之間有明顯空隙，只帶一點諧波色彩。"},
+  "initial": {"pitch": 74, "sweep": -8, "length": 0.45, "spacing": 0.95, "brightness": 0.9},
+  "target": {"pitch": 86, "sweep": 7, "length": 0.18, "spacing": 0.65, "brightness": 0.2},
+  "bands": {"pitch": [84.5, 87.5], "sweep": [5.5, 8.5], "length": [0.14, 0.22], "spacing": [0.6, 0.72], "brightness": [0.1, 0.3]}
+}

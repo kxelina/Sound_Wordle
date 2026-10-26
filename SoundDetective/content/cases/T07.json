@@ -1,0 +1,117 @@
+{
+  "schema_version": 1,
+  "id": "T07",
+  "revision": 1,
+  "mode": "timbre_match",
+  "title": {
+    "en": "A Room with No Witness",
+    "zh-Hant": "無人目擊的房間"
+  },
+  "description": {
+    "en": "Reconstruct the acoustic space using room size, damping and wet mix.",
+    "zh-Hant": "利用空間大小、阻尼與濕聲比例，重建證物的空間感。"
+  },
+  "editable_parameters": [
+    "reverb_enabled",
+    "reverb_room",
+    "reverb_damping",
+    "reverb_mix"
+  ],
+  "diagnostic_profile": "reverb",
+  "reference_settings": {
+    "patch": {
+      "harmonics": [
+        1,
+        0.5,
+        0.33,
+        0.25,
+        0.2,
+        0.17,
+        0.14,
+        0.125
+      ],
+      "attack": 0.01,
+      "decay": 0.03,
+      "sustain": 0.8,
+      "release": 0.05
+    },
+    "effects": {
+      "filter": {
+        "enabled": false,
+        "mode": "lowpass",
+        "cutoff_hz": 1200,
+        "resonance": 0
+      },
+      "delay": {
+        "enabled": false,
+        "time_seconds": 0.25,
+        "decay_seconds": 0.8,
+        "mix": 0.25
+      },
+      "reverb": {
+        "enabled": true,
+        "room": 0.75,
+        "damping": 0.25,
+        "mix": 0.45
+      },
+      "bypass": false
+    }
+  },
+  "initial_settings": {
+    "patch": {
+      "harmonics": [
+        1,
+        0.5,
+        0.33,
+        0.25,
+        0.2,
+        0.17,
+        0.14,
+        0.125
+      ],
+      "attack": 0.01,
+      "decay": 0.03,
+      "sustain": 0.8,
+      "release": 0.05
+    },
+    "effects": {
+      "filter": {
+        "enabled": false,
+        "mode": "lowpass",
+        "cutoff_hz": 1200,
+        "resonance": 0
+      },
+      "delay": {
+        "enabled": false,
+        "time_seconds": 0.25,
+        "decay_seconds": 0.8,
+        "mix": 0.25
+      },
+      "reverb": {
+        "enabled": true,
+        "room": 0.2,
+        "damping": 0.8,
+        "mix": 0.12
+      },
+      "bypass": false
+    }
+  },
+  "sequence": {
+    "schema_version": 1,
+    "events": [
+      {
+        "pitch": 60,
+        "start_seconds": 0.08,
+        "duration_seconds": 0.25,
+        "velocity": 110
+      }
+    ]
+  },
+  "hint_threshold": 75,
+  "comparison": {
+    "focus": "combined",
+    "pass_score": 90,
+    "component_floor": 85,
+    "tail_floor": 85
+  }
+}

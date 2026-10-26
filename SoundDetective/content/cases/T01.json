@@ -1,0 +1,23 @@
+{
+  "schema_version": 1,
+  "id": "T01",
+  "revision": 1,
+  "mode": "timbre_match",
+  "title": {"en": "The Altered Signal", "zh-Hant": "被改動的訊號"},
+  "description": {
+    "en": "An intercepted tone has been altered. Recreate the reference using the two unlocked controls. Submit each revision to see your match score.",
+    "zh-Hant": "一段截獲的訊號被人改動了。使用兩個開放的控制項還原參照聲音；每次修改後提交，查看匹配分數。"
+  },
+  "editable_parameters": ["cutoff_hz", "release"],
+  "reference_settings": {
+    "patch": {"harmonics": [1, 0.5, 0.33, 0.25, 0.2, 0.17, 0.14, 0.125], "attack": 0.02, "decay": 0.18, "sustain": 0.6, "release": 0.25},
+    "effects": {"filter": {"enabled": true, "mode": "lowpass", "cutoff_hz": 3000, "resonance": 0}, "delay": {"enabled": false}, "reverb": {"enabled": false}, "bypass": false}
+  },
+  "initial_settings": {
+    "patch": {"harmonics": [1, 0.5, 0.33, 0.25, 0.2, 0.17, 0.14, 0.125], "attack": 0.02, "decay": 0.18, "sustain": 0.6, "release": 0.9},
+    "effects": {"filter": {"enabled": true, "mode": "lowpass", "cutoff_hz": 350, "resonance": 0}, "delay": {"enabled": false}, "reverb": {"enabled": false}, "bypass": false}
+  },
+  "sequence": {"schema_version": 1, "events": [{"pitch": 60, "start_seconds": 0.08, "duration_seconds": 0.8, "velocity": 110}]},
+  "hint_threshold": 75,
+  "comparison": {"focus": "combined", "pass_score": 90, "component_floor": 85, "tail_floor": 85}
+}

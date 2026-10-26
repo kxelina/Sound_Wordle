@@ -1,0 +1,121 @@
+{
+  "schema_version": 1,
+  "id": "T04",
+  "revision": 1,
+  "mode": "timbre_match",
+  "title": {
+    "en": "The Harmonic Cipher",
+    "zh-Hant": "諧波密碼"
+  },
+  "description": {
+    "en": "Investigate all eight harmonic strengths. Relative balance matters more than overall level.",
+    "zh-Hant": "調查八個諧波的強度；相對比例比整體音量更重要。"
+  },
+  "editable_parameters": [
+    "h1",
+    "h2",
+    "h3",
+    "h4",
+    "h5",
+    "h6",
+    "h7",
+    "h8"
+  ],
+  "diagnostic_profile": "harmonics",
+  "reference_settings": {
+    "patch": {
+      "harmonics": [
+        1,
+        0,
+        0.5,
+        0,
+        0.28,
+        0,
+        0.16,
+        0
+      ],
+      "attack": 0.02,
+      "decay": 0.18,
+      "sustain": 0.6,
+      "release": 0.25
+    },
+    "effects": {
+      "filter": {
+        "enabled": false,
+        "mode": "lowpass",
+        "cutoff_hz": 1200,
+        "resonance": 0
+      },
+      "delay": {
+        "enabled": false,
+        "time_seconds": 0.25,
+        "decay_seconds": 0.8,
+        "mix": 0.25
+      },
+      "reverb": {
+        "enabled": false,
+        "room": 0.5,
+        "damping": 0.5,
+        "mix": 0.2
+      },
+      "bypass": false
+    }
+  },
+  "initial_settings": {
+    "patch": {
+      "harmonics": [
+        1,
+        0.5,
+        0.05,
+        0.4,
+        0.05,
+        0.3,
+        0.05,
+        0.2
+      ],
+      "attack": 0.02,
+      "decay": 0.18,
+      "sustain": 0.6,
+      "release": 0.25
+    },
+    "effects": {
+      "filter": {
+        "enabled": false,
+        "mode": "lowpass",
+        "cutoff_hz": 1200,
+        "resonance": 0
+      },
+      "delay": {
+        "enabled": false,
+        "time_seconds": 0.25,
+        "decay_seconds": 0.8,
+        "mix": 0.25
+      },
+      "reverb": {
+        "enabled": false,
+        "room": 0.5,
+        "damping": 0.5,
+        "mix": 0.2
+      },
+      "bypass": false
+    }
+  },
+  "sequence": {
+    "schema_version": 1,
+    "events": [
+      {
+        "pitch": 60,
+        "start_seconds": 0.08,
+        "duration_seconds": 1.2,
+        "velocity": 110
+      }
+    ]
+  },
+  "hint_threshold": 75,
+  "comparison": {
+    "focus": "spectrum",
+    "pass_score": 90,
+    "component_floor": 85,
+    "tail_floor": 85
+  }
+}
