@@ -1,6 +1,7 @@
 """Perspective desktop shell: menu, preferences and interactive office."""
 
 from pathlib import Path
+import time
 
 from PySide6.QtCore import QEvent, QEasingCurve, QPointF, QRectF, Qt, QTimer, QVariantAnimation, Signal
 from PySide6.QtGui import QColor, QPainter, QPainterPath, QPen, QPixmap
@@ -14,6 +15,8 @@ from ..audio.sc_client import ROOT
 from ..game.desktop import DesktopStore, window_sizes
 from ..game.cases import load_campaign
 from ..game.music_cases import load_music_case
+from ..game.availability import music_availability
+from ..game.player_journey import JourneyStore
 from .case_board import CaseBoard
 from .hardware import InlineChoices
 from .hover_help import set_help, show_scene_help
@@ -50,6 +53,10 @@ TEXT = {
         "wordle_synth": "Sound workshop · ADSR / Harmonics",
         "melody_synth": "Melody workshop · Piano roll / Synthesizer",
         "source_synth": "Sound-source workshop · Noise / Pitch / Envelope",
+        "tutorial": "Learn to play", "review_page": "Case review",
+        "review_back": "Back to case",
+        "journey_backup": "Tutorial/review records were backed up after a read error. Case progress is retained.",
+        "journey_save_error": "Tutorial/review records could not be saved. Case progress is stored separately.",
     },
     "zh-Hant": {
         "start": "開始遊戲", "settings": "設定", "exit": "退出", "back": "返回",
@@ -77,6 +84,10 @@ TEXT = {
         "wordle_synth": "聲音工作台 · ADSR / 諧波",
         "melody_synth": "旋律工作台 · 鋼琴卷簾 / 合成器",
         "source_synth": "聲源工作台 · 噪聲 / 音高 / 包絡",
+        "tutorial": "新手練習", "review_page": "結案復盤",
+        "review_back": "返回案件",
+        "journey_backup": "教程／復盤記錄讀取失敗，已先備份；案件進度仍保留。",
+        "journey_save_error": "無法儲存教程／復盤記錄；案件進度另行保存。",
     },
 }
 
@@ -211,6 +222,14 @@ class StudioWindow(QMainWindow):
         self.progress_dir = Path(progress_dir or ROOT / "userdata")
         self.store = DesktopStore(self.progress_dir / "desktop-preferences.json")
         self.preferences = self.store.load()
+        self.journey = JourneyStore(self.progress_dir/'player-journey.json')
+        self._has_prior_play = any(self.progress_dir.glob('T*.json')) or any((self.progress_dir/'wordle').glob('W*.json')) or any((self.progress_dir/'music').glob('M*.json'))
+        self.tutorial_panel = self.tutorial_proxy = None
+        self.debrief_panel = self.debrief_proxy = None
+        self._tutorial_return = 'menu'
+        self._review_return = 'device'
+        self._device_started = None
+        self._play_clock = time.monotonic
         self.setProperty("uiAudioVolume", self.preferences.volume / 100)
         self.page, self._settings_return = "menu", "menu"
         self._hovered = None
@@ -229,6 +248,7 @@ class StudioWindow(QMainWindow):
             self.music = load_music_case(verify=False)
         except (OSError, ValueError, TypeError, KeyError):
             self.music = None
+        self.music_status = music_availability()
         self.view = OfficeView(self)
         self.setCentralWidget(self.view)
         scene = self.view.scene()
@@ -252,7 +272,7 @@ class StudioWindow(QMainWindow):
         self._build_menu()
         self._build_settings()
         self._build_room_chrome()
-        self.board = CaseBoard(self.cases, self.music, self.progress_dir)
+        self.board = CaseBoard(self.cases, self.music, self.progress_dir, music_status=self.music_status)
         self.board.accepted.connect(self._accept_case)
         self.board.free_requested.connect(self.open_free_composition)
         self.board.dismissed.connect(lambda: self._show_page("room"))
@@ -268,7 +288,7 @@ class StudioWindow(QMainWindow):
         self.transition.setStartValue(0.)
         self.transition.setEndValue(1.)
         self.transition.valueChanged.connect(self._animate_room)
-        self.transition.finished.connect(lambda: self._show_page("room"))
+        self.transition.finished.connect(self._finish_start)
         self.desk_transition = QVariantAnimation(self)
         self.desk_transition.setDuration(min(animation_ms, 350))
         self.desk_transition.setStartValue(0.)
@@ -329,11 +349,14 @@ class StudioWindow(QMainWindow):
             item.setPath(polygon(definition.devices[name]))
 
     def _room_back_key(self):
-        return ("menu" if self.page == "room" else "back_desk" if self.page == "device" else
+        return ('back' if self.page=='tutorial' else 'review_back' if self.page=='review' else "menu" if self.page=="room" else "back_desk" if self.page=="device" else
                 "music_back_room" if self.scene_key == "music" else "back_room")
 
     def _update_room_title(self):
         text = TEXT[self.language]
+        if self.page in ('tutorial','review'):
+            self.room_title.setText('SOUND DETECTIVE  /  '+text['tutorial' if self.page=='tutorial' else 'review_page'])
+            return
         heading = "SOUND DETECTIVE  /  "
         if self.scene_key == "music":
             heading += text["composition_office" if self.free_composition else "music_office"] + "  /  "
@@ -385,10 +408,12 @@ class StudioWindow(QMainWindow):
         self.start_button = self._button("start", self.start_game)
         self.settings_button = self._button("settings", self.open_settings)
         self.exit_button = self._button("exit", self._exit_after_click)
-        for button in (self.start_button, self.settings_button, self.exit_button):
+        self.tutorial_button = self._button('open_tutorial', self.open_tutorial)
+        for button in (self.start_button, self.tutorial_button, self.settings_button, self.exit_button):
             button.setMinimumHeight(52)
             button.setCursor(Qt.CursorShape.PointingHandCursor)
             layout.addWidget(button)
+        self.tutorial_button.setMinimumHeight(42)
         layout.addStretch()
         self.menu_proxy = self._proxy(widget, 360, 120, 560, 500)
 
@@ -446,8 +471,11 @@ class StudioWindow(QMainWindow):
         self.room_title = QLabel()
         self.room_title.setStyleSheet("font-size: 19px; color: #fff0d4; background: rgba(15,18,16,190); padding: 12px;")
         self.room_settings = self._button("room_settings", self.open_settings)
+        self.room_review = self._button('open_debrief', self.open_review)
         self.room_menu = self._button("room_menu", self.go_back)
         layout.addWidget(self.room_title, 1)
+        self.room_title.setMinimumWidth(0)
+        layout.addWidget(self.room_review)
         layout.addWidget(self.room_settings)
         layout.addWidget(self.room_menu)
         self.room_proxy = self._proxy(widget, 30, 22, 1220, 52)
@@ -466,7 +494,7 @@ class StudioWindow(QMainWindow):
         self.settings_button.setText(text["settings"])
         self.exit_button.setText(text["exit"])
         menu_font = "'Courier New'" if self.language == "en" else "'KaiTi', 'STKaiti', 'Microsoft JhengHei UI'"
-        for button in (self.start_button, self.settings_button, self.exit_button):
+        for button in (self.start_button, self.tutorial_button, self.settings_button, self.exit_button):
             button.setStyleSheet(f"""
                 QPushButton {{ font-family: {menu_font}; font-size: 25px;
                     letter-spacing: 3px; color: #d5c8ab; background: transparent;
@@ -478,6 +506,8 @@ class StudioWindow(QMainWindow):
         self.tagline.setText(text["tagline"])
         self.settings_title.setText(text["settings"])
         self.settings_back.setText(text["back"])
+        self.tutorial_button.setText(text['tutorial'])
+        self.room_review.setText(text['review_page'])
         self.diagnostics_button.setText('啟動診斷' if self.language == 'zh-Hant' else 'Startup diagnostics')
         set_help(self.diagnostics_button, 'diagnostics', self.language)
         self._update_room_title()
@@ -490,10 +520,15 @@ class StudioWindow(QMainWindow):
         self._hover(self._hovered)
         self.warning.setText(text.get(self.store.warning, ""))
         self.warning_proxy.setVisible(bool(self.store.warning))
+        if self.journey.warning and not self.store.warning:
+            self.warning.setText(text.get('journey_'+self.journey.warning,''))
+            self.warning_proxy.setVisible(True)
         if self.controller is not None:
             self.controller.language.setCurrentIndex(0 if self.language == "en" else 1)
             self.controller.present_device(self.current_device)
         self._apply_hover_help()
+        if self.tutorial_panel is not None:self.tutorial_panel.translate(self.language)
+        if self.debrief_panel is not None:self.debrief_panel.translate(self.language)
 
     def _apply_hover_help(self):
         language = self.language
@@ -501,7 +536,11 @@ class StudioWindow(QMainWindow):
                             (self.exit_button, "exit"), (self.room_settings, "settings"),
                             (self.settings_back, "back_settings"), (self.volume_slider, "volume")):
             set_help(widget, key, language)
+        set_help(self.tutorial_button,'open_tutorial',language)
+        set_help(self.room_review,'open_debrief',language)
         back = "back_desk" if self.page == "device" else "back_menu" if self.page == "room" else "back_room"
+        if self.page=='tutorial':back='tutorial_skip'
+        elif self.page=='review':back='debrief_back'
         if back == "back_room" and self.scene_key == "music":
             back = "back_composition_room" if self.free_composition else "back_music_room"
         set_help(self.room_menu, back, language)
@@ -527,6 +566,9 @@ class StudioWindow(QMainWindow):
             set_help(item, role, language)
 
     def _show_page(self, page):
+        self._flush_device_time()
+        if self.page=='tutorial' and page!='tutorial' and self.tutorial_panel is not None:self.tutorial_panel.stop()
+        if self.page=='review' and page!='review' and self.debrief_panel is not None:self.debrief_panel.stop()
         if self.page == "device" and page != "device" and self.controller:
             if not (self.preferences.active_case.startswith("M") and self.controller.session.solved and page in ("desk", "room", "settings")):
                 self.controller.stop()
@@ -537,15 +579,19 @@ class StudioWindow(QMainWindow):
         self._set_environment("music" if music and base != "menu" else "office")
         self.menu_proxy.setVisible(page == "menu")
         self.settings_proxy.setVisible(page == "settings")
-        self.room_proxy.setVisible(page in ("room", "desk", "device"))
+        self.room_proxy.setVisible(page in ("room", "desk", "device","tutorial","review"))
         self.caption_proxy.setVisible(page in ("room", "desk"))
         self.board_proxy.setVisible(page == "board")
-        self.desk_background.setVisible(base in ("desk", "device", "desk_transition"))
+        self.desk_background.setVisible(base in ("desk", "device", "desk_transition","tutorial","review"))
         self.desk_background.setOpacity(0 if page == "desk_transition" else 1)
         self.desk_blur.setBlurRadius(0 if page in ("desk", "desk_transition") else 16)
         self.room_menu.setText(TEXT[self.language][self._room_back_key()])
         if self.device_proxy is not None:
             self.device_proxy.setVisible(page == "device")
+        if self.tutorial_proxy is not None:self.tutorial_proxy.setVisible(page=='tutorial')
+        if self.debrief_proxy is not None:self.debrief_proxy.setVisible(page=='review')
+        self.room_review.setVisible(page not in ('tutorial','review'))
+        self.room_review.setEnabled(self._review_available())
         if self.controller and page == "menu":
             self.controller.stop()
         self._update_room_title()
@@ -564,6 +610,7 @@ class StudioWindow(QMainWindow):
         self.blur.setBlurRadius(0 if page in ("room", "desk", "desk_transition") else 16)
         self.shade.setBrush(QColor(0, 0, 0, 0 if page in ("room", "desk", "desk_transition") else 115))
         self._apply_hover_help()
+        if page=='device':self._device_started=self._play_clock()
         self.page_changed.emit(page)
 
     def start_game(self):
@@ -573,7 +620,83 @@ class StudioWindow(QMainWindow):
         if self.animation_ms:
             self.transition.start()
         else:
-            self._show_page("room")
+            self._finish_start()
+
+    def _finish_start(self):
+        if self.journey.should_offer_tutorial and not self._has_prior_play:
+            self.open_tutorial(automatic=True)
+        else:self._show_page('room')
+
+    def open_tutorial(self,*,automatic=False):
+        if self.controller is not None:self.controller.stop()
+        if self.tutorial_panel is None:
+            from .tutorial import TutorialPanel
+            self.tutorial_panel=TutorialPanel(self.journey,language=self.language,volume=self.preferences.volume/100)
+            self.tutorial_panel.finished.connect(self._tutorial_finished)
+            self.tutorial_proxy=self._proxy(self.tutorial_panel,50,90,1180,610)
+            self.volume_changed.connect(self.tutorial_panel.set_volume)
+        self._tutorial_return='room' if automatic else self.page if self.page in ('menu','room','device','desk') else 'menu'
+        self.tutorial_panel.start(replay=not automatic)
+        self._show_page('tutorial')
+
+    def _tutorial_finished(self,completed):
+        self._show_page('room' if completed else self._tutorial_return)
+        if completed:
+            self.board.open(self.preferences.active_case,self.language,free_composition=self.free_composition)
+            self._show_page('board')
+
+    def _flush_device_time(self):
+        if self._device_started is not None and self.controller is not None:
+            key=self.controller.case.id
+            timing=self.journey.timings.setdefault(key,{'seconds':0.,'complete':False})
+            timing['seconds']+=max(0.,self._play_clock()-self._device_started)
+            self._device_started=None
+            self.journey.save()
+
+    def _review_available(self):
+        if self.controller is None or self.free_composition:return False
+        session=self.controller.session
+        return self.controller.case.id in self.journey.reviews or bool(session.solved or getattr(session,'first_pass',None))
+
+    def _on_case_completed(self,controller):
+        if self._closed or controller is not self.controller:return
+        self._flush_device_time()
+        from ..game.debrief import build_debrief
+        timing=self.journey.timings.get(controller.case.id,{})
+        seconds=timing.get('seconds') if timing.get('complete') else None
+        self.journey.remember(build_debrief(controller.case,controller.session,seconds=seconds))
+        self.room_review.setEnabled(True)
+        if not controller.case.id.startswith('M'):
+            completed_current=controller.session.current
+            # A rapid edit after submitting should keep the player at the desk.
+            QTimer.singleShot(0,lambda:self.open_review() if not self._closed and self.controller is controller
+                and self.page=='device' and controller.session.current==completed_current else None)
+
+    def open_review(self):
+        if not self._review_available():return False
+        self._flush_device_time()
+        controller=self.controller
+        from ..game.debrief import build_debrief
+        record=self.journey.reviews.get(controller.case.id)
+        if record is None:record=self.journey.remember(build_debrief(controller.case,controller.session))
+        if self.debrief_panel is None:
+            from .debrief import DebriefPanel
+            self.debrief_panel=DebriefPanel(language=self.language,volume=self.preferences.volume/100)
+            self.debrief_panel.back_requested.connect(self._leave_review)
+            self.debrief_panel.cases_requested.connect(self._review_cases)
+            self.debrief_proxy=self._proxy(self.debrief_panel,50,90,1180,610)
+            self.volume_changed.connect(self.debrief_panel.set_volume)
+        controller.stop()
+        self._review_return=self.page if self.page in ('room','desk','device') else 'device'
+        self.debrief_panel.load(record,controller.case)
+        self._show_page('review')
+        return True
+
+    def _leave_review(self):self._show_page(self._review_return)
+
+    def _review_cases(self):
+        self.board.open(self.preferences.active_case,self.language,free_composition=self.free_composition)
+        self._show_page('board')
 
     def _animate_room(self, value):
         self.blur.setBlurRadius(16 * (1 - value))
@@ -681,6 +804,7 @@ class StudioWindow(QMainWindow):
         except (OSError, ValueError, TypeError, KeyError, RuntimeError, StopIteration):
             return False
         if self.controller:
+            self._flush_device_time()
             self.controller.close()
             self.controller.deleteLater()
         if self.device_proxy:
@@ -688,6 +812,11 @@ class StudioWindow(QMainWindow):
             self.view.scene().removeItem(self.device_proxy)
             self.device_proxy.deleteLater()
         self.controller = candidate
+        candidate.setProperty('studioEmbedded',True)
+        if hasattr(candidate,'case_completed'):
+            candidate.case_completed.connect(lambda c=candidate:self._on_case_completed(c))
+        if hasattr(candidate,'review_requested'):candidate.review_requested.connect(self.open_review)
+        self.journey.timings.setdefault(case_id,{'seconds':0.,'complete':getattr(candidate.session,'attempts',0)==0})
         candidate.setParent(self)
         candidate.setStyleSheet(STYLE)
         candidate.hide()
@@ -735,7 +864,9 @@ class StudioWindow(QMainWindow):
             self.controller._clock_timer.start()
 
     def go_back(self):
-        if self.page == "settings":
+        if self.page=='tutorial':self.tutorial_panel.skip()
+        elif self.page=='review':self._leave_review()
+        elif self.page == "settings":
             self.close_settings()
         elif self.page in ("board", "desk"):
             self._show_page("room")
@@ -749,7 +880,7 @@ class StudioWindow(QMainWindow):
         return window_sizes(area.width(), area.height())
 
     def open_settings(self):
-        if self.page not in ("menu", "room", "desk", "device"):
+        if self.page not in ("menu", "room", "desk", "device","tutorial","review"):
             return
         self._settings_return = self.page
         self.size_combo.clear()
@@ -771,6 +902,8 @@ class StudioWindow(QMainWindow):
         from .diagnostics import DiagnosticsDialog
         if self.controller:
             self.controller.stop()
+        if self.tutorial_panel is not None:self.tutorial_panel.stop()
+        if self.debrief_panel is not None:self.debrief_panel.stop()
         dialog = DiagnosticsDialog(self, language=self.language)
         dialog.exec()
 
@@ -820,7 +953,9 @@ class StudioWindow(QMainWindow):
             self.controller.edit_bar.redo() if redo else self.controller.edit_bar.undo()
             event.accept()
         elif event.key() == Qt.Key.Key_Escape:
-            if self.controller and self.page == "device":
+            if self.page=='tutorial':self.tutorial_panel.stop()
+            elif self.page=='review':self.debrief_panel.stop()
+            elif self.controller and self.page == "device":
                 self.controller.stop()
             else:
                 self.go_back()
@@ -830,22 +965,31 @@ class StudioWindow(QMainWindow):
 
     def changeEvent(self, event):
         super().changeEvent(event)
-        if event.type() == QEvent.Type.WindowDeactivate and hasattr(self, "controller") and self.controller:
+        if event.type() == QEvent.Type.WindowDeactivate and hasattr(self, "tutorial_panel"):
             QTimer.singleShot(0, self._check_focus)
+        elif event.type()==QEvent.Type.ActivationChange and hasattr(self,'page') and self.isActiveWindow() and self.page=='device' and self._device_started is None:
+            self._device_started=self._play_clock()
 
     def _check_focus(self):
         if self._closed or self.isActiveWindow() or QApplication.activePopupWidget():
             return
+        self._flush_device_time()
+        if self.tutorial_panel is not None:self.tutorial_panel.stop()
+        if self.debrief_panel is not None:self.debrief_panel.stop()
         if self.controller and not (self.preferences.active_case.startswith("M") and self.controller.session.solved):
             self.controller.stop()
 
     def closeEvent(self, event):
         if not self._closed:
+            self._flush_device_time()
             self._exit_timer.stop()
             self.transition.stop()
             self.desk_transition.stop()
             if self.controller:
                 self.controller.close()
+            if self.tutorial_panel is not None:self.tutorial_panel.shutdown()
+            if self.debrief_panel is not None:self.debrief_panel.shutdown()
+            self.journey.save()
             self._save_preferences()
             self._closed = True
         event.accept()

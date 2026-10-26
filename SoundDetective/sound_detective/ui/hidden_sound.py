@@ -117,6 +117,7 @@ CLUES = {
 
 
 class HiddenSoundWindow(QMainWindow):
+    case_completed = Signal()
     device_requested = Signal(str)
 
     def __init__(self, *, case=None, save_path=None, player=None, renderer=None,
@@ -421,6 +422,7 @@ class HiddenSoundWindow(QMainWindow):
         self._save()
 
     def _submit(self):
+        was_solved = self.session.solved
         self.stop()
         previous = self.session.unlocked
         result = self.session.submit()
@@ -429,6 +431,8 @@ class HiddenSoundWindow(QMainWindow):
         self._refresh(history=True)
         self.status.setText(self.t("solved" if all(result.passed) else "submitted"))
         self._save()
+        if not was_solved and self.session.solved:
+            self.case_completed.emit()
 
     def _restore_edit(self, settings):
         self.stop()

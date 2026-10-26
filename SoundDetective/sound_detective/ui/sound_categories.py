@@ -259,6 +259,7 @@ class SourceEditor(QWidget):
 
 
 class SourceCaseWindow(QMainWindow):
+    case_completed = Signal()
     device_requested = Signal(str)
 
     def __init__(self, *, case, save_path, language="en", volume=.35, embedded=True, renderer=None, player=None):
@@ -516,9 +517,12 @@ class SourceCaseWindow(QMainWindow):
             self._restore_edit(SourcePatch.from_dict(self.session.records[row]["patch"]),record=True)
 
     def _submit(self):
+        was_solved = self.session.solved
         self.stop()
         result = self.session.submit()
         self._refresh();self._save()
+        if not was_solved and self.session.solved:
+            self.case_completed.emit()
         parts = " · ".join(f"{spec.labels[self.zh]} {result.scores[spec.key]:.0f}" for spec in CONTROLS[self.session.current.recipe])
         self.status.setText(self.text("Passed! ","通關！")+parts if result.passed else
             self.text("Goal: 90 overall and 85 per attribute. ","目標：總分 90，各項至少 85。")+parts)

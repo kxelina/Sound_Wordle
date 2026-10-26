@@ -11,6 +11,7 @@ A Windows desktop sound-construction game built with Python, PySide6 and SuperCo
 - **Free composition:** write a melody using draggable piano-roll notes.
 - **M01 music restoration:** included as code/configuration; song recordings are local-only and are not distributed here.
 - English and Traditional Chinese interfaces, edit history, progress saves and WAV export.
+- A five-step interactive tutorial and persistent first-clear reviews with audio comparisons.
 
 [Full English / 繁體中文 player guide](SoundDetective/README.md)
 
@@ -26,11 +27,18 @@ py -3.11 -m venv .venv
 .\.venv\Scripts\python.exe -m sound_detective.play
 ```
 
-Use the Python entry above for this source checkout. The current native EXE entry performs
-startup checks that also require M01's local music assets. Those recordings and the
-complete offline installer are not included in the repository. With the Python entry,
-missing M01 audio disables that case while the synthesized challenges and free composition remain available.
+After creating the environment, you can use the Python entry above or **SoundDetective.exe**.
+M01's local recordings are optional for startup: missing or unusable assets disable that
+case while all synthesized challenges and free composition remain available.
+The public offline installer can be built without those recordings using `--public`;
+recordings and bundled installers are excluded from this source repository.
 SuperCollider is invoked automatically; it does not need to be opened manually.
+
+Choose **Learn to play** for isolated exercises in listening, Release, H2, chirp editing
+and practice submission. Fresh players are offered the lesson on Start Game.
+Cleared cases unlock a first-clear review with starting/answer/target auditions,
+component progress, reference controls and available time/history. Music completion
+keeps full-song playback; open that review manually.
 
 The environments, temporary renders, user progress and bundled runtimes are excluded from Git.
 Read [environment notes](SoundDetective/docs/ENVIRONMENT.md) for engine path configuration.
@@ -40,7 +48,7 @@ Read [environment notes](SoundDetective/docs/ENVIRONMENT.md) for engine path con
 After installing the dependencies, run the source-only Wordle and piano-roll checks from the repository root:
 
 ```powershell
-.\SoundDetective\.venv\Scripts\python.exe -m pytest SoundDetectiveDevelopment/test_sound_categories.py SoundDetectiveDevelopment/test_note_dragging.py -q
+.\SoundDetective\.venv\Scripts\python.exe -m pytest SoundDetectiveDevelopment/test_player_journey.py SoundDetectiveDevelopment/test_sound_categories.py SoundDetectiveDevelopment/test_note_dragging.py -q
 ```
 
 These checks include actual SuperCollider rendering. Some additional music-restoration
@@ -48,8 +56,8 @@ checks in `test_features.py` require the local M01 assets. Earlier full local va
 results are documented in [VALIDATION.md](SoundDetectiveDevelopment/VALIDATION.md);
 they should not be confused with a perceptual study or results on another computer.
 
-The source checkout was verified on the development Windows computer on October 26,
-2026: **54 source-only checks passed with the M01 recordings omitted**.
+Validation records include a source checkout without M01 recordings and local checks
+with those assets present. See the dated validation notes for exact counts and scope.
 
 [Architecture](SoundDetective/docs/ARCHITECTURE.md) ·
 [AI assistance and references](SoundDetective/docs/AI_ASSISTANCE.md)
@@ -72,8 +80,9 @@ The source checkout was verified on the development Windows computer on October 
 
 安裝 Python 3.11 與 SuperCollider 後，依上方 PowerShell 指令建立環境，
 並使用 `python -m sound_detective.play` 啟動此原始碼版本。
-目前原生 EXE 的啟動檢查仍要求 M01 的本機音源；此倉庫不提供那些錄音或完整離線安裝包。
-使用 Python 入口時，缺少音源只會讓歌曲案件無法選擇，其他合成挑戰與自由創作仍可使用。
+環境建立後，也可以使用原生 `SoundDetective.exe`。缺少或無法驗證 M01 音源時，只有歌曲案件暫不可玩，其他合成挑戰與自由創作仍可啟動。此倉庫不提供原曲錄音或完整執行環境；可用 `--public` 建立不帶歌曲的離線安裝包。
+
+主選單「新手練習」提供獨立的五步操作教程，新玩家第一次開始遊戲時會獲得引導。通關後可查看首次結案復盤，比較起點、答案與目標聲音，查看分項進度及參考設定。音樂修復仍保留完整原曲播放，復盤手動開啟。
 
 [開發測試與驗證紀錄](SoundDetectiveDevelopment/VALIDATION.md) ·
 [外部資源及 AI 輔助紀錄](SoundDetective/docs/AI_ASSISTANCE.md)

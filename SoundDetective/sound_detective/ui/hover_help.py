@@ -11,6 +11,19 @@ from PySide6.QtWidgets import QApplication, QGraphicsProxyWidget, QToolTip, QWid
 
 
 HELP = {
+    "open_tutorial": ("Open a separate hands-on lesson for listening, Release, harmonics, pitch and submission. Your cases are kept.", "開啟獨立操作教程，練習試聽、Release、諧波、音高和提交；保留正式案件。"),
+    "tutorial_contrast": ("Hear a generic before/after teaching pair. This does not reveal any hidden case answer.", "聆聽普通教學示例的前後對比，不會揭曉隱藏案件答案。"),
+    "tutorial_submit": ("Check this practice tone's two requirements. It never adds an attempt to a game case.", "檢查練習音色的兩項要求，不會增加正式案件提交次數。"),
+    "tutorial_back": ("Return to the previous exercise while keeping your practice controls.", "返回上一個練習，保留目前練習控制值。"),
+    "tutorial_skip": ("Leave the lesson and keep your cases. You can replay it from Learn to play on the main menu.", "離開教程並保留案件；之後可在主選單的「新手練習」重開。"),
+    "tutorial_next": ("Complete the current action and audition the edit, then continue. The final step requires a practice submission.", "完成目前操作並試聽後繼續；最後一步需要提交練習。"),
+    "open_debrief": ("Open a completed case's first-clear review, with sounds, component progress and saved controls. It unlocks after solving.", "查看已結案案件的首次復盤，包含聲音、分項進度和設定；通關後開放。"),
+    "debrief_initial": ("Play the case's starting sound. An empty starting melody has no audio.", "播放案件起點聲音；空白的起始旋律沒有音訊。"),
+    "debrief_final": ("Play the saved cleared answer. Later practice edits do not replace this snapshot.", "播放已保存的通關答案，之後的練習修改不會覆蓋此快照。"),
+    "debrief_target": ("Play the revealed reference excerpt for this completed case.", "播放此已完成案件揭曉的參照片段。"),
+    "debrief_compare": ("Play each available starting, cleared and target clip in order, with a short gap between them.", "依序播放可用的起點、通關答案與目標片段，中間留有短間隔。"),
+    "debrief_back": ("Return to the investigation without changing its controls or adding a submission.", "返回調查，保留控制值，不增加提交次數。"),
+    "debrief_cases": ("Open the case board to choose your next investigation; the completed review is kept.", "開啟案件板選擇下一案，保留已完成的復盤。"),
     "source_category": ("Filter the Sound Wordle case list by sound family. Accept a case to start; browsing keeps your progress.", "依聲音類別篩選 Sound Wordle 案件；接受案件後才開始，瀏覽不會清除進度。"),
     "source_workshop": ("Open this case's sound generators and shaping controls. Each case exposes only the controls it needs.", "開啟此案件的聲源與塑形控制，只顯示這個聲音需要的控制項。"),
     "source_analysis": ("Inspect the last audition's measured spectrum, amplitude envelope and submitted versions.", "查看上次試聽的實測頻譜、振幅包絡與提交版本。"),

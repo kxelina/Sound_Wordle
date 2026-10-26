@@ -2,7 +2,7 @@
 
 import math
 
-from PySide6.QtCore import Qt, QTimer
+from PySide6.QtCore import Qt, QTimer, Signal
 from PySide6.QtWidgets import (
     QAbstractItemView, QComboBox, QDoubleSpinBox, QFormLayout, QGroupBox,
     QHBoxLayout, QHeaderView, QLabel, QPushButton, QSlider, QSpinBox,
@@ -89,6 +89,8 @@ def display_score(value):
 
 
 class CaseWindow(AudioBench):
+    case_completed = Signal()
+    review_requested = Signal()
     def __init__(self, *, case=None, save_path=None, player=None, renderer=None):
         self._initializing = True
         self._load_progress(case or load_case(ROOT / "content/cases/T01.json"), save_path)
@@ -374,6 +376,9 @@ class CaseWindow(AudioBench):
     def _open_review(self):
         if not self.session.solved:
             return
+        if self.property('studioEmbedded'):
+            self.review_requested.emit()
+            return
         zh = self._language == "zh-Hant"
         dialog = QDialog(self)
         dialog.setWindowTitle("案件復盤" if zh else "Case review")
@@ -434,6 +439,7 @@ class CaseWindow(AudioBench):
     def _matched(self, revision, result):
         if self._closed or revision != self._revision or revision != self._match_revision or self._submission_token is None:
             return
+        was_solved = self.session.solved
         try:
             self.session.complete_submission(self._submission_token, result)
         except (ValueError, TypeError) as error:
@@ -442,6 +448,8 @@ class CaseWindow(AudioBench):
         self._submission_token = None
         super()._matched(revision, result)
         self._save()
+        if not was_solved and self.session.solved:
+            self.case_completed.emit()
 
     def _failed(self, revision, message):
         if self._closed or revision != self._revision:

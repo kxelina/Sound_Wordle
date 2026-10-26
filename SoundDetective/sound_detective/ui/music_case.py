@@ -96,6 +96,7 @@ TEXT = {
 
 
 class MusicCaseWindow(QMainWindow):
+    case_completed = Signal()
     device_requested = Signal(str)
 
     def __init__(self, parent=None, *, case=None, player=None, renderer=None, save_path=None,
@@ -649,6 +650,7 @@ class MusicCaseWindow(QMainWindow):
         self._lock()
         if result.newly_solved:
             self._play_reveal()
+            self.case_completed.emit()
         elif result.passed:
             self._goto_stage()
         else:

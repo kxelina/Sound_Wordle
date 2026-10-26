@@ -45,8 +45,6 @@ def collect_diagnostics(*, root=None, probe_audio=True):
 
     def assets():
         from .game.cases import load_campaign
-        from .game.music_cases import load_music_case
-        from .game.recorded_pitch import load_recorded_pitch_map
         from .ui.studio_scenes import SCENES
         files = [root/'assets/ui'/name for scene in SCENES.values() for name in (scene.room_art, scene.desk_art)]
         files += [root/'assets/audio/ui-click.wav'] + [root/'supercollider'/name for name in
@@ -54,16 +52,26 @@ def collect_diagnostics(*, root=None, probe_audio=True):
         missing = [str(p.relative_to(root)) for p in files if not p.is_file()]
         if missing:
             raise FileNotFoundError(', '.join(missing))
-        cases, music = load_campaign(), load_music_case(verify=True)
+        cases = load_campaign(root/'content/cases')
         from .game.sound_categories import load_source_cases
-        sources = load_source_cases()
+        sources = load_source_cases(root/'content/sound_cases')
         if len(sources) != 4:
             raise ValueError('Missing category sound cases')
-        load_recorded_pitch_map(music)
-        return {'timbre_cases': len(cases), 'music_case': music.id, 'category_cases': len(sources), 'assets_verified': True}
+        return {'timbre_cases': len(cases), 'category_cases': len(sources), 'assets_verified': True}
     check('content', assets, 'Levels, scene art and audio files', '關卡、場景與音源',
-          'Reinstall into a complete game folder. Keep the original audio with the game.',
-          '重新安裝完整遊戲目錄，並保留原曲音源。')
+          'Reinstall the game files, scene art and synthesized case definitions.',
+          '重新安裝遊戲程式、場景圖片與合成案件設定。')
+
+    def optional_music():
+        from .game.availability import music_availability
+        result = music_availability(root=root)
+        if not result.available:
+            raise ValueError('M01 unavailable; all synthesized cases and free composition remain playable. / '
+                             'M01 暫不可玩；合成案件與自由創作仍可使用。 '+result.reason)
+        return result.to_dict()
+    check('optional_music', optional_music, 'Optional recorded-music case', '可選的錄音歌曲案件',
+          'Continue playing the other modes. Supply the configured local M01 assets only if needed.',
+          '可繼續其他玩法；需要 M01 時才提供對應的本機音源。', warning=True)
 
     for name in ('userdata', '.runtime'):
         def writable(name=name):

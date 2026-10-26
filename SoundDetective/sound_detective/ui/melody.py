@@ -91,6 +91,7 @@ TEXT = {
 
 
 class MelodyWindow(QMainWindow):
+    case_completed = Signal()
     device_requested = Signal(str)
     mode_changed = Signal(str)
 
@@ -476,6 +477,7 @@ class MelodyWindow(QMainWindow):
             self.mode_changed.emit(mode)
 
     def _submit(self):
+        was_solved = self.session.solved
         self.stop()
         try:
             result = self.session.submit()
@@ -487,6 +489,8 @@ class MelodyWindow(QMainWindow):
         self._refresh(history=True)
         self.status.setText(self.t("solved" if all(result.passed) else "submitted"))
         self._save()
+        if not was_solved and self.session.solved:
+            self.case_completed.emit()
 
     def _hint(self):
         self.session.request_hint()

@@ -12,7 +12,9 @@ The game currently includes **eight timbre cases, one music-restoration case, si
 
 ### Start playing
 
-If you received **SoundDetective-Setup.exe**, run it and choose an empty folder you can write to. The installer includes the software needed to run the game and can create a desktop shortcut. Existing game folders and saves will not be overwritten.
+If you received **SoundDetective-Public-Setup.exe** or **SoundDetective-Setup.exe**, run it and choose an empty folder you can write to. The installer includes the software needed to run the game and can create a desktop shortcut. Existing game folders and saves will not be overwritten.
+
+The public edition works without song recordings. M01 appears unavailable when its local music assets are missing or unusable; the timbre cases, Sound Wordle and free composition remain playable.
 
 If you already have the game folder, open **SoundDetective.exe**.
 
@@ -24,6 +26,12 @@ If you already have the game folder, open **SoundDetective.exe**.
 The desk and board have highlighted outlines to help you find them. Use **Back to desk** to change equipment and the wall board to change activities. New players can start with **T01**.
 
 Open **Settings** to change window size, volume or language. The default language is English; select **繁體中文** for Traditional Chinese. Headphones can help you hear small differences.
+
+### Learn to play
+
+A new player's first **Start Game** offers five separate exercises: audition a sound, shorten Release, raise H2, drag a chirp's pitch and length, and submit a practice answer. After editing, listen to your changed sound before continuing. The final exercise requires pressing **Practice submission**.
+
+Use **Skip tutorial** whenever you want. You can reopen **Learn to play** from the main menu; existing players are not forced through the lesson. Practice controls, hints and submissions are separate from all cases. Finishing opens the case board.
 
 ### Choose an activity
 
@@ -88,6 +96,14 @@ After changing a setting, play your sound again to hear the update. Listening an
 
 Scores guide you toward each case's goal; they are not percentages of how similar two sounds would seem to a listener. After a timbre case is solved, open its review to compare your answer with the target settings.
 
+### Close the case and review
+
+Clearing a timbre or Sound Wordle case opens **Case review**. You can replay the starting sound, saved cleared answer and revealed target individually or in order. Tabs show component progress and reference controls. The review explains the biggest improvements and shows recorded submissions, clue tiers and time when available.
+
+The first-clear snapshot is saved independently of later practice. You can reopen it using **Case review** at the top of the room or desk. Reviewing never adds an attempt. A quick edit immediately after submitting keeps you at the desk; the review remains available from the button.
+
+An empty W02 starting melody has no starting audio. Older saves may lack a cleared answer or timing; unavailable information is shown explicitly. Music restoration keeps its full-song playback after completion; open its review manually to compare excerpts. Its graph shows available starting and completed estimates, without inventing intermediate scores.
+
 ### Restore music and compare your progress
 
 In M01, enable the current repair device, adjust its estimates, and listen to **My repair**. Turning a repair device off leaves that part of the distortion in place. Use **Check & get a clue** whenever you need a direction; checking does not add a submission.
@@ -146,7 +162,9 @@ If something is wrong:
 
 ### 開始遊戲
 
-如果你拿到的是 **SoundDetective-Setup.exe**，執行它並選擇可寫入的空白資料夾。安裝包已包含遊戲需要的執行軟體，也可建立桌面捷徑；不會覆寫既有遊戲資料夾與存檔。
+如果你拿到的是 **SoundDetective-Public-Setup.exe** 或 **SoundDetective-Setup.exe**，執行它並選擇可寫入的空白資料夾。安裝包已包含遊戲需要的執行軟體，也可建立桌面捷徑；不會覆寫既有遊戲資料夾與存檔。
+
+公開版不需要歌曲錄音即可啟動。缺少或無法使用 M01 的本機素材時，只有該案件暫不可玩；音色案件、聲音重建和自由創作仍可使用。
 
 如果已經有完整遊戲資料夾，直接開啟 **SoundDetective.exe**。
 
@@ -158,6 +176,12 @@ If something is wrong:
 桌子和案件板會有高亮描邊，方便辨認。按「返回桌面」可更換設備，點案件板可切換玩法。第一次遊玩建議從 **T01** 開始。
 
 在「**設定**」中可以調整視窗大小、音量和語言。遊戲預設英文，選擇 **繁體中文** 即可切換介面。使用耳機會更容易聽出細微差異。
+
+### 新手練習
+
+全新玩家第一次按「**開始遊戲**」時，會進入五個獨立練習：試聽、縮短 Release、提高 H2、拖曳鳥鳴音高及長度、提交練習答案。調整後請先試聽自己的修改，再繼續；最後一步需要按「**提交練習**」。
+
+可以隨時「**略過教程**」，之後在主選單的「**新手練習**」重開。已有案件進度的玩家不會被強制帶入教程。練習與正式案件、提示和提交記錄分開，完成後開啟案件板。
 
 ### 選擇玩法
 
@@ -221,6 +245,14 @@ W04 的音高曲線可以直接操作：上下拖曳兩個端點改變音高，�
 **音樂修復：**每個步驟達到 **90 分**後，提交即可繼續。音高校正階段還需要每個標記片段都進入畫面顯示的調音容差。已完成的修復會保持。
 
 分數用來引導你接近案件目標，不代表人耳認為兩段聲音有多少百分比相似。音色案件通關後，可以開啟復盤，對照自己的答案與目標設定。
+
+### 結案復盤
+
+音色案件或聲音重建通關後，會開啟「**結案復盤**」。可分別或依序試聽起點、已保存的通關答案與揭曉的目標；頁籤包含分項進度和參考設定，也會解釋主要改進，顯示已記錄的提交、提示層級及可用的用時。
+
+首次結案快照與之後的練習分開保存。在房間或桌面上方按「**結案復盤**」即可重開，不會增加提交。提交後若立即繼續修改，會留在設備頁；之後仍可主動開啟復盤。
+
+W02 的空白起始旋律沒有起點音訊；舊存檔可能缺少歷史答案或用時，會明確顯示無法提供。音樂修復成功後仍會播放完整原曲，復盤由你主動打開，並比較音樂片段。音樂圖表只呈現可取得的起點與結案估計，不補造中途分數。
 
 ### 修復音樂與比較進度
 

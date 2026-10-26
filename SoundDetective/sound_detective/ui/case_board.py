@@ -15,10 +15,11 @@ class CaseBoard(QFrame):
     free_requested = Signal()
     dismissed = Signal()
 
-    def __init__(self, cases, music, progress_dir):
+    def __init__(self, cases, music, progress_dir, *, music_status=None):
         super().__init__()
         self.setObjectName("panel")
         self.cases, self.music, self.progress_dir = cases, music, progress_dir
+        self.music_status = music_status
         self.wordle = load_hidden_case()
         self.melody = MelodyCase()
         self.source_cases = load_source_cases()
@@ -174,8 +175,8 @@ class CaseBoard(QFrame):
                         status = "已完成" if zh else "Cleared"
                 except (OSError, ValueError, TypeError, KeyError):
                     pass
-                if not case.source.is_file() or not case.evidence.is_file():
-                    status = "缺少音源" if zh else "Audio unavailable"
+                if not case.source.is_file() or not case.evidence.is_file() or self.music_status is not None and not self.music_status.available:
+                    status = "本機音源暫不可用" if zh else "Local audio unavailable"
                     button.setEnabled(False)
             button.setText(f"{case.id}\n{case.title[self.language]}\n\n{status}")
             set_help(button, "case_card", self.language)
@@ -205,6 +206,9 @@ class CaseBoard(QFrame):
         elif self.mode == "music":
             self.note.setText("選擇音樂修復案件或自由創作，接受後進入音樂工作室；創作不評分，草稿獨立儲存。" if zh else
                               "Choose a restoration case or free composition, then accept to enter the music studio. Free drafts are saved separately, without grading.")
+            if self.music_status is not None and not self.music_status.available:
+                self.note.setText("M01 需要另外提供本機歌曲素材；目前可以選擇自由創作，或切換至音色案件與聲音重建。" if zh else
+                                  "M01 needs separately supplied local music assets. Free composition, Timbre Cases and Sound Wordle remain available.")
 
     def select(self, case_id):
         self.selected = case_id

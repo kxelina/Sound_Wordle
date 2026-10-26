@@ -18,8 +18,7 @@ def check_environment():
     from PySide6 import QtMultimedia  # Include the actual native playback module.
     from .audio.sc_client import ROOT, find_executable
     from .game.cases import load_campaign
-    from .game.music_cases import load_music_case
-    from .game.recorded_pitch import load_recorded_pitch_map
+    from .game.availability import music_availability
     from .ui.studio_scenes import SCENES
 
     for filename in {name for scene in SCENES.values() for name in (scene.room_art, scene.desk_art)}:
@@ -32,10 +31,10 @@ def check_environment():
     source_cases = load_source_cases()
     if len(source_cases) != 4:
         raise ValueError("The four category sound cases are missing")
-    music = load_music_case(verify=True)
-    load_recorded_pitch_map(music)
+    music = music_availability()
     return {"project": str(ROOT), "python": sys.version.split()[0], "python_executable": sys.executable,
-            "pyside": qt_version, "timbre_cases": len(cases), "music_case": music.id, "category_cases": len(source_cases),
+            "pyside": qt_version, "timbre_cases": len(cases), "music_case": music.case_id if music.available else None,
+            "optional_music": music.to_dict(), "category_cases": len(source_cases),
             "supercollider": {name: str(find_executable(name)) for name in ("sclang.exe", "scsynth.exe")}}
 
 

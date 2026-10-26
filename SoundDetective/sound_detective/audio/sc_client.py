@@ -53,6 +53,28 @@ def check_cancelled(cancel_event: threading.Event | None) -> None:
         raise RenderCancelled("Audio generation cancelled")
 
 
+def process_executable(path: str) -> str:
+    """Keep bundled SC's Windows class-library lookup within short path limits.
+
+    Do not resolve the returned alias: doing so expands it before CreateProcess.
+    Volumes without short names retain the original path. File discovery and
+    diagnostic reports continue to use the actual installation location.
+    """
+    if os.name != 'nt':
+        return path
+    import ctypes
+    from ctypes import wintypes
+    short_path = ctypes.WinDLL('kernel32', use_last_error=True).GetShortPathNameW
+    short_path.argtypes = (wintypes.LPCWSTR, wintypes.LPWSTR, wintypes.DWORD)
+    short_path.restype = wintypes.DWORD
+    size = short_path(path, None, 0)
+    if not size:
+        return path
+    buffer = ctypes.create_unicode_buffer(size)
+    count = short_path(path, buffer, size)
+    return buffer.value if 0 < count < size and len(buffer.value) < len(path) else path
+
+
 @dataclass(frozen=True)
 class RenderResult:
     path: Path
@@ -122,7 +144,8 @@ class SCEngine:
         # stdin for GUI/pythonw launches, where inherited standard handles vary.
         with log_path.open("wb") as output:
             try:
-                process = subprocess.Popen(command, cwd=self.scsynth.parent,
+                launch = [process_executable(str(command[0])), *command[1:]]
+                process = subprocess.Popen(launch, cwd=Path(launch[0]).parent,
                                            stdin=subprocess.DEVNULL,
                                            stdout=output, stderr=subprocess.STDOUT,
                                            env=environment,
