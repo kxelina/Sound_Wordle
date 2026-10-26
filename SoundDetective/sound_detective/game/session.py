@@ -1,6 +1,6 @@
 """Submission transactions and score-gated clues; never gate on a past best."""
 
-from dataclasses import asdict, dataclass, field
+from dataclasses import asdict, dataclass, field,replace
 import time
 
 from ..audio.matching import ALGORITHM_VERSION, CLUES, MatchResult
@@ -54,6 +54,8 @@ class SessionState:
         self.volume = .35
         self._token = 0
         self._pending = None
+        self._submitted=0
+        self._saved_first_pass=None
 
     @property
     def attempts(self):
@@ -65,7 +67,11 @@ class SessionState:
 
     @property
     def first_pass(self):
-        return next((record for record in self.records if record.passed(self.case)), None)
+        return self._saved_first_pass or next((record for record in self.records if record.passed(self.case)), None)
+
+    @property
+    def attempt_count(self):
+        return self._submitted if self.case.id=='T09' else len(self.attempts)
 
     @property
     def solved(self):
@@ -103,7 +109,7 @@ class SessionState:
     def begin_submission(self):
         if self.solved or self._pending is not None:
             raise RuntimeError("A submission is already pending or the case is solved")
-        if len(self.records) >= MAX_ATTEMPTS:
+        if self.case.id!='T09' and len(self.records) >= MAX_ATTEMPTS:
             raise ValueError("Submission history is full; export/archive this save before continuing")
         self._token += 1
         self._pending = (self._token, self.current)
@@ -125,10 +131,14 @@ class SessionState:
             raise ValueError("Invalid diagnosis codes")
         settings = self._pending[1]
         progress = grade_progress(self.case, settings)
-        record = AttemptRecord(self.run, len(self.attempts) + 1, self.case.parameters(settings),
+        record = AttemptRecord(self.run, self.attempt_count + 1, self.case.parameters(settings),
             progress.total, result.spectrum, result.envelope, result.tail,
             progress.diagnostics, self.elapsed_seconds, PROGRESS_VERSION, progress.modules)
         self.records.append(record)
+        if self.case.id=='T09':
+            self._submitted+=1
+            if record.passed(self.case) and self._saved_first_pass is None:self._saved_first_pass=record
+            self.records=self.records[-30:]
         self._pending = None
         if record.passed(self.case):
             self._elapsed_base = record.elapsed_seconds
@@ -138,18 +148,63 @@ class SessionState:
     def restart(self):
         self.cancel_submission()
         self.run += 1
+        self._submitted=0
         self.current = self.case.initial
         self._elapsed_base = 0.
         self._started_at = self._clock()
 
     def to_dict(self):
-        return {"schema_version": 3, "case_id": self.case.id, "case_fingerprint": self.case.fingerprint,
+        data={"schema_version": 3, "case_id": self.case.id, "case_fingerprint": self.case.fingerprint,
             "scoring_version": PROGRESS_VERSION, "run": self.run, "language": self.language, "volume": self.volume,
             "current": self.case.parameters(self.current),
             "elapsed_seconds": self.elapsed_seconds, "records": [asdict(record) for record in self.records]}
+        if self.case.id=='T09':data.update(schema_version=4,submitted=self._submitted,first_pass=asdict(self.first_pass) if self.first_pass else None)
+        return data
+
+    @classmethod
+    def _from_rolling(cls,case,data,clock):
+        base_fields={'schema_version','case_id','case_fingerprint','scoring_version','run','language','volume','current','elapsed_seconds','records'}
+        if set(data)!=base_fields|{'submitted','first_pass'} or type(data['submitted']) is not int or data['submitted']<0:
+            raise ValueError('Invalid rolling submission count')
+        records=data['records']
+        if not isinstance(records,list) or len(records)>30:raise ValueError('Invalid rolling history')
+        normalized=[];numbers=[];last_run=None;last_number=None
+        for item in records:
+            if not isinstance(item,dict) or type(item.get('number')) is not int or item['number']<1 or type(item.get('run')) is not int:
+                raise ValueError('Invalid rolling record')
+            if item['run']==last_run and item['number']!=last_number+1:raise ValueError('Nonconsecutive history')
+            if last_run is not None and item['run']!=last_run and item['number']!=1:raise ValueError('Invalid run start')
+            count=normalized[-1]['number']+1 if item['run']==last_run else 1
+            normalized.append(dict(item,number=count));numbers.append(item['number'])
+            last_run,last_number=item['run'],item['number']
+        base={key:data[key] for key in base_fields};base.update(schema_version=3,records=normalized)
+        session=cls.from_dict(case,base,clock=clock)
+        session.records=[replace(record,number=number) for record,number in zip(session.records,numbers)]
+        current=[r for r in session.records if r.run==session.run]
+        if data['submitted']!=(current[-1].number if current else 0):raise ValueError('Inconsistent rolling count')
+        session._submitted=data['submitted'];session._saved_first_pass=None
+        first=data['first_pass']
+        if first is not None:
+            if not isinstance(first,dict) or type(first.get('number')) is not int or first['number']<1 or type(first.get('run')) is not int or first['run']>session.run:
+                raise ValueError('Invalid first-pass snapshot')
+            sample=dict(base,run=first['run'],current=first.get('parameters'),elapsed_seconds=first.get('elapsed_seconds'),records=[dict(first,number=1)])
+            checked=cls.from_dict(case,sample,clock=clock).records[0]
+            checked=replace(checked,number=first['number'])
+            if not checked.passed(case):raise ValueError('First-pass snapshot did not pass')
+            if any(r.run==checked.run and r.number==checked.number and r!=checked for r in session.records):
+                raise ValueError('First-pass snapshot differs from retained history')
+            if any(r.passed(case) and (r.run,r.number)<(checked.run,checked.number) for r in session.records):
+                raise ValueError('First-pass snapshot is not the first pass')
+            if checked.run==session.run and (not session.last or not session.last.passed(case) or checked.number!=session.last.number):
+                raise ValueError('Inconsistent first-pass run')
+            session._saved_first_pass=checked
+        if any(r.passed(case) for r in session.records) and session._saved_first_pass is None:raise ValueError('Missing first-pass snapshot')
+        return session
 
     @classmethod
     def from_dict(cls, case, data, *, clock=time.monotonic):
+        if case.id=='T09' and isinstance(data,dict) and type(data.get('schema_version')) is int and data['schema_version']==4:
+            return cls._from_rolling(case,data,clock)
         fields = {"schema_version", "case_id", "case_fingerprint", "scoring_version", "run", "language", "volume", "current", "elapsed_seconds", "records"}
         if not isinstance(data, dict) or set(data) != fields:
             raise ValueError("Invalid save fields")
@@ -229,4 +284,7 @@ class SessionState:
             raise ValueError("Solved save must retain the submitted answer")
         session._elapsed_base = data["elapsed_seconds"]
         session._started_at = None if session.solved else clock()
+        if case.id=='T09':
+            session._submitted=session.last.number if session.last else 0
+            session._saved_first_pass=session.first_pass
         return session

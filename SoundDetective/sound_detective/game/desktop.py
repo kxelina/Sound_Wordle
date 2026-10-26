@@ -5,6 +5,7 @@ import json
 from pathlib import Path
 
 from .storage import SessionStore, atomic_json_write
+from .catalog import CASE_IDS
 
 
 @dataclass
@@ -33,7 +34,7 @@ class DesktopPreferences:
             raise ValueError("Invalid window size")
         if abs(data["width"] / data["height"] - 16 / 9) > .01:
             raise ValueError("Window size must use the desktop aspect ratio")
-        if data["active_case"] not in (None, *(f"T{i:02}" for i in range(1, 9)), "M01", *(f"W{i:02}" for i in range(1, 7))):
+        if data["active_case"] is not None and data["active_case"] not in CASE_IDS:
             raise ValueError("Invalid active case")
         return cls(**{key: value for key, value in data.items() if key != "schema_version"})
 

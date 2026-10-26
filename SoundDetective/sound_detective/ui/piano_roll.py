@@ -399,6 +399,12 @@ class PianoRollEditor(QWidget):
 
     def _reveal_note(self, note):
         rect = self.roll.note_rect(note)
+        bounds=rect
+        for other in self.roll.pattern.notes:bounds=bounds.united(self.roll.note_rect(other))
+        viewport=self.viewport.viewport()
+        if bounds.height()+16<=viewport.height() and bounds.width()+16<=viewport.width():
+            self.viewport.ensureVisible(round(bounds.center().x()),round(bounds.center().y()),round(bounds.width()/2+8),round(bounds.height()/2+8))
+            return
         self.viewport.ensureVisible(round(rect.center().x()), round(rect.center().y()), 25, 30)
 
     def _preview(self, note):

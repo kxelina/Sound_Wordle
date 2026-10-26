@@ -6,6 +6,7 @@ The original target phrase is composed for this project; no song is required.
 
 from dataclasses import dataclass, field
 import json
+import hashlib
 from pathlib import Path
 
 from ..audio.matching import MatchConfig
@@ -15,6 +16,7 @@ from .hidden_sound import HISTORY_LIMIT, load_hidden_case
 from .parameters import PARAMETERS, replace_parameters
 from .progress import grade_progress
 from .storage import atomic_json_write
+from .catalog import MELODY_IDS
 
 STEPS, LOW_PITCH, HIGH_PITCH, TEMPO = 16, 60, 72, 100
 VERSION = "melody-workshop-v1"
@@ -96,6 +98,21 @@ class MelodyCase:
         GridNote(0, 2, 60), GridNote(4, 2, 64), GridNote(8, 2, 67), GridNote(12, 4, 64))))
     editable_parameters: tuple = tuple(PARAMETERS)
     comparison: MatchConfig = field(default_factory=lambda: MatchConfig(pass_score=90, component_floor=85))
+    stages: tuple = (0,1,2)
+    story: dict | None = None
+    clues: dict | None = None
+    completion: dict | None = None
+    fingerprint: str = ''
+    silent_cells: tuple = ()
+
+    def __post_init__(self):
+        if self.id not in MELODY_IDS or self.stages not in ((0,),(0,1),(0,1,2)) or not self.pattern.notes:
+            raise ValueError('Invalid melody case')
+        if 2 not in self.stages and self.initial!=self.reference:
+            raise ValueError('Locked timbre must match the reference')
+        if any(type(cell) is not int or not 0<=cell<STEPS for cell in self.silent_cells) or len(set(self.silent_cells))!=len(self.silent_cells):
+            raise ValueError('Invalid silent cells')
+        if any(n.start<=cell<n.start+n.length for cell in self.silent_cells for n in self.pattern.notes):raise ValueError('Reference overlaps a required rest')
 
     @property
     def sequence(self):
@@ -106,6 +123,32 @@ class MelodyCase:
 
     def settings(self, **changes):
         return replace_parameters(self.initial, changes)
+
+
+def load_melody_cases(directory=None):
+    from ..audio.sc_client import ROOT
+    directory=Path(directory or ROOT/'content/melody_cases')
+    cases=[MelodyCase()]
+    for cid in MELODY_IDS[1:]:
+        data=json.loads((directory/(cid+'.json')).read_text('utf-8'))
+        fields={'schema_version','id','title','story','pattern','sound','stages','clues','completion','silent_cells'}
+        if not isinstance(data,dict) or set(data)!=fields or type(data['schema_version']) is not int or data['schema_version']!=1 or data['id']!=cid:
+            raise ValueError('Invalid authored melody case')
+        texts=[data['title'],data['story'],data['completion']]
+        stages=tuple(data['stages'])
+        if not isinstance(data['stages'],list) or any(type(s) is not int for s in data['stages']):raise ValueError('Invalid melody stages')
+        if set(data['clues'])!={str(stage) for stage in stages}:raise ValueError('Missing stage clues')
+        for clues in data['clues'].values():
+            if not isinstance(clues,list) or len(clues)!=4:raise ValueError('Expected initial and three hint tiers')
+            texts.extend(clues)
+        if any(not isinstance(t,dict) or set(t)!={'en','zh-Hant'} or any(not isinstance(v,str) or not v.strip() or len(v)>1500 for v in t.values()) for t in texts):
+            raise ValueError('Melody text requires two languages')
+        sound=SoundSettings.from_dict(data['sound'])
+        fingerprint=hashlib.sha256(json.dumps(data,sort_keys=True,ensure_ascii=False).encode()).hexdigest()
+        cases.append(MelodyCase(id=cid,title=data['title'],initial=sound,reference=sound,
+            pattern=MelodyPattern.from_dict(data['pattern']),stages=stages,story=data['story'],
+            clues=data['clues'],completion=data['completion'],fingerprint=fingerprint,silent_cells=tuple(data['silent_cells'])))
+    return tuple(cases)
 
 
 @dataclass(frozen=True)
@@ -158,10 +201,11 @@ class MelodyResult:
     passed: tuple
     pairs: tuple
     timbre: object = None
+    active: tuple = (0,1,2)
 
     @property
     def total(self):
-        value = sum(self.scores) / 3
+        value = sum(self.scores[i] for i in self.active) / len(self.active)
         return value if all(self.passed) else min(value, 99.)
 
 
@@ -170,12 +214,15 @@ def compare_draft(draft, case=None):
     quality, pairs = align_notes(case.pattern, draft.pattern)
     denominator = max(len(case.pattern.notes), len(draft.pattern.notes))
     rhythm = 100 * quality / denominator
+    if any(n.start<=cell<n.start+n.length for cell in case.silent_cells for n in draft.pattern.notes):
+        rhythm=min(rhythm,89.)  # A high mean timing score cannot erase a required rest.
     melody = 100 * sum(max(0., 1 - abs(case.pattern.notes[i].pitch - draft.pattern.notes[j].pitch) / 4)
                        for i, j, _ in pairs) / denominator
-    timbre = None if draft.sound.patch.is_silent else grade_progress(case, draft.sound)
-    sound = timbre.total if timbre else 0.
+    timbre = None if draft.sound.patch.is_silent or 2 not in case.stages else grade_progress(case, draft.sound)
+    sound = 100. if 2 not in case.stages else timbre.total if timbre else 0.
     return MelodyResult((rhythm, melody, sound),
-                        (rhythm >= 90, melody >= 90, bool(timbre and timbre.passed)), pairs, timbre)
+                        (rhythm >= 90, 1 not in case.stages or melody >= 90,
+                         2 not in case.stages or bool(timbre and timbre.passed)), pairs, timbre,case.stages)
 
 
 @dataclass
@@ -188,6 +235,10 @@ class MelodySession:
     hints: list = field(default_factory=lambda: [0, 0, 0])
     records: list = field(default_factory=list)
     solution: dict | None = None
+    case: MelodyCase = field(default_factory=MelodyCase)
+
+    def __post_init__(self):
+        if self.case.id!='W02' and self.challenge==Draft():self.challenge=Draft(sound=self.case.initial)
 
     @property
     def current(self):
@@ -199,15 +250,15 @@ class MelodySession:
 
     @property
     def focus(self):
-        result = compare_draft(self.challenge)
-        return next((i for i in range(self.unlocked + 1) if not result.passed[i]), self.unlocked)
+        result = compare_draft(self.challenge,self.case)
+        return next((i for i in self.case.stages if i<=self.unlocked and not result.passed[i]), self.unlocked)
 
     @property
     def current_is_submitted(self):
         return bool(self.records) and self.challenge.to_dict() == self.records[-1]["draft"]
 
     def set_mode(self, mode):
-        if mode not in ("challenge", "free"):
+        if mode not in ("challenge", "free") or mode=='free' and self.case.id!='W02':
             raise ValueError("Unknown workshop mode")
         self.mode = mode
 
@@ -219,9 +270,9 @@ class MelodySession:
             return
         if draft.tempo != TEMPO:
             raise ValueError("Challenge tempo is fixed")
-        if self.unlocked == 0 and any(n.pitch != LOW_PITCH for n in draft.pattern.notes):
+        if (self.unlocked == 0 or 1 not in self.case.stages) and any(n.pitch != LOW_PITCH for n in draft.pattern.notes):
             raise ValueError("Pitch unlocks after the rhythm stage")
-        if self.unlocked < 2 and draft.sound != MelodyCase().initial:
+        if (self.unlocked < 2 or 2 not in self.case.stages) and draft.sound != self.case.initial:
             raise ValueError("Sound controls unlock after the melody stage")
         self.challenge = draft
 
@@ -230,9 +281,9 @@ class MelodySession:
             return None  # Composition never consumes an attempt or gets graded.
         if not self.challenge.pattern.notes or self.challenge.sound.patch.is_silent:
             raise ValueError("Add an audible note before submitting")
-        result = compare_draft(self.challenge)
+        result = compare_draft(self.challenge,self.case)
         self.attempts += 1
-        while self.unlocked < 2 and all(result.passed[:self.unlocked + 1]):
+        while self.unlocked < self.case.stages[-1] and all(result.passed[:self.unlocked + 1]):
             self.unlocked += 1
         if all(result.passed) and self.solution is None:
             self.solution = self.challenge.to_dict()
@@ -256,18 +307,25 @@ class MelodySession:
         if self.mode == "free":
             self.free = Draft()
         else:
-            self.challenge, self.unlocked, self.attempts = Draft(), 0, 0
+            self.challenge, self.unlocked, self.attempts = Draft(sound=self.case.initial), 0, 0
             self.hints, self.records = [0, 0, 0], []
 
     def to_dict(self):
-        return {"version": VERSION, "challenge": self.challenge.to_dict(), "free": self.free.to_dict(),
+        data={"version": VERSION, "challenge": self.challenge.to_dict(), "free": self.free.to_dict(),
                 "mode": self.mode, "unlocked": self.unlocked, "attempts": self.attempts,
                 "hints": self.hints, "records": self.records, "solution": self.solution}
+        if self.case.id!='W02':data.update(case_id=self.case.id,case_fingerprint=self.case.fingerprint)
+        return data
 
     @classmethod
-    def from_dict(cls, data):
-        if not isinstance(data, dict) or set(data) != {"version", "challenge", "free", "mode", "unlocked", "attempts", "hints", "records", "solution"} or data["version"] != VERSION:
+    def from_dict(cls, data,case=None):
+        case=case or MelodyCase()
+        fields={"version", "challenge", "free", "mode", "unlocked", "attempts", "hints", "records", "solution"}
+        if case.id!='W02':fields|={'case_id','case_fingerprint'}
+        if not isinstance(data, dict) or set(data) != fields or data["version"] != VERSION:
             raise ValueError("Unsupported melody save")
+        if case.id!='W02' and (data['case_id']!=case.id or data['case_fingerprint']!=case.fingerprint):
+            raise ValueError('Melody save belongs to another case revision')
         integer(data["unlocked"], 0, 2, "stage")
         if type(data["attempts"]) is not int or data["attempts"] < 0:
             raise ValueError("Invalid attempt count")
@@ -278,20 +336,21 @@ class MelodySession:
             integer(value, 0, 3, "hint")
         if not isinstance(records, list) or len(records) != min(data["attempts"], HISTORY_LIMIT):
             raise ValueError("Invalid history")
-        session = cls(unlocked=data["unlocked"])
+        if data['unlocked'] not in case.stages:raise ValueError('Invalid unlocked case stage')
+        session = cls(unlocked=data["unlocked"],case=case)
         session.update(Draft.from_dict(data["challenge"]))
         for index, record in enumerate(records, data["attempts"] - len(records) + 1):
             if not isinstance(record, dict) or set(record) != {"number", "draft"} or type(record["number"]) is not int or record["number"] != index:
                 raise ValueError("Invalid record")
-            validator = cls(unlocked=data["unlocked"])
+            validator = cls(unlocked=data["unlocked"],case=case)
             validator.update(Draft.from_dict(record["draft"]))
             if not validator.challenge.pattern.notes or validator.challenge.sound.patch.is_silent:
                 raise ValueError("Invalid silent submission")
         solution = data["solution"]
         if solution is not None:
-            validator = cls(unlocked=2)
+            validator = cls(unlocked=case.stages[-1],case=case)
             validator.update(Draft.from_dict(solution))
-            if not all(compare_draft(validator.challenge).passed):
+            if not all(compare_draft(validator.challenge,case).passed):
                 raise ValueError("Invalid solution")
         session.free = Draft.from_dict(data["free"])
         session.set_mode(data["mode"])
@@ -299,16 +358,18 @@ class MelodySession:
         return session
 
 
-def load_melody_session(path):
+def load_melody_session(path,case=None):
     path = Path(path)
+    case=case or MelodyCase()
     if not path.exists():
-        return MelodySession()
+        return MelodySession(challenge=Draft(sound=case.initial),case=case)
     if path.stat().st_size > 2_000_000:
         raise ValueError("Melody save is too large")
-    return MelodySession.from_dict(json.loads(path.read_text(encoding="utf-8")))
+    return MelodySession.from_dict(json.loads(path.read_text(encoding="utf-8")),case)
 
 
 def save_melody_session(path, session):
+    MelodySession.from_dict(session.to_dict(),session.case)
     atomic_json_write(path, session.to_dict())
 
 
@@ -326,3 +387,27 @@ def teaching_pair(stage):
         sounds, seq = lesson(1)
         return ((sounds[0], seq), (sounds[1], seq))
     return tuple((base, NoteSequence(notes)) for notes in patterns)
+
+
+def authored_melody_clue(case,draft,result,stage,tier,language):
+    text=case.clues[str(stage)][tier][language]
+    if tier<1:return text
+    zh=language=='zh-Hant'
+    if stage==0:
+        delta=len(draft.pattern.notes)-len(case.pattern.notes)
+        text+=(' 目前音符太多。' if delta>0 else ' 目前音符不足。' if delta<0 else '') if zh else (' Too many notes.' if delta>0 else ' More notes are needed.' if delta<0 else '')
+        if case.id=='W08' and any(n.start<=8<n.start+n.length for n in draft.pattern.notes):
+            text+=' 第三拍被一個音覆蓋了。' if zh else ' A note covers the silent third beat.'
+        if delta==0:
+            for i,j,q in result.pairs:
+                target,actual=case.pattern.notes[i],draft.pattern.notes[j]
+                if actual.length!=target.length:
+                    text+=(f' 第 {j+1} 音需要'+('更長。' if actual.length<target.length else '更短。')) if zh else f' Note {j+1} should be '+('longer.' if actual.length<target.length else 'shorter.')
+                    break
+    elif stage==1:
+        for i,j,q in result.pairs:
+            expected,actual=case.pattern.notes[i].pitch,draft.pattern.notes[j].pitch
+            if expected!=actual:
+                text+=(f' 第 {j+1} 音可再'+('提高。' if actual<expected else '降低。')) if zh else f' Move note {j+1} '+('up.' if actual<expected else 'down.')
+                break
+    return text

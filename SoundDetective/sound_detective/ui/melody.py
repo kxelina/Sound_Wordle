@@ -7,13 +7,13 @@ from PySide6.QtCore import QEvent, QTimer, Qt, Signal
 from PySide6.QtGui import QKeySequence, QShortcut
 from PySide6.QtWidgets import (QAbstractItemView, QComboBox, QGroupBox, QHBoxLayout,
     QHeaderView, QLabel, QMainWindow, QProgressBar, QPushButton, QSlider, QSpinBox,
-    QScrollArea, QTableWidget, QTableWidgetItem, QTabWidget, QVBoxLayout, QWidget)
+    QScrollArea, QTableWidget, QTableWidgetItem, QTabWidget, QVBoxLayout, QWidget,QFrame)
 
 from ..audio.playback import AudioPlayer, PlaybackItem
 from ..audio.preview import PreviewRenderer
 from ..audio.sc_client import ROOT
 from ..game.melody import (Draft, MelodyCase, MelodySession, LOW_PITCH, TEMPO,
-    compare_draft, load_melody_session, save_melody_session, teaching_pair)
+    compare_draft, load_melody_session, save_melody_session, teaching_pair,authored_melody_clue)
 from ..game.progress import PROGRESS_CLUES
 from ..game.storage import SessionStore
 from .hardware import PlaybackDeck
@@ -99,15 +99,15 @@ class MelodyWindow(QMainWindow):
                  language="en", volume=.35, embedded=False):
         super().__init__()
         self.case = case or MelodyCase()
-        self.save_path = Path(save_path or ROOT / "userdata/wordle/W02.json")
+        self.save_path = Path(save_path or ROOT / "userdata/wordle"/(self.case.id+'.json'))
         self._language, self.embedded = language, embedded
         self._closed = self._save_blocked = False
         self._warning, self._revision, self._armed = "", None, None
         self.device_kind = "synth"
         try:
-            self.session = load_melody_session(self.save_path)
+            self.session = load_melody_session(self.save_path,self.case)
         except (OSError, ValueError, TypeError, KeyError):
-            self.session = MelodySession()
+            self.session = MelodySession(case=self.case)
             try:
                 SessionStore(self.save_path).preserve_invalid()
                 self._warning = "saved_bad"
@@ -133,6 +133,18 @@ class MelodyWindow(QMainWindow):
         self._save()
 
     def t(self, key):
+        if self.case.id!='W02':
+            zh=self._language=='zh-Hant'
+            if key=='title':return 'Sound Detective · '+self.case.id+' · '+self.case.title[self._language]
+            if key=='story':return self.case.story[self._language]
+            if key=='solved':return self.case.completion[self._language]
+            if key=='modes':return (self.case.id+(' 挑戰' if zh else ' challenge'),'自由創作' if zh else 'Free composition')
+            if key=='rules':return ('只考節奏；音高與音色固定。不限提交，保留停頓。' if zh else 'Rhythm only; fixed pitch and timbre. Unlimited submissions; preserve the pause.') if self.case.stages==(0,) else ('節奏 → 音高；音色固定，不限提交。' if zh else 'Rhythm → pitch; fixed timbre and unlimited submissions.')
+            if key=='hidden':return '本案達標後才開放目標。' if zh else 'Solve this case to reveal the target.'
+            if key=='locked':return '本案音色已設定，請用鋼琴卷簾調整音符。' if zh else 'Timbre is already set. Use the piano roll to edit notes.'
+            if key=='pitch_locked' and self.case.stages==(0,):return '本案固定 C4，只調整音符位置及長度。' if zh else 'This case keeps C4 fixed; edit note positions and lengths only.'
+            if key=='ready' and self.session.focus==self.case.stages[-1]:return '目前已達要求，提交此版本即可完成案件。' if zh else 'The requirements are met. Submit this version to close the case.'
+            if key in ('saved_bad','save_error'):return TEXT[self._language][key].replace('W02',self.case.id)
         return TEXT[self._language][key]
 
     def label(self):
@@ -214,9 +226,12 @@ class MelodyWindow(QMainWindow):
         self.story.setStyleSheet("font-size: 13px;")
         self.score.setStyleSheet("font-size: 17px; color: #efd6a0;")
         self.stale.setStyleSheet("font-size: 12px; color: #bfb79f;")
+        notes=QWidget();notes_layout=QVBoxLayout(notes);notes_layout.setContentsMargins(0,0,0,0)
         for label in (self.story, self.stage_label, self.score, self.cards, self.stale):
-            left.addWidget(label)
-        left.addStretch()
+            notes_layout.addWidget(label)
+        notes_layout.addStretch()
+        self.note_scroll=QScrollArea();self.note_scroll.setWidgetResizable(True);self.note_scroll.setFrameShape(QFrame.Shape.NoFrame)
+        self.note_scroll.setMinimumHeight(0);self.note_scroll.setWidget(notes);left.addWidget(self.note_scroll,1)
         self.play_reference, self.play_current, self.stop_button, self.play_ab = [QPushButton() for _ in range(4)]
         self.play_reference.clicked.connect(lambda: self._prepare("target"))
         self.play_current.clicked.connect(lambda: self._prepare("current"))
@@ -226,6 +241,7 @@ class MelodyWindow(QMainWindow):
         left.addWidget(self.deck)
         self.feedback = self.label()
         self.feedback.setStyleSheet("font-size: 13px;")
+        self.feedback.setMaximumHeight(90)
         right.addWidget(self.feedback)
         hints = QHBoxLayout()
         self.hint_button, self.lesson_button, self.goto_button = [QPushButton() for _ in range(3)]
@@ -237,6 +253,7 @@ class MelodyWindow(QMainWindow):
         right.addLayout(hints)
         self.work_tabs = QTabWidget()
         self.piano = PianoRollEditor()
+        if self.case.id!='W02':self.piano.viewport.setMinimumHeight(125)
         self.piano.changed.connect(self._pattern_changed)
         self.piano.editing_started.connect(lambda: self.stop(cancel_drag=False))
         self.piano_scroll = QScrollArea()
@@ -306,6 +323,7 @@ class MelodyWindow(QMainWindow):
         self.tempo_label.setText(self.t("tempo"))
         for key, text in zip(self.mode_buttons, self.t("modes")):
             self.mode_buttons[key].setText(text)
+        self.mode_buttons['free'].setVisible(self.case.id=='W02')
         for button, text in zip(self.device_buttons.values(), self.t("devices")):
             button.setText(text)
         for button, key in ((self.play_current, "current"), (self.play_ab, "ab"), (self.stop_button, "stop"),
@@ -321,6 +339,8 @@ class MelodyWindow(QMainWindow):
         self.status.setText(self.t("initial"))
         self._refresh(history=True)
         apply_window_help(self, "melody", self._language)
+        if self.case.id!='W02':
+            self.mode_buttons['challenge'].setToolTip('返回本案的獨立挑戰草稿，不會改動 W02 自由創作。' if self._language=='zh-Hant' else 'Resume this case draft without changing W02 free composition.')
 
     def _refresh(self, *, history=False):
         s, free = self.session, self.session.mode == "free"
@@ -338,16 +358,19 @@ class MelodyWindow(QMainWindow):
         self.tempo.setEnabled(free)
         self.editor.set_settings(s.current.sound)
         self.editor.set_locked(not free and s.unlocked < 2)
-        rhythm_hints = tuple((n.start, n.length) for n in self.case.pattern.notes) if not free and s.hints[0] >= 2 else ()
+        rhythm_hints = tuple((n.start, n.length) for n in self.case.pattern.notes) if not free and s.hints[0] >= (2 if self.case.id=='W02' else 3) else ()
         hint_notes = (self.case.pattern.notes[0], self.case.pattern.notes[-1]) if not free and s.hints[1] >= 2 else ()
+        if self.case.id!='W02' and s.hints[1]==2:hint_notes=(self.case.pattern.notes[0],)
         self.piano.set_pattern(s.current.pattern, pitch_locked=not free and s.unlocked == 0,
                                rhythm_hints=rhythm_hints, hint_notes=hint_notes)
+        if 1 not in self.case.stages:
+            self.piano.instructions.setText('拖移改起點，拉兩側改長度；音高固定。' if self._language=='zh-Hant' else 'Drag to move; pull either edge for length. Pitch stays fixed.')
         self.score.setText(self.t("free") if free else self.t("unscored"))
         self.cards.clear()
         if s.records and not free:
-            result = compare_draft(Draft.from_dict(s.records[-1]["draft"]))
+            result = compare_draft(Draft.from_dict(s.records[-1]["draft"]),self.case)
             self.score.setText(self.t("score").format(n=s.attempts, score=f"{math.floor(result.total * 10) / 10:.1f}"))
-            self.cards.setText("\n".join(f"{name}: {value:.1f} / 100" for name, value in zip(self.t("groups"), result.scores)))
+            self.cards.setText("\n".join(f"{self.t('groups')[i]}: {result.scores[i]:.1f} / 100" for i in self.case.stages))
         self.stale.setText(self.t("stale"))
         self.stale.setVisible(not free and bool(s.records) and not s.current_is_submitted)
         self.play_reference.setText(self.t("target_open" if s.solved else "target"))
@@ -364,8 +387,8 @@ class MelodyWindow(QMainWindow):
             self.history.setHorizontalHeaderLabels(self.t("columns"))
             self.history.setRowCount(len(s.records))
             for row, record in enumerate(s.records):
-                result = compare_draft(Draft.from_dict(record["draft"]))
-                for column, value in enumerate((str(record["number"]), *(f"{v:.1f}" for v in result.scores))):
+                result = compare_draft(Draft.from_dict(record["draft"]),self.case)
+                for column, value in enumerate((str(record["number"]), *(f"{v:.1f}" if i in self.case.stages else '—' for i,v in enumerate(result.scores)))):
                     self.history.setItem(row, column, QTableWidgetItem(value))
             if s.records:
                 self.history.setCurrentCell(len(s.records) - 1, 0)
@@ -382,6 +405,7 @@ class MelodyWindow(QMainWindow):
         self.restore_button.setVisible(analyzing)
         self.history_play.setVisible(analyzing)
         self.work_tabs.setTabVisible(0, workshop)
+        self.work_tabs.setTabVisible(1,self.session.mode=='free' or 2 in self.case.stages)
         self.editor.show_groups({"harmonics", "envelope", "filter"} if workshop else {device})
         self.locked.setText(self.t("pitch_locked") if self.session.unlocked == 0 and workshop else self.t("locked"))
         self.locked.setVisible(not analyzing and self.session.mode == "challenge" and self.session.unlocked < 2)
@@ -391,12 +415,16 @@ class MelodyWindow(QMainWindow):
         if s.mode == "free":
             self.feedback.setText(self.t("free_help"))
             return
-        result, stage = compare_draft(s.challenge), s.focus
+        result, stage = compare_draft(s.challenge,self.case), s.focus
         tier = s.hints[stage]
+        self.feedback.setStyleSheet('')
         if all(result.passed) and s.current_is_submitted:
             text = self.t("solved")
+            self.feedback.setStyleSheet('color: #afd8b2; font-size: 16px;')
         elif result.passed[stage]:
             text = self.t("ready")
+        elif self.case.clues is not None:
+            text=authored_melody_clue(self.case,s.challenge,result,stage,tier,self._language)
         elif stage == 0:
             text = "四個音各在一拍的開頭；最後一音較長。" if zh else "Four onsets, one per beat; the last note is longer."
             if tier >= 1:
@@ -435,6 +463,7 @@ class MelodyWindow(QMainWindow):
         if s.solved and not all(result.passed):
             text = self.t("practice") + " " + text
         self.feedback.setText(text)
+        self.feedback.setToolTip(text)
 
     def _update(self, draft):
         self.stop()
@@ -465,6 +494,7 @@ class MelodyWindow(QMainWindow):
         self._update(Draft(current.pattern, current.sound, value))
 
     def _set_mode(self, mode):
+        if mode=='free' and self.case.id!='W02':return
         changed = self.session.mode != mode
         self.stop()
         self.session.set_mode(mode)
@@ -487,6 +517,7 @@ class MelodyWindow(QMainWindow):
         if result is None:
             return
         self._refresh(history=True)
+        QTimer.singleShot(0,lambda:self.note_scroll.ensureWidgetVisible(self.score) if not self._closed else None)
         self.status.setText(self.t("solved" if all(result.passed) else "submitted"))
         self._save()
         if not was_solved and self.session.solved:
@@ -501,7 +532,7 @@ class MelodyWindow(QMainWindow):
         stage = self.session.focus
         device = "synth"
         if stage == 2:
-            result = compare_draft(self.session.challenge)
+            result = compare_draft(self.session.challenge,self.case)
             if result.timbre:
                 group = min(result.timbre.modules, key=result.timbre.modules.get)
                 device = group if group in ("delay", "reverb") else "synth"

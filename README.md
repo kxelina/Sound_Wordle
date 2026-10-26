@@ -4,10 +4,11 @@
 
 A Windows desktop sound-construction game built with Python, PySide6 and SuperCollider.
 
-- **T01–T08:** recreate timbres with harmonics, ADSR, filters, delay and reverb.
+- **T01–T09:** recreate timbres with harmonics, ADSR, filters, delay and reverb.
 - **Sound Wordle:** build hidden sounds from witness clues, with unlimited submissions and free hints.
   W01/W02 cover a signal and a melody. W03/W04 cover rain and bird-like chirps,
-  W05 a plucked string-like note, and W06 radio static.
+  W05 a plucked string-like note, and W06 radio static. W07 is an original two-note doorbell; W08 reconstructs a rhythm with a required silent beat.
+- **T09 · The Extra Knock:** use one short source event and Delay to reconstruct fading repeats, with an optional ungraded cause question.
 - **Free composition:** write a melody using draggable piano-roll notes.
 - **M01 music restoration:** included as code/configuration; song recordings are local-only and are not distributed here.
 - English and Traditional Chinese interfaces, edit history, progress saves and WAV export.
@@ -50,7 +51,7 @@ Read [environment notes](SoundDetective/docs/ENVIRONMENT.md) for engine path con
 After installing the dependencies, run the source-only Wordle and piano-roll checks from the repository root:
 
 ```powershell
-.\SoundDetective\.venv\Scripts\python.exe -m pytest SoundDetectiveDevelopment/test_learning_tools.py SoundDetectiveDevelopment/test_player_journey.py SoundDetectiveDevelopment/test_sound_categories.py SoundDetectiveDevelopment/test_note_dragging.py -q
+.\SoundDetective\.venv\Scripts\python.exe -m pytest SoundDetectiveDevelopment/test_after_hours.py SoundDetectiveDevelopment/test_learning_tools.py SoundDetectiveDevelopment/test_player_journey.py SoundDetectiveDevelopment/test_sound_categories.py SoundDetectiveDevelopment/test_note_dragging.py -q
 ```
 
 These checks include actual SuperCollider rendering. Some additional music-restoration
@@ -72,11 +73,13 @@ with those assets present. See the dated validation notes for exact counts and s
 
 這是一款 Windows 桌面聲音合成遊戲，使用 Python、PySide6 與 SuperCollider。
 
-- **T01–T08 音色案件：**調整諧波、ADSR、濾波、回聲與混響來還原聲音。
+- **T01–T09 音色案件：**調整諧波、ADSR、濾波、回聲與混響來還原聲音。
 - **Sound Wordle：**依證人口供製作隱藏聲音，不限提交，提示免費。
   W01/W02 為信號及旋律；W03/W04 為小雨及鳥鳴般哨音；W05 為撥弦音；W06 為收音機雜音。
 - **自由創作：**拖曳音符編寫旋律，調整音色並匯出 WAV。
 - **M01 音樂修復：**保留程式與設定，原曲及證物錄音僅保存在本機。
+
+新增 T09「多出來的一聲」、W07「會說話的門鈴」及 W08「空白的一拍」，不需要歌曲素材，各自保存進度並支援首次作品收藏。
 
 [完整玩家指南：英文及繁體中文](SoundDetective/README.md)
 

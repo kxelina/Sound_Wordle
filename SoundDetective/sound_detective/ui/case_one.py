@@ -263,7 +263,7 @@ class CaseWindow(AudioBench):
     def _show_progress(self):
         text, session = TEXT[self._language], self.session
         phase = "solved" if session.solved else "practice" if session.practice else "playing"
-        message = text["progress"].format(phase=text[phase], attempts=len(session.attempts), seconds=session.elapsed_seconds)
+        message = text["progress"].format(phase=text[phase], attempts=session.attempt_count, seconds=session.elapsed_seconds)
         if session.first_pass is not None:
             message += " · " + text["first"].format(total=session.first_pass.total, number=session.first_pass.number)
         self.progress.setText(message)

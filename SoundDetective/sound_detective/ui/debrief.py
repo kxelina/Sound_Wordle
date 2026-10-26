@@ -160,6 +160,16 @@ class DebriefPanel(QFrame):
             final=SourcePatch.from_dict(r.clips['final']['patch']) if r.clips['final'] else None
             for spec in CONTROLS[target.recipe]:
                 rows.append((spec.labels[self.zh],dict(target.values)[spec.key],dict(final.values)[spec.key] if final else '—'))
+        elif r.kind=='melody' and self.case.id!='W02':
+            target=NoteSequence.from_dict(r.clips['target']['sequence']).events
+            final=NoteSequence.from_dict(r.clips['final']['sequence']).events if r.clips['final'] else ()
+            def pitch_name(pitch):return ('C','C#','D','D#','E','F','F#','G','G#','A','A#','B')[pitch%12]+str(pitch//12-1)
+            for i,note in enumerate(target):
+                actual=final[i] if i<len(final) else None
+                label=self.text(f'Note {i+1}',f'第 {i+1} 音')
+                rows.extend(((label+self.text(' · onset (s)',' · 起點（秒）'),note.start_seconds,actual.start_seconds if actual else '—'),
+                    (label+self.text(' · duration (s)',' · 長度（秒）'),note.duration_seconds,actual.duration_seconds if actual else '—')))
+                if 1 in self.case.stages:rows.append((label+self.text(' · pitch',' · 音高'),pitch_name(note.pitch),pitch_name(actual.pitch) if actual else '—'))
         elif r.kind in ('tone','melody'):
             from ..game.parameters import PARAMETERS
             target=SoundSettings.from_dict(r.clips['target']['settings'])

@@ -79,7 +79,7 @@ def refresh(output, *, base_installer=None, public=False):
                 bundle.write(p, name)
                 files[name] = {'size': p.stat().st_size, 'sha256': digest(p)}
             previous['files'] = files
-            previous.update(version='0.4.0', public_build=public, recorded_music_included=not public)
+            previous.update(version='0.5.0', public_build=public, recorded_music_included=not public)
             bundle.writestr('release-manifest.json', json.dumps(previous, ensure_ascii=False, indent=2))
         replacement = stage/'SoundDetective-Setup.exe'
         with replacement.open('wb') as stream:
@@ -129,7 +129,7 @@ def build(output, sc_dir, *, public=False):
             '/reference:System.IO.Compression.dll', '/reference:System.IO.Compression.FileSystem.dll',
             '/reference:System.Web.Extensions.dll', '/out:'+str(stub), str(ROOT/'launcher/Installer.cs')], check=True)
         files = sorted(p for p in payload.rglob('*') if p.is_file())
-        manifest = {'version': '0.4.0', 'platform': 'windows-x86_64', 'python': sys.version.split()[0],
+        manifest = {'version': '0.5.0', 'platform': 'windows-x86_64', 'python': sys.version.split()[0],
                     'public_build': public, 'recorded_music_included': not public,
                     'source_progress_included': False, 'files': {p.relative_to(payload).as_posix():
                     {'size': p.stat().st_size, 'sha256': digest(p)} for p in files}}

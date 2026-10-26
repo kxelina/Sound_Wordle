@@ -9,6 +9,7 @@ from ..audio.matching import MatchConfig
 from ..audio.models import SoundSettings, bounded
 from ..audio.sequence import NoteSequence
 from .parameters import PARAMETERS, replace_parameters
+from .catalog import TIMBRE_IDS
 
 
 @dataclass(frozen=True)
@@ -25,6 +26,7 @@ class CaseDefinition:
     fingerprint: str
     editable_parameters: tuple[str, ...]
     diagnostic_profile: str = "basic"
+    investigation: dict | None = None
 
     def parameters(self, settings):
         return {key: PARAMETERS[key].get(settings) for key in self.editable_parameters}
@@ -56,9 +58,9 @@ def load_case(path: str | Path) -> CaseDefinition:
     data = json.loads(Path(path).read_text(encoding="utf-8-sig"))
     fields = {"schema_version", "id", "revision", "mode", "title", "description", "editable_parameters",
               "reference_settings", "initial_settings", "sequence", "hint_threshold", "comparison"}
-    if not isinstance(data, dict) or not fields <= set(data) or set(data) - fields - {"diagnostic_profile"}:
+    if not isinstance(data, dict) or not fields <= set(data) or set(data) - fields - {"diagnostic_profile","investigation"}:
         raise ValueError("Invalid case fields")
-    if type(data["schema_version"]) is not int or data["schema_version"] != 1 or data["id"] not in {f"T{i:02d}" for i in range(1, 9)} or data["mode"] != "timbre_match":
+    if type(data["schema_version"]) is not int or data["schema_version"] != 1 or data["id"] not in TIMBRE_IDS or data["mode"] != "timbre_match":
         raise ValueError("Unsupported case schema or mode")
     if type(data["revision"]) is not int or data["revision"] < 1:
         raise ValueError("Invalid case revision")
@@ -87,15 +89,25 @@ def load_case(path: str | Path) -> CaseDefinition:
     if not 1 <= len(sequence.events) <= 8 or sequence.duration_seconds + 1.4 > 30:
         raise ValueError("Cases require a short, non-empty note sequence")
     fingerprint = hashlib.sha256(json.dumps(data, sort_keys=True, ensure_ascii=False).encode("utf-8")).hexdigest()
+    investigation=data.get('investigation')
+    if investigation is not None:
+        if not isinstance(investigation,dict) or set(investigation)!={'question','options','completion'} or not isinstance(investigation['options'],list) or len(investigation['options'])!=3:
+            raise ValueError('Invalid investigation question')
+        texts=[investigation['question'],investigation['completion']]
+        for option in investigation['options']:
+            if not isinstance(option,dict) or set(option)!={'label','feedback'}:raise ValueError('Invalid investigation option')
+            texts.extend((option['label'],option['feedback']))
+        if any(not isinstance(t,dict) or set(t)!={'en','zh-Hant'} or any(not isinstance(v,str) or not v.strip() or len(v)>1000 for v in t.values()) for t in texts):
+            raise ValueError('Investigation text requires two languages')
     return CaseDefinition(data["id"], data["revision"], data["title"], data["description"], reference, initial,
-                          sequence, data["hint_threshold"], config, fingerprint, tuple(editable), profile)
+                          sequence, data["hint_threshold"], config, fingerprint, tuple(editable), profile,investigation)
 
 
 def load_campaign(directory=None):
     if directory is None:
         from ..audio.sc_client import ROOT
         directory = ROOT / "content/cases"
-    cases = tuple(load_case(Path(directory) / f"T{i:02d}.json") for i in range(1, 9))
-    if tuple(case.id for case in cases) != tuple(f"T{i:02d}" for i in range(1, 9)):
-        raise ValueError("Campaign requires all eight cases in order")
+    cases = tuple(load_case(Path(directory) / f"{cid}.json") for cid in TIMBRE_IDS)
+    if tuple(case.id for case in cases) != TIMBRE_IDS:
+        raise ValueError("Campaign is missing registered cases")
     return cases

@@ -5,7 +5,8 @@ from PySide6.QtWidgets import QButtonGroup, QFrame, QGridLayout, QHBoxLayout, QL
 
 from ..game.storage import SessionStore
 from ..game.hidden_sound import load_hidden_case, load_hidden_session
-from ..game.melody import MelodyCase, load_melody_session
+from ..game.melody import load_melody_cases, load_melody_session
+from ..game.catalog import MELODY_IDS
 from ..game.sound_categories import CATEGORIES, load_source_cases, load_source_session
 from ..game.source_learning import selected_difficulty,source_path,with_difficulty,DIFFICULTIES
 from .hover_help import set_help
@@ -22,7 +23,8 @@ class CaseBoard(QFrame):
         self.cases, self.music, self.progress_dir = cases, music, progress_dir
         self.music_status = music_status
         self.wordle = load_hidden_case()
-        self.melody = MelodyCase()
+        self.melody_cases={case.id:case for case in load_melody_cases()}
+        self.melody = self.melody_cases['W02']
         self.source_cases = load_source_cases()
         self.category = "all"
         self.language, self.mode, self.selected = "en", "tone", None
@@ -133,7 +135,7 @@ class CaseBoard(QFrame):
         self.category_row.setVisible(self.mode == "wordle")
         for key,button in self.category_buttons.items():
             button.setChecked(key == self.category)
-        available = self.cases if self.mode == "tone" else (self.wordle, self.melody, *self.source_cases) if self.mode == "wordle" else ((self.music,) if self.music else ())
+        available = self.cases if self.mode == "tone" else (self.wordle, self.melody, *self.source_cases,*tuple(self.melody_cases.values())[1:]) if self.mode == "wordle" else ((self.music,) if self.music else ())
         if self.mode == "wordle" and self.category != "all":
             available = tuple(case for case in available if getattr(case,"category","classic") == self.category)
         for index, case in enumerate(available):
@@ -155,9 +157,8 @@ class CaseBoard(QFrame):
             elif self.mode == "wordle":
                 try:
                     path = self.progress_dir / "wordle" / f"{case.id}.json"
-                    if case.id in ("W01","W02"):
-                        loader = load_hidden_session if case.id == "W01" else load_melody_session
-                        session = loader(path)
+                    if case.id=='W01' or case.id in MELODY_IDS:
+                        session = load_hidden_session(path) if case.id=='W01' else load_melody_session(path,case)
                     else:
                         difficulty=selected_difficulty(path)
                         session = load_source_session(source_path(path,difficulty),with_difficulty(case,difficulty))
@@ -204,8 +205,8 @@ class CaseBoard(QFrame):
                            "Accept a case, then return to the workbench to investigate.") if available else
                           ("目前沒有可用的音樂案件。" if zh else "No music cases available."))
         if self.mode == "wordle":
-            self.note.setText("選擇自然、樂器或噪聲案件，依口供合成聲音。W01/W02 位於信號與旋律類。不限提交、免費提示；目標於通關後揭曉。" if zh else
-                              "Choose Nature, Instruments or Noise and build from witness clues. W01/W02 remain under Signals & melody. Unlimited submissions, free clues; targets unlock after solving.")
+            self.note.setText("依口供合成聲音；W07 門鈴與 W08 空白一拍位於信號與旋律類。不限提交、免費提示，目標於通關後揭曉。" if zh else
+                              "Build from witness clues. Find W07 Doorbell and W08 Silent Beat under Signals / melody. Unlimited submissions and free clues; targets unlock after solving.")
         elif self.mode == "music":
             self.note.setText("選擇音樂修復案件或自由創作，接受後進入音樂工作室；創作不評分，草稿獨立儲存。" if zh else
                               "Choose a restoration case or free composition, then accept to enter the music studio. Free drafts are saved separately, without grading.")

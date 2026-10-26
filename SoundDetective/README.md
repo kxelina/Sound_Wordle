@@ -8,7 +8,7 @@
 
 Welcome to your sound detective's workspace. Listen to evidence, investigate what has changed, and use the equipment on your desk to reconstruct sounds and restore music. You can also enter the music studio to compose your own melody.
 
-The game currently includes **eight timbre cases, one music-restoration case, six hidden-sound challenges, and free composition**.
+The game currently includes **nine timbre cases, one music-restoration case, eight hidden-sound challenges, and free composition**.
 
 ### Start playing
 
@@ -37,7 +37,7 @@ Use **Skip tutorial** whenever you want. You can reopen **Learn to play** from t
 
 | Activity | What you do |
 | --- | --- |
-| **Timbre Cases · T01–T08** | Listen to a reference tone and recreate it. Cases gradually introduce envelopes, harmonics, filters, delay and reverb. |
+| **Timbre Cases · T01–T09** | Listen to a reference tone and recreate it. Cases gradually introduce envelopes, harmonics, filters, delay and reverb. |
 | **Music Studio · M01** | Restore a distorted recording, one step at a time: **Filter → Delay → Reverb → Pitch**. Completing every step unlocks playback of the full original song. |
 | **Sound Wordle · W01** | Build a hidden sound from witness clues. The target becomes playable after you meet all three stages' requirements. |
 | **Sound Wordle · W02** | Reconstruct a hidden phrase in three stages: **rhythm → melody → timbre**. The target is revealed after completion. |
@@ -47,6 +47,14 @@ Use **Skip tutorial** whenever you want. You can reopen **Learn to play** from t
 The hidden-sound challenges allow unlimited submissions and free hints. In W01/W02, **Hear the concept** plays a teaching example when you need help understanding a sound feature.
 
 Free composition supports one note at a time, within C4–C5. Its draft is saved separately from your W02 challenge, so you can switch between them without replacing either draft.
+
+### New after-hours cases
+
+- **T09 · The Extra Knock** — find it under Timbre Cases, then open the Delay machine. Rebuild several fading echoes from one fixed short knock. Explore the optional cause choices without changing controls, attempts or score. Parameter diagnoses follow the usual 75-point rule. All three Delay controls are open. Submissions have no gameplay limit; the latest 30 records and the independent first-clear answer are kept.
+- **W07 · A Doorbell with a Message** — under Sound Wordle → Signals / melody. First build the two-note rhythm, then drag the notes vertically to tune the high, short first sound and lower, longer second sound. Timbre is already set. Passing the rhythm alone does not reveal the target.
+- **W08 · The Silent Beat** — in the same category. Recreate three short sounds across four beats, leaving beat 3 quiet. Pitch and timbre stay fixed; adding or extending a note into the required pause prevents completion even when the average timing score is high.
+
+W07/W08 have their own three-tier clues, drafts, histories and target unlocks. Use Hear the concept for a generic example. These original signals do not need song recordings. Free composition remains a separate activity in Music Studio. All three completed cases can be reviewed and collected.
 
 ### Build a sound by category
 
@@ -172,7 +180,7 @@ If something is wrong:
 
 歡迎來到你的聲音偵探工作室。聆聽證物、找出聲音的變化，再使用桌上的設備還原音色、修復音樂。你也可以進入音樂工作室，創作自己的旋律。
 
-目前遊戲包含 **8 個音色案件、1 個音樂修復案件、6 個隱藏聲音挑戰，以及自由創作**。
+目前遊戲包含 **9 個音色案件、1 個音樂修復案件、8 個隱藏聲音挑戰，以及自由創作**。
 
 ### 開始遊戲
 
@@ -201,7 +209,7 @@ If something is wrong:
 
 | 玩法 | 你的任務 |
 | --- | --- |
-| **音色還原 · T01–T08** | 聆聽參照單音，調整設備來還原它。各關逐步介紹包絡、諧波、濾波、回聲與混響。 |
+| **音色還原 · T01–T09** | 聆聽參照單音，調整設備來還原它。各關逐步介紹包絡、諧波、濾波、回聲與混響。 |
 | **音樂工作室 · M01** | 分階段修復扭曲的錄音，順序為「**濾波 → 回聲 → 混響 → 音高**」。全部完成後，解鎖完整原曲播放。 |
 | **聲音重建 · W01** | 根據證人口供製作隱藏的單音；三個階段都達標後，才可播放目標。 |
 | **聲音重建 · W02** | 依序重建隱藏樂句的「**節奏 → 旋律 → 音色**」，完成後揭曉目標。 |
@@ -211,6 +219,14 @@ If something is wrong:
 隱藏聲音挑戰不限提交次數，提示免費。W01/W02 中遇到不熟悉的聲音特徵，可以按「**聽聽概念**」聆聽教學示例。
 
 自由創作的音域為 C4–C5，一次演奏一個音。創作草稿與 W02 挑戰分開儲存，切換時會保留各自的內容。
+
+### 新增夜間異常案件
+
+- **T09 · 多出來的一聲**：在音色案件中選擇，再開啟回聲設備。用一次固定短敲擊重建逐漸變弱的重複聲。成因推理可自由選擇，不改參數、不加提交，也不影響分數；參數診斷沿用 75 分開放規則。三個 Delay 控制均開放。沒有遊戲提交次數上限，保留最近 30 次記錄及獨立的首次通關答案。
+- **W07 · 會說話的門鈴**：位於 Sound Wordle → 信號與旋律。先建立兩音節奏，再上下拖動音符，完成先高而短、後低而長的門鈴。音色已設定；只通過節奏還不能播放目標。
+- **W08 · 空白的一拍**：位於同一分類。四拍內做出三次短聲，第三拍保持安靜。音高與音色固定；若在指定休止區加音或把音延長進去，即使平均時間分數高也不能通關。
+
+W07／W08 各自保存三層提示、草稿、提交歷史與目標解鎖。「聽聽概念」只播放一般示例。這些原創訊號不需要歌曲錄音；自由創作仍在音樂工作室。三個新案件均可復盤並收入收藏。
 
 ### 依類別製作聲音
 

@@ -1,0 +1,18 @@
+{
+  "schema_version": 1, "id": "W08",
+  "title": {"en": "The Silent Beat", "zh-Hant": "空白的一拍"},
+  "story": {"en": "A corridor mechanism repeats every four beats. It sounds on beats 1, 2 and 4; beat 3 stays silent. Recreate that recorded pattern, including its pause. Keep every sound short. Pitch and timbre are already set.", "zh-Hant": "走廊裝置每四拍循環：第 1、2、4 拍發聲，第 3 拍安靜。請重建這段包含停頓的紀錄，每聲保持短促。音高與音色已設定。"},
+  "pattern": [{"start": 0, "length": 1, "pitch": 60}, {"start": 4, "length": 1, "pitch": 60}, {"start": 12, "length": 1, "pitch": 60}],
+  "sound": {"patch": {"harmonics": [1, 0.4, 0.12, 0, 0, 0, 0, 0], "attack": 0.01, "decay": 0.04, "sustain": 0.25, "release": 0.02}},
+  "stages": [0],
+  "silent_cells": [8, 9, 10, 11],
+  "clues": {
+    "0": [
+      {"en": "Silence is part of the evidence. Leave beat 3 empty rather than filling every beat.", "zh-Hant": "沉默也是證物的一部分。第 3 拍應留白，不要每拍都加音。"},
+      {"en": "Use three short attacks in four beats. An extra attack in the pause lowers progress; submissions remain unlimited.", "zh-Hant": "四拍內有三次短促起音；在停頓處多加一聲會降低進度，仍可不限次提交。"},
+      {"en": "Each beat is four cells. Keep cells 8–11 empty and leave gaps between the short sounds.", "zh-Hant": "每拍四格，第 8–11 格應留白，短音之間也要有空隙。"},
+      {"en": "Start cells 0, 4 and 12, with length 1 each. The gold timing marks are now visible.", "zh-Hant": "三個音從第 0、4、12 格開始，各長 1 格；金色節奏標記已顯示。"}
+    ]
+  },
+  "completion": {"en": "CASE CLOSED: sound, sound, silence, sound. You preserved the missing beat instead of covering it up.", "zh-Hant": "案件結論：響、響、停、響。你保留了空白的一拍，沒有把它掩蓋。"}
+}

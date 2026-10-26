@@ -18,6 +18,7 @@ from ..game.music_cases import load_music_case
 from ..game.availability import music_availability
 from ..game.player_journey import JourneyStore
 from ..game.evidence import EvidenceStore
+from ..game.catalog import MELODY_IDS
 from .case_board import CaseBoard
 from .hardware import InlineChoices
 from .hover_help import set_help, show_scene_help
@@ -567,7 +568,7 @@ class StudioWindow(QMainWindow):
             prefix = "composition" if self.free_composition else "music"
             set_help(item, f"{prefix}_{key}" if self.scene_key == "music" else key, language)
         for key, item in self.device_hotspots.items():
-            role = "device_melody" if key == "synth" and self.preferences.active_case == "W02" else (
+            role = "device_melody" if key == "synth" and self.preferences.active_case in MELODY_IDS else (
                 "device_music" if key == "synth" and (self.preferences.active_case or "").startswith("M") else f"device_{key}")
             if self.preferences.active_case in ("W03","W04","W05","W06"):
                 if key == "synth":
@@ -689,7 +690,7 @@ class StudioWindow(QMainWindow):
     def open_cabinet(self):
         if self.cabinet_panel is None:
             from .evidence import EvidencePanel
-            self.cabinet_panel=EvidencePanel(self.evidence_store,(*self.cases,self.board.wordle,self.board.melody,*self.board.source_cases),language=self.language,volume=self.preferences.volume/100)
+            self.cabinet_panel=EvidencePanel(self.evidence_store,(*self.cases,self.board.wordle,*self.board.melody_cases.values(),*self.board.source_cases),language=self.language,volume=self.preferences.volume/100)
             self.cabinet_panel.back_requested.connect(lambda:self._show_page(self._cabinet_return))
             self.cabinet_proxy=self._proxy(self.cabinet_panel,50,90,1180,610)
             self.volume_changed.connect(self.cabinet_panel.set_volume)
@@ -762,7 +763,7 @@ class StudioWindow(QMainWindow):
             key = f"composition_{key}"
         elif key in ("synth", "delay", "reverb", "analyzer", "desk", "board") and (self.preferences.active_case or "").startswith("M"):
             key = f"music_{key}"
-        elif key == "synth" and self.preferences.active_case == "W02":
+        elif key == "synth" and self.preferences.active_case in MELODY_IDS:
             key = "melody_synth"
         elif key == "synth" and self.preferences.active_case == "W01":
             key = "wordle_synth"
@@ -789,7 +790,7 @@ class StudioWindow(QMainWindow):
             self.board.note.setText(TEXT[self.language]["case_error"])
             return False
         self.preferences.active_case = case_id
-        if case_id == "W02":
+        if case_id in MELODY_IDS:
             self.controller._set_mode("challenge")
         self._save_preferences()
         self.room_title.setText(f"SOUND DETECTIVE  /  {case_id}")
@@ -828,10 +829,10 @@ class StudioWindow(QMainWindow):
                     save_path=self.progress_dir / "wordle/W01.json", language=self.language,
                     volume=self.preferences.volume / 100, embedded=True)
                 candidate.device_requested.connect(self._wordle_device)
-            elif case_id == "W02":
+            elif case_id in MELODY_IDS:
                 from .melody import MelodyWindow
-                candidate = (self._melody_factory or MelodyWindow)(case=self.board.melody,
-                    save_path=self.progress_dir / "wordle/W02.json", language=self.language,
+                candidate = (self._melody_factory or MelodyWindow)(case=self.board.melody_cases[case_id],
+                    save_path=self.progress_dir / "wordle"/(case_id+'.json'), language=self.language,
                     volume=self.preferences.volume / 100, embedded=True)
                 candidate.device_requested.connect(self._wordle_device)
                 candidate.mode_changed.connect(self._melody_mode_changed)

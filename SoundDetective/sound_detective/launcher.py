@@ -27,6 +27,8 @@ def check_environment():
     if not (ROOT/"assets/audio/ui-click.wav").is_file():
         raise FileNotFoundError("The UI click sound is missing")
     cases = load_campaign()
+    from .game.melody import load_melody_cases
+    melodies=load_melody_cases()
     from .game.sound_categories import load_source_cases
     source_cases = load_source_cases()
     if len(source_cases) != 4:
@@ -34,7 +36,7 @@ def check_environment():
     music = music_availability()
     return {"project": str(ROOT), "python": sys.version.split()[0], "python_executable": sys.executable,
             "pyside": qt_version, "timbre_cases": len(cases), "music_case": music.case_id if music.available else None,
-            "optional_music": music.to_dict(), "category_cases": len(source_cases),
+            "optional_music": music.to_dict(), "category_cases": len(source_cases),"melody_cases":len(melodies),
             "supercollider": {name: str(find_executable(name)) for name in ("sclang.exe", "scsynth.exe")}}
 
 

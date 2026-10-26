@@ -37,6 +37,9 @@ class SessionStore:
                 # save. A failed backup must leave the old progress untouched.
                 backup = self.path.with_name(f"{self.path.stem}.before-progress-v2-{uuid.uuid4().hex[:8]}.json")
                 shutil.copy2(self.path, backup)
+            elif isinstance(data,dict) and session.case.id=='T09' and data.get('schema_version')==3:
+                backup=self.path.with_name(f'{self.path.stem}.before-rolling-v4-{uuid.uuid4().hex[:8]}.json')
+                shutil.copy2(self.path,backup)
         atomic_json_write(self.path, session.to_dict())
 
 

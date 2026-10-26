@@ -1,0 +1,27 @@
+{
+  "schema_version": 1, "id": "T09", "revision": 1, "mode": "timbre_match",
+  "title": {"en": "The Extra Knock", "zh-Hant": "多出來的一聲"},
+  "description": {"en": "A witness heard several knocks, each weaker and evenly spaced. Rebuild the recording from one short knock. The cause question is optional and never changes your score.", "zh-Hant": "證人聽見數次等距、漸弱的敲擊。用一次短促敲擊重建這段證物。成因推理可自由嘗試，不影響分數。"},
+  "editable_parameters": ["delay_time", "delay_decay", "delay_mix"],
+  "diagnostic_profile": "delay",
+  "reference_settings": {
+    "patch": {"harmonics": [1, 0.55, 0.2, 0.08, 0, 0, 0, 0], "attack": 0.01, "decay": 0.08, "sustain": 0.03, "release": 0.04},
+    "effects": {"delay": {"enabled": true, "time_seconds": 0.24, "decay_seconds": 0.65, "mix": 0.28}}
+  },
+  "initial_settings": {
+    "patch": {"harmonics": [1, 0.55, 0.2, 0.08, 0, 0, 0, 0], "attack": 0.01, "decay": 0.08, "sustain": 0.03, "release": 0.04},
+    "effects": {"delay": {"enabled": true, "time_seconds": 0.08, "decay_seconds": 2.4, "mix": 0.48}}
+  },
+  "sequence": {"schema_version": 1, "events": [{"pitch": 45, "start_seconds": 0.08, "duration_seconds": 0.06, "velocity": 110}]},
+  "hint_threshold": 75,
+  "comparison": {"focus": "combined", "pass_score": 90, "component_floor": 85, "tail_floor": 85},
+  "investigation": {
+    "question": {"en": "What could turn one knock into several sounds? Explore a theory; there is no penalty.", "zh-Hant": "一次敲擊為何像多次聲音？可自由選擇推理，不扣分。"},
+    "options": [
+      {"label": {"en": "More knocks", "zh-Hant": "多次敲擊"}, "feedback": {"en": "Multiple knocks are possible in general, but this case has one fixed source event. Listen for evenly spaced, fading copies.", "zh-Hant": "一般情況可能有多次敲擊，但本案聲源只有一次起音。留意等距、漸弱的重複聲。"}},
+      {"label": {"en": "An echo", "zh-Hant": "回聲"}, "feedback": {"en": "An echo creates new, delayed copies. Adjust spacing, decay and wet mix on the Delay machine.", "zh-Hant": "回聲會產生延遲的重複聲。前往回聲設備調整間隔、衰減與濕聲比例。"}},
+      {"label": {"en": "A long tail", "zh-Hant": "較長尾音"}, "feedback": {"en": "A long Release extends a sound continuously; it does not create separate new attacks. Compare the gaps between repeats.", "zh-Hant": "長 Release 會連續延長收尾，不會創造分開的新起音。比較重複聲之間的空隙。"}}
+    ],
+    "completion": {"en": "CASE CLOSED: one knock, several echoes. The witness heard repeated copies, not additional source events.", "zh-Hant": "案件結論：一次敲擊，多次回應。證人聽見的是重複聲，而非更多聲源起音。"}
+  }
+}

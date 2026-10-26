@@ -1,0 +1,24 @@
+{
+  "schema_version": 1, "id": "W07",
+  "title": {"en": "A Doorbell with a Message", "zh-Hant": "會說話的門鈴"},
+  "story": {"en": "The courier remembers two sounds: the first short and high, the second lower and three times as long. Its start comes halfway between beats 2 and 3. Build the rhythm first, then tune the notes. This is an original electronic doorbell, not a song.", "zh-Hant": "快遞員記得兩聲：第一聲短而高，第二聲較低，長度為第一聲三倍。第二聲在第 2 與第 3 拍的中間開始。先編節奏，再調音高；這是原創電子門鈴。"},
+  "pattern": [{"start": 0, "length": 1, "pitch": 67}, {"start": 6, "length": 3, "pitch": 64}],
+  "sound": {"patch": {"harmonics": [1, 0.3, 0.12, 0.04, 0, 0, 0, 0], "attack": 0.01, "decay": 0.08, "sustain": 0.35, "release": 0.1}},
+  "stages": [0, 1],
+  "silent_cells": [],
+  "clues": {
+    "0": [
+      {"en": "Place two notes: a short first note, then a longer second note. The gap matters too.", "zh-Hant": "放入兩個音：先短、後長，並留意兩次起音之間的空隙。"},
+      {"en": "The second note lasts three times as long. Each beat has four cells; the second onset is between beats 2 and 3.", "zh-Hant": "第二音長度是第一音三倍。每拍四格，第二次起音位於第 2 與第 3 拍之間。"},
+      {"en": "Think of one short pulse, a pause, then a held tone. Listen to the generic timing example; it is not the target.", "zh-Hant": "先一個短脈衝，停頓，再一個較長音。可聽一般節奏示例，它不是答案。"},
+      {"en": "Start cells 0 and 6; lengths 1 and 3. The gold marks now show this timing. Pitch is still fixed until you submit the rhythm.", "zh-Hant": "起點格為 0、6，長度為 1、3 格；金色標記顯示此節奏。先提交節奏，才開放音高。"}
+    ],
+    "1": [
+      {"en": "Keep the rhythm. The second sound is lower than the first.", "zh-Hant": "保留節奏，第二聲比第一聲低。"},
+      {"en": "The two pitches are three semitones apart. Move the notes vertically; their timing stays unchanged.", "zh-Hant": "兩音相差三個半音。上下拖動音塊調音高，保持原本的節奏。"},
+      {"en": "The dashed guide reveals the first pitch. Place the second three rows below it.", "zh-Hant": "虛線顯示第一音音高，第二音應在它下方三個半音格。"},
+      {"en": "The first note is G4 and the second E4. Both dashed guides are now visible.", "zh-Hant": "第一音為 G4，第二音為 E4；兩個虛線提示均已顯示。"}
+    ]
+  },
+  "completion": {"en": "ACCESS GRANTED. Your two-note doorbell is complete and saved in the evidence cabinet.", "zh-Hant": "門禁確認成功！兩音門鈴已完成，首次作品已收入證物收藏櫃。"}
+}

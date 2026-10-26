@@ -38,7 +38,7 @@ class JourneyStore:
                 if not isinstance(data,dict) or set(data) not in ({'schema_version','tutorial','reviews'},{'schema_version','tutorial','reviews','timings'}) or type(data['schema_version']) is not int or data['schema_version']!=1:
                     raise ValueError('Unsupported player journey')
                 validate_tutorial(data['tutorial'])
-                if not isinstance(data['reviews'],dict) or len(data['reviews'])>15:
+                if not isinstance(data['reviews'],dict) or len(data['reviews'])>64:
                     raise ValueError('Invalid review archive')
                 records={k:Debrief.from_dict(v) for k,v in data['reviews'].items()}
                 if any(k!=r.case_id for k,r in records.items()):
@@ -46,7 +46,7 @@ class JourneyStore:
                 self.tutorial=data['tutorial']
                 self.reviews=records
                 timings=data.get('timings',{})
-                if not isinstance(timings,dict) or len(timings)>15:raise ValueError('Invalid case timing')
+                if not isinstance(timings,dict) or len(timings)>64:raise ValueError('Invalid case timing')
                 for key,value in timings.items():
                     if not isinstance(value,dict) or set(value)!={'seconds','complete'} or type(value['complete']) is not bool:
                         raise ValueError('Invalid case timing')

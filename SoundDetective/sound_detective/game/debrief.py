@@ -5,6 +5,7 @@ from dataclasses import asdict, dataclass
 from ..audio.models import SoundSettings, bounded
 from ..audio.sequence import NoteSequence
 from ..audio.sound_sources import SourcePatch, CONTROLS
+from .catalog import CASE_IDS,MELODY_IDS,SOURCE_IDS
 
 
 LABELS = {
@@ -75,7 +76,7 @@ class Debrief:
     note: tuple = ('','')
 
     def __post_init__(self):
-        if self.case_id not in (*(f'T{i:02}' for i in range(1,9)),*(f'W{i:02}' for i in range(1,7)),'M01') or self.kind not in ('tone','source','melody','music'):
+        if self.case_id not in CASE_IDS or self.kind not in ('tone','source','melody','music'):
             raise ValueError('Invalid review case')
         if type(self.attempts) is not int or not 0<=self.attempts<=10**9:
             raise ValueError('Invalid review attempts')
@@ -97,9 +98,9 @@ class Debrief:
         expected='source' if self.kind=='source' else 'music' if self.kind=='music' else 'tone'
         if self.clips['target'] is None or any(clip is not None and clip['type']!=expected for clip in self.clips.values()):
             raise ValueError('Review audio type does not match the case')
-        if (self.kind=='music')!=(self.case_id=='M01') or (self.kind=='melody')!=(self.case_id=='W02'):
+        if (self.kind=='music')!=(self.case_id=='M01') or (self.kind=='melody')!=(self.case_id in MELODY_IDS):
             raise ValueError('Review kind does not match the case')
-        if (self.kind=='source')!=(self.case_id in ('W03','W04','W05','W06')):
+        if (self.kind=='source')!=(self.case_id in SOURCE_IDS):
             raise ValueError('Review source kind does not match the case')
         if len(self.history)>1000:
             raise ValueError('Review history is too large')
@@ -153,7 +154,8 @@ def build_debrief(case,session,*,seconds=None):
         before,after=grade_progress(case,case.initial).modules,grade_progress(case,final).modules
         clips={'initial':tone_clip(case.initial,case.sequence),'final':tone_clip(final,case.sequence),'target':tone_clip(case.reference,case.sequence)}
         rows=tuple((r.number,r.total) for r in session.records if r.run==record.run and r.number<=record.number)
-        return Debrief(cid,'tone',case.title,record.number,hint,record.elapsed_seconds,before,after,clips,rows)
+        note=tuple(case.investigation['completion'][lang] for lang in ('en','zh-Hant')) if case.investigation else ('','')
+        return Debrief(cid,'tone',case.title,record.number,hint,record.elapsed_seconds,before,after,clips,rows,note)
     if cid=='W01':
         from .hidden_sound import assess,settings_from_parameters
         final=settings_from_parameters(session.solution)
@@ -162,17 +164,19 @@ def build_debrief(case,session,*,seconds=None):
         rows=tuple((r['number'],assess(settings_from_parameters(r['parameters'])).total) for r in session.records)
         clips={'initial':tone_clip(case.initial,case.sequence),'final':tone_clip(final,case.sequence),'target':tone_clip(case.reference,case.sequence)}
         return Debrief(cid,'tone',case.title,session.attempts,('Hint tiers by stage: '+' / '.join(map(str,session.hints)),'各階段提示層級：'+' / '.join(map(str,session.hints))),seconds,before,after,clips,rows)
-    if cid=='W02':
+    if cid in MELODY_IDS:
         if session.mode=='free':
             raise ValueError('Free composition is not graded')
         from .melody import Draft,compare_draft
         final=Draft.from_dict(session.solution)
-        initial=Draft()
-        before=dict(zip(('rhythm','melody','timbre'),compare_draft(initial).scores))
-        after=dict(zip(before,compare_draft(final).scores))
-        rows=tuple((r['number'],compare_draft(Draft.from_dict(r['draft'])).total) for r in session.records)
+        initial=Draft(sound=case.initial)
+        labels=('rhythm','melody','timbre')
+        before={labels[i]:compare_draft(initial,case).scores[i] for i in case.stages}
+        after={labels[i]:compare_draft(final,case).scores[i] for i in case.stages}
+        rows=tuple((r['number'],compare_draft(Draft.from_dict(r['draft']),case).total) for r in session.records)
         clips={'initial':None,'final':tone_clip(final.sound,final.sequence),'target':tone_clip(case.reference,case.sequence)}
         note=('The starting draft was empty, so there is no starting audio.','起始草稿沒有音符，因此沒有起點聲音。')
+        if case.completion:note=tuple(case.completion[lang]+' '+note[i] for i,lang in enumerate(('en','zh-Hant')))
         return Debrief(cid,'melody',case.title,session.attempts,('Hint tiers by stage: '+' / '.join(map(str,session.hints)),'各階段提示層級：'+' / '.join(map(str,session.hints))),seconds,before,after,clips,rows,note)
     if cid.startswith('W'):
         from .sound_categories import assess_source

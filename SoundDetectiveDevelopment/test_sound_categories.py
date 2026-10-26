@@ -205,8 +205,8 @@ def test_case_board_filters_scene_and_preferences(app,tmp_path):
     w.resize(1280,720);w.volume_slider.setValue(0);w.show()
     try:
         w.board.open(None,'en');w.board.set_mode('wordle')
-        assert set(w.board.cards) == {'W01','W02','W03','W04','W05','W06'}
-        for category,ids in {'nature':{'W03','W04'},'instrument':{'W05'},'noise':{'W06'},'classic':{'W01','W02'}}.items():
+        assert set(w.board.cards) == {'W01','W02','W03','W04','W05','W06','W07','W08'}
+        for category,ids in {'nature':{'W03','W04'},'instrument':{'W05'},'noise':{'W06'},'classic':{'W01','W02','W07','W08'}}.items():
             w.board.set_category(category)
             assert set(w.board.cards) == ids
         for case in CASES:
