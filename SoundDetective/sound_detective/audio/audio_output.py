@@ -4,6 +4,11 @@ import numpy as np
 from .models import bounded
 
 
+def audition_options(case_id):
+    """Playback-only trim for the short, low knock; never part of a patch/save."""
+    return {'playback_rms': .18} if case_id == 'T09' else {}
+
+
 def prepare_playback(audio: np.ndarray, volume: float = 0.5,
                      target_rms: float = 0.1, peak_limit: float = 0.9) -> np.ndarray:
     """近似 RMS 匹配并留峰值余量。volume 在匹配后应用。"""

@@ -377,6 +377,10 @@ class CaseWindow(AudioBench):
         return {label: (settings, self.case.sequence) for label, settings in (("a", self.case.reference), ("b", self.session.current))
                 if mode is None or mode in ("ab", "compare") or mode == label}
 
+    def _preview_options(self):
+        from ..audio.audio_output import audition_options
+        return audition_options(self.case.id)
+
     def _comparison_options(self):
         result = {"comparison_config": self.case.comparison}
         if self.case.diagnostic_profile != "basic":

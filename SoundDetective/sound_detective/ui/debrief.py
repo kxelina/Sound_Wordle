@@ -219,7 +219,8 @@ class DebriefPanel(QFrame):
                 self._revision=self.source_renderer.prepare({key:SourcePatch.from_dict(self.record.clips[key]['patch']) for key in roles})
             else:
                 self._backend=self.tone_renderer
-                self._revision=self.tone_renderer.prepare({key:(SoundSettings.from_dict(self.record.clips[key]['settings']),NoteSequence.from_dict(self.record.clips[key]['sequence'])) for key in roles})
+                from ..audio.audio_output import audition_options
+                self._revision=self.tone_renderer.prepare({key:(SoundSettings.from_dict(self.record.clips[key]['settings']),NoteSequence.from_dict(self.record.clips[key]['sequence'])) for key in roles},**audition_options(self.record.case_id))
         except (OSError,ValueError,RuntimeError) as error:self._failed(self._backend,self._revision,str(error))
 
     def _next_music(self):

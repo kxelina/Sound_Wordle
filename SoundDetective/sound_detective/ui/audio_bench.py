@@ -321,14 +321,17 @@ class AudioBench(QMainWindow):
             if mode == "compare":
                 self._match_result = None
                 self._show_match()
-                self._revision = self.renderer.prepare(self._requests(mode), match=True, **self._comparison_options())
+                self._revision = self.renderer.prepare(self._requests(mode), match=True, **self._comparison_options(),**self._preview_options())
                 self._match_revision = self._revision
             else:
-                self._revision = self.renderer.prepare(self._requests(mode))
+                self._revision = self.renderer.prepare(self._requests(mode),**self._preview_options())
         except Exception as error:
             self.busy.hide()
             self._armed = None
             self._status("error", message=str(error))
+
+    def _preview_options(self):
+        return {}
 
     def _comparison_options(self):
         return {}

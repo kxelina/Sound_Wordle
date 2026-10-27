@@ -50,7 +50,7 @@ Free composition supports one note at a time, within C4–C5. Its draft is saved
 
 ### New after-hours cases
 
-- **T09 · The Extra Knock** — find it under Timbre Cases, then open the Delay machine. Rebuild several fading echoes from one fixed short knock. Explore the optional cause choices without changing controls, attempts or score. Parameter diagnoses follow the usual 75-point rule. All three Delay controls are open. Submissions have no gameplay limit; the latest 30 records and the independent first-clear answer are kept.
+- **T09 · The Extra Knock** — find it under Timbre Cases, then open the Delay machine. Rebuild several fading echoes from one fixed short knock. Explore the optional cause choices without changing controls, attempts or score. Parameter diagnoses follow the usual 75-point rule. All three Delay controls are open. T09 has a slightly louder audition trim to make its short, low knock easier to hear, with peak headroom; this also applies to review/collection audio and does not affect scores. Submissions have no gameplay limit; the latest 30 records and the independent first-clear answer are kept.
 - **W07 · A Doorbell with a Message** — under Sound Wordle → Signals / melody. First build the two-note rhythm, then drag the notes vertically to tune the high, short first sound and lower, longer second sound. Timbre is already set. Passing the rhythm alone does not reveal the target.
 - **W08 · The Silent Beat** — in the same category. Recreate three short sounds across four beats, leaving beat 3 quiet. Pitch and timbre stay fixed; adding or extending a note into the required pause prevents completion even when the average timing score is high.
 
@@ -233,7 +233,7 @@ If something is wrong:
 
 ### 新增夜間異常案件
 
-- **T09 · 多出來的一聲**：在音色案件中選擇，再開啟回聲設備。用一次固定短敲擊重建逐漸變弱的重複聲。成因推理可自由選擇，不改參數、不加提交，也不影響分數；參數診斷沿用 75 分開放規則。三個 Delay 控制均開放。沒有遊戲提交次數上限，保留最近 30 次記錄及獨立的首次通關答案。
+- **T09 · 多出來的一聲**：在音色案件中選擇，再開啟回聲設備。用一次固定短敲擊重建逐漸變弱的重複聲。成因推理可自由選擇，不改參數、不加提交，也不影響分數；參數診斷沿用 75 分開放規則。三個 Delay 控制均開放。T09 的短促低音敲擊採用較高的試聽電平並保留峰值餘量，復盤／收藏音訊亦一致，不影響評分。沒有遊戲提交次數上限，保留最近 30 次記錄及獨立的首次通關答案。
 - **W07 · 會說話的門鈴**：位於 Sound Wordle → 信號與旋律。先建立兩音節奏，再上下拖動音符，完成先高而短、後低而長的門鈴。音色已設定；只通過節奏還不能播放目標。
 - **W08 · 空白的一拍**：位於同一分類。四拍內做出三次短聲，第三拍保持安靜。音高與音色固定；若在指定休止區加音或把音延長進去，即使平均時間分數高也不能通關。
 

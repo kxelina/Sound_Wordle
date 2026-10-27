@@ -13,7 +13,7 @@ import soundfile as sf
 from PySide6.QtCore import QObject, Qt, Signal
 
 from .audio_output import prepare_playback
-from .models import SoundSettings
+from .models import SoundSettings,bounded
 from .matching import MatchConfig, compare_files
 from .clue_features import DiagnosticContext
 from .sc_client import ROOT, RenderCancelled, SCEngine, check_cancelled
@@ -59,9 +59,10 @@ class PreviewRenderer(QObject):
         if self._future is not None:
             self._future.cancel()
 
-    def prepare(self, requests, *, match=False, comparison_config=None, diagnostic_context=None):
+    def prepare(self, requests, *, match=False, comparison_config=None, diagnostic_context=None,playback_rms=.1):
         if self._closed:
             raise RuntimeError("PreviewRenderer is closed")
+        bounded('playback_rms',playback_rms,.001,.25)
         requests = dict(requests)
         if not requests:
             raise ValueError("No preview requests")
@@ -74,9 +75,9 @@ class PreviewRenderer(QObject):
         for settings, sequence in requests.values():
             if not isinstance(settings, SoundSettings) or not isinstance(sequence, NoteSequence):
                 raise TypeError("Each preview requires SoundSettings and NoteSequence")
-        return self._enqueue(requests, match, comparison_config, diagnostic_context)
+        return self._enqueue(requests, match, comparison_config, diagnostic_context,playback_rms)
 
-    def _enqueue(self, requests, match=False, comparison_config=None, diagnostic_context=None):
+    def _enqueue(self, requests, match=False, comparison_config=None, diagnostic_context=None,playback_rms=.1):
         """Shared cancellation and delivery lifecycle for different source types."""
         if self._closed:
             raise RuntimeError("PreviewRenderer is closed")
@@ -84,7 +85,7 @@ class PreviewRenderer(QObject):
         revision = self.revision
         event = threading.Event()
         self._event = event
-        future = self._executor.submit(self._work, requests, event, match, comparison_config, diagnostic_context)
+        future = self._executor.submit(self._work, requests, event, match, comparison_config, diagnostic_context,playback_rms)
         self._future = future
         with self._futures_lock:
             self._futures.add(future)
@@ -119,7 +120,7 @@ class PreviewRenderer(QObject):
             else:
                 self.failed.emit(revision, error)
 
-    def _work(self, requests, event, match=False, comparison_config=None, diagnostic_context=None):
+    def _work(self, requests, event, match=False, comparison_config=None, diagnostic_context=None,playback_rms=.1):
         check_cancelled(event)
         if self._engine is None:
             self._engine = self._engine_factory()
@@ -130,7 +131,7 @@ class PreviewRenderer(QObject):
         for label, (settings, sequence) in requests.items():
             check_cancelled(event)
             payload = {"version": "preview-rms-v1", "settings": settings.to_dict(),
-                       "sequence": sequence.to_dict(), "sc_source": fingerprint}
+                       "sequence": sequence.to_dict(), "sc_source": fingerprint,"playback_rms":playback_rms}
             key = hashlib.sha256(json.dumps(payload, sort_keys=True).encode("utf-8")).hexdigest()
             raw = self.directory / f"{key}-raw.wav"
             listening = self.directory / f"{key}-listening.wav"
@@ -141,7 +142,7 @@ class PreviewRenderer(QObject):
                     check_cancelled(event)
                     data, rate = sf.read(raw, always_2d=True)
                     # One normalized copy at full gain; user volume is applied by the device.
-                    prepared = prepare_playback(data, volume=1.)
+                    prepared = prepare_playback(data, volume=1.,target_rms=playback_rms)
                     sf.write(listening, prepared, rate, subtype="PCM_24")
                     check_cancelled(event)
                 except BaseException:
