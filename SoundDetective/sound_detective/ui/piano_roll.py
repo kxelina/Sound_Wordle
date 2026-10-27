@@ -1,4 +1,4 @@
-"""Small one-bar piano roll: add, move, resize, delete, and exact-value editing."""
+"""Shared challenge/composition piano roll with mode-specific pitch/time bounds."""
 
 from PySide6.QtCore import Qt, Signal, QRectF, QPointF, QSize, QTimer
 from PySide6.QtGui import QColor, QPainter, QPen, QValidator
@@ -6,6 +6,7 @@ from PySide6.QtWidgets import (QWidget, QVBoxLayout, QHBoxLayout, QLabel, QPushB
                                QSpinBox, QLayout, QScrollArea,QSizePolicy)
 
 from ..game.melody import GridNote, MelodyPattern, STEPS, LOW_PITCH, HIGH_PITCH
+from ..game.composition import CompositionNote,CompositionPattern,LOW,HIGH
 
 
 def pitch_name(pitch):
@@ -25,7 +26,7 @@ class PitchBox(QSpinBox):
 
     def _parsed(self, text):
         text = text.strip().upper().replace("♯", "#")
-        for pitch in range(LOW_PITCH, HIGH_PITCH + 1):
+        for pitch in range(self.minimum(), self.maximum() + 1):
             if text in (pitch_name(pitch).upper().replace("♯", "#"), str(pitch)):
                 return pitch
         return None
@@ -38,8 +39,8 @@ class PitchBox(QSpinBox):
         if self._parsed(text) is not None:
             return QValidator.State.Acceptable, text, position
         prefix = text.strip().upper().replace("♯", "#")
-        candidates = [pitch_name(p).upper().replace("♯", "#") for p in range(LOW_PITCH, HIGH_PITCH + 1)]
-        candidates.extend(str(p) for p in range(LOW_PITCH, HIGH_PITCH + 1))
+        candidates = [pitch_name(p).upper().replace("♯", "#") for p in range(self.minimum(), self.maximum() + 1)]
+        candidates.extend(str(p) for p in range(self.minimum(), self.maximum() + 1))
         state = QValidator.State.Intermediate if any(value.startswith(prefix) for value in candidates) else QValidator.State.Invalid
         return state, text, position
 
@@ -50,6 +51,7 @@ class PianoRoll(QWidget):
     rejected = Signal()
     editing_started = Signal()
     preview_changed = Signal(object)
+    view_changed=Signal(int)
     LEFT, TOP, BOTTOM = 45, 24, 8
 
     def __init__(self, parent=None):
@@ -58,6 +60,9 @@ class PianoRoll(QWidget):
         self.pitch_locked = True
         self.hint_notes, self.rhythm_hints = (), ()
         self._drag = None
+        self.view_start=0
+        self._drag_view_start=0;self._edge_direction=0
+        self._pan_timer=QTimer(self);self._pan_timer.setInterval(240);self._pan_timer.timeout.connect(self._edge_pan)
         self.setMinimumSize(560, 292)
         self.setMouseTracking(True)
         self.setFocusPolicy(Qt.FocusPolicy.StrongFocus)
@@ -65,35 +70,54 @@ class PianoRoll(QWidget):
 
     @property
     def cell_width(self):
-        return (self.width() - self.LEFT - 8) / STEPS
+        return (self.width() - self.LEFT - 8) / self.display_steps
+
+    @property
+    def free(self):return isinstance(self.pattern,CompositionPattern)
+    @property
+    def steps(self):return self.pattern.steps if self.free else STEPS
+    @property
+    def display_steps(self):return min(self.steps-self.view_start,self.pattern.steps_per_bar*2) if self.free else STEPS
+    @property
+    def low_pitch(self):return LOW if self.free else LOW_PITCH
+    @property
+    def high_pitch(self):return HIGH if self.free else HIGH_PITCH
+    @property
+    def rows(self):return self.high_pitch-self.low_pitch+1
+    def new_note(self,start,length,pitch):return (CompositionNote if self.free else GridNote)(start,length,pitch)
+    def _make_pattern(self,notes):return self.pattern.with_notes(notes) if self.free else MelodyPattern(tuple(notes))
 
     @property
     def ROW(self):
         # The scene proxy has a fixed desktop viewport. Draw within the actual
         # allocated height, including when a longer translated clue wraps.
-        return (self.height() - self.TOP - self.BOTTOM) / 13
+        return 22 if self.free else (self.height() - self.TOP - self.BOTTOM) / 13
 
     def sizeHint(self):
         return QSize(700, 292)
 
     def note_rect(self, note):
-        return QRectF(self.LEFT + note.start * self.cell_width + 1,
-                      self.TOP + (HIGH_PITCH - note.pitch) * self.ROW + 2,
+        return QRectF(self.LEFT + (note.start-self.view_start) * self.cell_width + 1,
+                      self.TOP + (self.high_pitch - note.pitch) * self.ROW + 2,
                       note.length * self.cell_width - 2, self.ROW - 4)
 
     def point_for(self, start, pitch):
-        return QPointF(self.LEFT + (start + .4) * self.cell_width,
-                       self.TOP + (HIGH_PITCH - pitch + .5) * self.ROW)
+        return QPointF(self.LEFT + (start-self.view_start + .4) * self.cell_width,
+                       self.TOP + (self.high_pitch - pitch + .5) * self.ROW)
 
     def set_pattern(self, pattern):
         self.cancel_drag()
         self.pattern = pattern
+        self.view_start=min(self.view_start,max(0,self.steps-1)) if self.free else 0
+        if self.free:self.view_start=self.view_start//self.pattern.steps_per_bar*self.pattern.steps_per_bar
+        self.setMinimumHeight(self.rows*22+self.TOP+self.BOTTOM if self.free else 292)
         self.selection = min(self.selection, len(pattern.notes) - 1)
         self._drag = None
         self.update()
         self.selected.emit()
 
     def cancel_drag(self):
+        self._pan_timer.stop()
         if self._drag is not None:
             self._drag = None
             self._drag_position = None
@@ -102,6 +126,7 @@ class PianoRoll(QWidget):
             self.update()
 
     def _hit(self, position):
+        if position.x()<self.LEFT:return -1
         return next((i for i, note in enumerate(self.pattern.notes)
                      if self.note_rect(note).adjusted(-1, -2, 1, 2).contains(position)), -1)
 
@@ -118,7 +143,7 @@ class PianoRoll(QWidget):
         notes = list(self.pattern.notes)
         notes[self.selection] = note
         try:
-            MelodyPattern(tuple(notes))
+            self._make_pattern(notes)
             return True
         except ValueError:
             return False
@@ -132,7 +157,7 @@ class PianoRoll(QWidget):
 
     def commit(self, notes, selected=None):
         try:
-            pattern = MelodyPattern(tuple(notes))
+            pattern = self._make_pattern(notes)
         except ValueError:
             self.rejected.emit()
             return False
@@ -146,7 +171,7 @@ class PianoRoll(QWidget):
     def add(self, start, pitch, length=1):
         if self.pitch_locked:
             pitch = LOW_PITCH
-        note = GridNote(start, min(length, STEPS - start), pitch)
+        note = self.new_note(start, min(length, self.steps - start), pitch)
         return self.commit((*self.pattern.notes, note), note)
 
     def delete(self):
@@ -159,21 +184,23 @@ class PianoRoll(QWidget):
         font.setPixelSize(max(9, min(12, int(self.ROW) - 1)))
         painter.setFont(font)
         painter.fillRect(self.rect(), QColor("#14231f"))
-        for pitch in range(LOW_PITCH, HIGH_PITCH + 1):
-            y = self.TOP + (HIGH_PITCH - pitch) * self.ROW
+        for pitch in range(self.low_pitch, self.high_pitch + 1):
+            y = self.TOP + (self.high_pitch - pitch) * self.ROW
             black = pitch % 12 in (1, 3, 6, 8, 10)
             painter.fillRect(QRectF(0, y, self.width(), self.ROW), QColor("#1c2927" if black else "#29352e"))
             painter.setPen(QColor("#bec3ac"))
             painter.drawText(QRectF(1, y, 40, self.ROW), Qt.AlignmentFlag.AlignCenter, pitch_name(pitch))
-        for step in range(STEPS + 1):
+        beat_cells=16//self.pattern.denominator if self.free else 4
+        for step in range(self.display_steps + 1):
             x = self.LEFT + step * self.cell_width
-            painter.setPen(QPen(QColor("#9b875b" if step % 4 == 0 else "#3c4a3d"), 1))
-            painter.drawLine(QPointF(x, self.TOP), QPointF(x, self.TOP + self.ROW * 13))
-            if step < STEPS:
+            painter.setPen(QPen(QColor("#9b875b" if step % beat_cells == 0 else "#3c4a3d"), 1))
+            painter.drawLine(QPointF(x, self.TOP), QPointF(x, self.TOP + self.ROW * self.rows))
+            if step < self.display_steps:
                 painter.setPen(QColor("#d8cfac"))
                 painter.drawText(QRectF(x, 0, self.cell_width, self.TOP), Qt.AlignmentFlag.AlignCenter,
-                                 str(step // 4 + 1) if step % 4 == 0 else "·")
+                                 str(step // beat_cells + 1) if step % beat_cells == 0 else "·")
         painter.setPen(QPen(QColor("#ddb86d"), 2, Qt.PenStyle.DashLine))
+        painter.setClipRect(self.LEFT,self.TOP,self.width()-self.LEFT,self.height()-self.TOP)
         painter.setBrush(Qt.BrushStyle.NoBrush)
         for start, length in self.rhythm_hints:
             painter.drawRect(QRectF(self.LEFT + start * self.cell_width + 2, self.TOP + self.ROW * 13 - 5,
@@ -212,34 +239,38 @@ class PianoRoll(QWidget):
             note = self.pattern.notes[hit]
             handle = self._handle(note, event.position())
             self._drag = (event.position(), note, handle)
+            self._drag_view_start=self.view_start
             self._drag_position = event.position()
             self.setCursor(Qt.CursorShape.SizeHorCursor if handle != 'move' else Qt.CursorShape.ClosedHandCursor)
             self.editing_started.emit()
             self.preview_changed.emit(note)
-        elif self.LEFT <= event.position().x() < self.width() - 8 and self.TOP <= event.position().y() < self.TOP + self.ROW * 13:
-            start = min(STEPS - 1, int((event.position().x() - self.LEFT) / self.cell_width))
-            pitch = HIGH_PITCH - int((event.position().y() - self.TOP) / self.ROW)
+        elif self.LEFT <= event.position().x() < self.width() - 8 and self.TOP <= event.position().y() < self.TOP + self.ROW * self.rows:
+            start = min(self.steps - 1, self.view_start+int((event.position().x() - self.LEFT) / self.cell_width))
+            pitch = self.high_pitch - int((event.position().y() - self.TOP) / self.ROW)
             self.add(start, pitch)
         event.accept()
 
     def _drag_note(self, position):
         origin, note, handle = self._drag
-        dx = round((position.x() - origin.x()) / self.cell_width)
+        dx = round((position.x() - origin.x()) / self.cell_width)+(self.view_start-self._drag_view_start if self.free else 0)
         dy = round((position.y() - origin.y()) / self.ROW)
-        others = [n for i, n in enumerate(self.pattern.notes) if i != self.selection]
+        others = [n for i, n in enumerate(self.pattern.notes) if i != self.selection and (not self.free or n.pitch==note.pitch)]
         if handle == 'right':
-            stop = min((n.start for n in others if n.start >= note.start+note.length), default=STEPS)
-            return GridNote(note.start, max(1, min(stop - note.start, note.length + dx)), note.pitch)
+            stop = min((n.start for n in others if n.start >= note.start+note.length), default=self.steps)
+            return self.new_note(note.start, max(1, min(stop - note.start, note.length + dx)), note.pitch)
         if handle == 'left':
             first = max((n.start+n.length for n in others if n.start+n.length <= note.start), default=0)
             start = max(first, min(note.start+note.length-1, note.start+dx))
-            return GridNote(start, note.start+note.length-start, note.pitch)
-        pitch = note.pitch if self.pitch_locked else max(LOW_PITCH, min(HIGH_PITCH, note.pitch - dy))
-        return GridNote(max(0, min(STEPS - note.length, note.start + dx)), note.length, pitch)
+            return self.new_note(start, note.start+note.length-start, note.pitch)
+        pitch = note.pitch if self.pitch_locked else max(self.low_pitch, min(self.high_pitch, note.pitch - dy))
+        return self.new_note(max(0, min(self.steps - note.length, note.start + dx)), note.length, pitch)
 
     def mouseMoveEvent(self, event):
         if self._drag is not None:
             self._drag_position = event.position()
+            self._edge_direction=(1 if event.position().x()>self.width()-16 else -1 if event.position().x()<self.LEFT+16 else 0) if self.free else 0
+            if self._edge_direction:self._pan_timer.start()
+            else:self._pan_timer.stop()
             self.preview_changed.emit(self._drag_note(event.position()))
             self.update()
         else:
@@ -261,6 +292,14 @@ class PianoRoll(QWidget):
         self.selected.emit()
         self.update()
         event.accept()
+
+    def _edge_pan(self):
+        if not self.free or self._drag is None:self._pan_timer.stop();return
+        width=self.pattern.steps_per_bar
+        new=max(0,min((self.pattern.bars-1)*width,self.view_start+self._edge_direction*width))
+        if new==self.view_start:self._pan_timer.stop();return
+        self.view_start=new;self.view_changed.emit(new//width+1)
+        self.preview_changed.emit(self._drag_note(self._drag_position));self.update()
 
     def focusOutEvent(self, event):
         self.cancel_drag()
@@ -286,10 +325,10 @@ class PianoRoll(QWidget):
         elif self.selection >= 0 and key in (Qt.Key.Key_Left, Qt.Key.Key_Right, Qt.Key.Key_Up, Qt.Key.Key_Down):
             self.cancel_drag()
             note = self.pattern.notes[self.selection]
-            start = max(0, min(STEPS - note.length, note.start + (key == Qt.Key.Key_Right) - (key == Qt.Key.Key_Left)))
-            pitch = note.pitch if self.pitch_locked else max(LOW_PITCH, min(HIGH_PITCH,
+            start = max(0, min(self.steps - note.length, note.start + (key == Qt.Key.Key_Right) - (key == Qt.Key.Key_Left)))
+            pitch = note.pitch if self.pitch_locked else max(self.low_pitch, min(self.high_pitch,
                 note.pitch + (key == Qt.Key.Key_Up) - (key == Qt.Key.Key_Down)))
-            self.replace_selected(GridNote(start, note.length, pitch))
+            self.replace_selected(self.new_note(start, note.length, pitch))
         else:
             super().keyPressEvent(event)
 
@@ -313,10 +352,13 @@ class PianoRollRuler(QWidget):
         p.drawText(QRectF(0, 0, self.roll.LEFT, 24), Qt.AlignmentFlag.AlignCenter,
                    '音高' if self.language == 'zh-Hant' else 'Pitch')
         p.setClipRect(self.roll.LEFT, 0, self.scroll.viewport().width()-self.roll.LEFT, 24)
-        for step in range(STEPS):
+        beat=16//self.roll.pattern.denominator if self.roll.free else 4
+        for step in range(self.roll.display_steps):
             x = self.roll.LEFT + step*self.roll.cell_width - self.scroll.horizontalScrollBar().value()
+            absolute=self.roll.view_start+step
+            text=(f'{absolute//self.roll.pattern.steps_per_bar+1}.{absolute%self.roll.pattern.steps_per_bar//beat+1}' if self.roll.free else str(step//4+1)) if step%beat==0 else '·'
             p.drawText(QRectF(x, 0, self.roll.cell_width, 24), Qt.AlignmentFlag.AlignCenter,
-                       str(step//4+1) if step % 4 == 0 else '·')
+                       text)
 
 
 class PianoRollEditor(QWidget):
@@ -342,6 +384,12 @@ class PianoRollEditor(QWidget):
         self.readout.setStyleSheet('font-size: 13px; color: #ead29a;')
         layout.addWidget(self.readout)
         self.roll = PianoRoll()
+        self.pages=QWidget();page_row=QHBoxLayout(self.pages);page_row.setContentsMargins(0,0,0,0)
+        self.page_label=QLabel();self.previous_page=QPushButton('‹');self.next_page=QPushButton('›');self.page=QSpinBox();self.page.setRange(1,1);self.page.setFixedWidth(75)
+        page_row.addWidget(self.page_label);page_row.addWidget(self.previous_page);page_row.addWidget(self.page);page_row.addWidget(self.next_page);page_row.addStretch()
+        self.previous_page.clicked.connect(lambda:self.page.setValue(self.page.value()-1))
+        self.next_page.clicked.connect(lambda:self.page.setValue(self.page.value()+1))
+        self.page.valueChanged.connect(self._page_changed);layout.addWidget(self.pages);self.pages.hide()
         self.roll.TOP = 0
         self.viewport = QScrollArea()
         self.viewport.setWidgetResizable(True)
@@ -352,10 +400,12 @@ class PianoRollEditor(QWidget):
         layout.addWidget(self.ruler)
         layout.addWidget(self.viewport, 1)
         self.roll.preview_changed.connect(self._preview)
+        self.roll.view_changed.connect(self._sync_page)
         self.roll.editing_started.connect(self.editing_started.emit)
         row = QHBoxLayout()
         self.pitch = PitchBox()
         self.start, self.length = QSpinBox(), QSpinBox()
+        self.start.setKeyboardTracking(False);self.length.setKeyboardTracking(False)
         self.start.setRange(0, 15)
         self.length.setRange(1, 16)
         self.start.setFixedWidth(65)
@@ -390,6 +440,15 @@ class PianoRollEditor(QWidget):
         self.roll.pitch_locked = pitch_locked
         self.roll.rhythm_hints, self.roll.hint_notes = rhythm_hints, hint_notes
         self.roll.set_pattern(pattern)
+        free=self.roll.free
+        self.pages.setVisible(free)
+        self.page.blockSignals(True);self.page.setMaximum(pattern.bars if free else 1)
+        self.page.setValue(self.roll.view_start//pattern.steps_per_bar+1 if free else 1);self.page.blockSignals(False)
+        for control in (self.pitch,self.start,self.length):control.blockSignals(True)
+        self.pitch.setRange(self.roll.low_pitch,self.roll.high_pitch)
+        self.start.setMaximum(self.roll.steps-1);self.length.setMaximum(self.roll.steps)
+        for control in (self.pitch,self.start,self.length):control.blockSignals(False)
+        self.ruler.update();self._selected()
         self._instructions()
         QTimer.singleShot(0, self._reveal_selection)
 
@@ -397,10 +456,20 @@ class PianoRollEditor(QWidget):
         from shiboken6 import isValid
         if not isValid(self.roll) or not self.isVisible():
             return
-        note = self.roll.pattern.notes[self.roll.selection] if self.roll.selection >= 0 else GridNote(0, 1, LOW_PITCH)
+        note = self.roll.pattern.notes[self.roll.selection] if self.roll.selection >= 0 else self.roll.new_note(self.roll.view_start,1,60)
         self._reveal_note(note)
 
+    def _page_changed(self,value):
+        if not self.roll.free:return
+        self.roll.cancel_drag();self.roll.view_start=(value-1)*self.roll.pattern.steps_per_bar
+        self.roll.update();self.ruler.update()
+
+    def _sync_page(self,value):
+        self.page.blockSignals(True);self.page.setValue(value);self.page.blockSignals(False);self.ruler.update()
+
     def _reveal_note(self, note):
+        if self.roll.free and (note.start+note.length<=self.roll.view_start or note.start>=self.roll.view_start+self.roll.display_steps):
+            self.page.setValue(note.start//self.roll.pattern.steps_per_bar+1)
         rect = self.roll.note_rect(note)
         bounds=rect
         for other in self.roll.pattern.notes:bounds=bounds.united(self.roll.note_rect(other))
@@ -422,8 +491,9 @@ class PianoRollEditor(QWidget):
             self._rejected()
 
     def _readout(self, note):
-        self.readout.setText((f'{pitch_name(note.pitch)} · 長度 {note.length/4:g} 拍' if self.language == 'zh-Hant' else
-                              f'{pitch_name(note.pitch)} · Length {note.length/4:g} beats') if note else
+        beat_cells=16//self.roll.pattern.denominator if self.roll.free else 4
+        self.readout.setText((f'{pitch_name(note.pitch)} · 長度 {note.length/beat_cells:g} 拍' if self.language == 'zh-Hant' else
+                              f'{pitch_name(note.pitch)} · Length {note.length/beat_cells:g} beats') if note else
                             ('點擊空格加入音符，再直接拖曳調整。' if self.language == 'zh-Hant' else
                              'Click an empty cell to add a note, then drag it to edit.'))
 
@@ -446,7 +516,7 @@ class PianoRollEditor(QWidget):
         if self.roll.selection < 0:
             return
         try:
-            note = GridNote(self.start.value(), self.length.value(), self.pitch.value())
+            note = self.roll.new_note(self.start.value(), self.length.value(), self.pitch.value())
         except ValueError:
             self._rejected()
             self._selected()
@@ -455,8 +525,9 @@ class PianoRollEditor(QWidget):
             self._selected()
 
     def _add(self):
-        occupied = {s for n in self.roll.pattern.notes for s in range(n.start, n.start + n.length)}
-        start = next((s for s in range(STEPS) if s not in occupied), None)
+        pitch=self.pitch.value()
+        start = next((s for s in range(self.roll.view_start,self.roll.view_start+self.roll.display_steps)
+            if not any(n.start<=s<n.start+n.length and (not self.roll.free or n.pitch==pitch) for n in self.roll.pattern.notes)),None)
         if start is not None:
             self.roll.add(start, self.pitch.value())
         else:
@@ -467,7 +538,8 @@ class PianoRollEditor(QWidget):
         self.changed.emit(pattern)
 
     def _rejected(self):
-        self.message.setText("音符不能重疊或超出小節。" if self.language == "zh-Hant" else "Notes cannot overlap or extend beyond this bar.")
+        self.message.setText(('同音高不能重疊；請先增加小節再延長。' if self.roll.free else '音符不能重疊或超出小節。') if self.language=='zh-Hant' else
+            ('Same-pitch notes cannot overlap. Add bars before extending the timeline.' if self.roll.free else 'Notes cannot overlap or extend beyond this bar.'))
 
     def translate(self, language):
         from .hover_help import set_help
@@ -475,6 +547,8 @@ class PianoRollEditor(QWidget):
         self.ruler.language = language
         self.ruler.update()
         zh = language == "zh-Hant"
+        self.page_label.setText('起始小節' if zh else 'View from bar')
+        for control in (self.page,self.previous_page,self.next_page):control.setToolTip('選擇要編輯的小節；只改視角，不移動音符。' if zh else 'Choose the bars to edit. This changes the view without moving notes.')
         self._instructions()
         for label, text in zip(self.labels, ("音高", "起格", "格數") if zh else ("Pitch", "Start", "Length")):
             label.setText(text)
@@ -487,6 +561,7 @@ class PianoRollEditor(QWidget):
         set_help(self.viewport.verticalScrollBar(), 'piano_pitch_scroll', language)
         set_help(self.viewport.horizontalScrollBar(), 'piano_time_scroll', language)
         self._selected()
+        self._instructions()
 
     def _instructions(self):
         zh = self.language == 'zh-Hant'
@@ -494,7 +569,13 @@ class PianoRollEditor(QWidget):
             text = ('拖曳音塊移動位置；拉左右邊緣改長短。節奏通關後開放上下調音高。' if zh else
                     'Drag notes to move them; pull either edge to resize. Pitch unlocks after rhythm.')
         else:
-            text = ('上下拖音塊調音高；左右拖動移位置；拉左右邊緣改長短。每拍 4 格。' if zh else
+            text = ('C2–C6；捲動選音高，切換小節；拖音塊、拉邊緣改長短，一格為十六分音符。' if zh else
+                    'C2–C6 · scroll for pitch, choose a bar; drag notes and resize their edges. One cell = 1/16 note.') if self.roll.free else ('上下拖音塊調音高；左右拖動移位置；拉左右邊緣改長短。每拍 4 格。' if zh else
                     'Drag up/down for pitch, left/right for time; pull either edge for length. 4 cells per beat.')
         self.instructions.setText(text)
         self.instructions.setToolTip(text)
+        if self.roll.free:
+            self.roll.setToolTip(text)
+            self.pitch.setToolTip('輸入 C2–C6 或 MIDI 36–84，也可上下拖音塊。' if zh else 'Type C2–C6 or MIDI 36–84, or drag a note up/down.')
+            self.start.setToolTip('音符在整段作品中的起格，以十六分音符為單位。' if zh else 'Note start in sixteenth-note cells across the whole piece.')
+            self.length.setToolTip('音符長度，以十六分音符為單位；可以跨小節。' if zh else 'Note length in sixteenth-note cells; notes can cross bar lines.')

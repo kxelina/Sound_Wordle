@@ -18,6 +18,7 @@ from .matching import MatchConfig, compare_files
 from .clue_features import DiagnosticContext
 from .sc_client import ROOT, RenderCancelled, SCEngine, check_cancelled
 from .sequence import NoteSequence
+from .composition_render import CompositionRequest,CompositionEngine,normalize_wav,publish_wav
 
 
 @dataclass(frozen=True)
@@ -41,6 +42,7 @@ class PreviewRenderer(QObject):
         self.directory = Path(self._temporary.name)
         self._engine_factory = engine_factory or (lambda: SCEngine(runtime_dir=self.directory / "engine"))
         self._engine = None
+        self._composition_engine=None
         self._cache = OrderedDict()
         self._cache_limit = cache_limit
         self._executor = ThreadPoolExecutor(max_workers=1, thread_name_prefix="sound-preview")
@@ -75,6 +77,7 @@ class PreviewRenderer(QObject):
         for settings, sequence in requests.values():
             if not isinstance(settings, SoundSettings) or not isinstance(sequence, NoteSequence):
                 raise TypeError("Each preview requires SoundSettings and NoteSequence")
+        if match and any(isinstance(value,CompositionRequest) for value in requests.values()):raise ValueError('Instrument compositions cannot be used to score a challenge')
         return self._enqueue(requests, match, comparison_config, diagnostic_context,playback_rms)
 
     def _enqueue(self, requests, match=False, comparison_config=None, diagnostic_context=None,playback_rms=.1):
@@ -122,28 +125,36 @@ class PreviewRenderer(QObject):
 
     def _work(self, requests, event, match=False, comparison_config=None, diagnostic_context=None,playback_rms=.1):
         check_cancelled(event)
-        if self._engine is None:
-            self._engine = self._engine_factory()
         fingerprint = hashlib.sha256(b"".join(
             (ROOT / "supercollider" / name).read_bytes() for name in ("synth.scd", "engine.scd")
         )).hexdigest()
         result = {}
-        for label, (settings, sequence) in requests.items():
+        for label, request in requests.items():
+            settings,sequence=request
             check_cancelled(event)
             payload = {"version": "preview-rms-v1", "settings": settings.to_dict(),
                        "sequence": sequence.to_dict(), "sc_source": fingerprint,"playback_rms":playback_rms}
+            composition=isinstance(request,CompositionRequest)
+            if composition:
+                payload.update(instrument=request.instrument,instrument_source=hashlib.sha256((ROOT/'supercollider/composition.scd').read_bytes()).hexdigest())
             key = hashlib.sha256(json.dumps(payload, sort_keys=True).encode("utf-8")).hexdigest()
             raw = self.directory / f"{key}-raw.wav"
             listening = self.directory / f"{key}-listening.wav"
             hit = key in self._cache and raw.is_file() and listening.is_file()
             if not hit:
                 try:
-                    self._engine.render_sequence(settings, sequence, raw, cancel_event=event, overwrite=True)
+                    if composition:
+                        if self._composition_engine is None:self._composition_engine=CompositionEngine(runtime_dir=self.directory/'instrument-engine')
+                        self._composition_engine.render_composition(request,raw,cancel_event=event,overwrite=True)
+                    else:
+                        if self._engine is None:self._engine=self._engine_factory()
+                        self._engine.render_sequence(settings, sequence, raw, cancel_event=event, overwrite=True)
                     check_cancelled(event)
-                    data, rate = sf.read(raw, always_2d=True)
-                    # One normalized copy at full gain; user volume is applied by the device.
-                    prepared = prepare_playback(data, volume=1.,target_rms=playback_rms)
-                    sf.write(listening, prepared, rate, subtype="PCM_24")
+                    if composition:normalize_wav(raw,listening,target_rms=playback_rms,cancel_event=event)
+                    else:
+                        data, rate = sf.read(raw, always_2d=True)
+                        prepared = prepare_playback(data, volume=1.,target_rms=playback_rms)
+                        sf.write(listening, prepared, rate, subtype="PCM_24")
                     check_cancelled(event)
                 except BaseException:
                     raw.unlink(missing_ok=True)
@@ -151,6 +162,7 @@ class PreviewRenderer(QObject):
                     raise
                 self._cache[key] = (raw, listening)
             self._cache.move_to_end(key)
+            if composition and request.export_path is not None:publish_wav(listening,request.export_path,event)
             result[label] = PreviewAudio(raw, listening, hit)
         while len(self._cache) > max(self._cache_limit, len(requests)):
             _, obsolete = self._cache.popitem(last=False)

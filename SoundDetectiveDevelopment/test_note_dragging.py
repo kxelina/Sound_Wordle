@@ -134,9 +134,9 @@ def test_window_stage_lock_drag_history_and_playback(app, tmp_path):
         w._update(Draft(MelodyPattern((GridNote(4, 3, 64),)), draft.sound, 120))
         app.processEvents()
         drag(w.piano.roll, 'right', dx=2)
-        assert w.session.current.pattern.notes == (GridNote(4, 5, 64),)
+        assert tuple((n.start,n.length,n.pitch) for n in w.session.current.pattern.notes) == ((4,5,64),)
         w.edit_bar.undo()
-        assert w.session.current.pattern.notes == (GridNote(4, 3, 64),)
+        assert tuple((n.start,n.length,n.pitch) for n in w.session.current.pattern.notes) == ((4,3,64),)
         w._set_mode('challenge')
         assert w.session.current == edited
     finally: w.close()
@@ -170,11 +170,11 @@ def test_embedded_scene_keeps_low_notes_visible_and_draggable(app, tmp_path):
         QTest.mousePress(w.view.viewport(), Qt.MouseButton.LeftButton, pos=a)
         QTest.mouseMove(w.view.viewport(), pos=b)
         QTest.mouseRelease(w.view.viewport(), Qt.MouseButton.LeftButton, pos=b)
-        assert c.session.current.pattern.notes == (GridNote(4, 3, 62),)
+        assert tuple((n.start,n.length,n.pitch) for n in c.session.current.pattern.notes) == ((4,3,62),)
         assert c.piano.ruler.isVisible()
         assert c.piano.pitch.value() == 62
         c.edit_bar.undo()
-        assert c.session.current.pattern.notes == (GridNote(4, 3, 60),)
+        assert tuple((n.start,n.length,n.pitch) for n in c.session.current.pattern.notes) == ((4,3,60),)
     finally:
         w.close()
         app.processEvents()

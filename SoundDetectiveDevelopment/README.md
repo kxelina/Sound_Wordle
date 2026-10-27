@@ -33,3 +33,6 @@ $testRun = Join-Path (Get-Location) ('.runtime/test-' + [guid]::NewGuid().ToStri
 
 - `test_device_workspace.py`：雙語實體錄音機、隱藏目標門檻、合併協助、底部操作列、場景尺寸及自由創作 BPM。
 - `validate_device_workspace_ui.py`：1280×720 場景直接點錄音機，以真實引擎靜音檢查切換、停止、提交、幫助及自由創作速度；截取各模式雙語畫面。
+
+- `test_composition_studio.py`：自由創作的拍號／跨小節／和弦、C2–C6、音色與效果分離、升級備份、實際樂器音準／決定性、長段串流匯出、取消及快取隔離。
+- `validate_composition_ui.py`：以場景指標點音色自動播放、拉跨小節音符、輸入 C2/C6、建立和弦、加音樂廳效果、匯出及重載；真實引擎、音量 0。

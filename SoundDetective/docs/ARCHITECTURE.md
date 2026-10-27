@@ -97,3 +97,14 @@
 `PlaybackDeck` 直接以兩個可點擊／鍵盤操作的磁帶窗轉發既有播放命令，隱藏重複命令按鈕及 A/B。還原模式顯示兩台；隱藏目標沿用啟用狀態決定何時出現；自由創作只顯示自己的磁帶。停止共用，播放器仍採最新請求優先與取消機制。
 
 每個模式保留一個可見的幫助／設備引導入口，串接既有提示及導覽，不重複領取、不改答案或增加提交。音色案件仍需當次診斷門檻。設備頁隱藏概念／示例按鈕；後端教學片段 API 保留供既有練習及測試。W02 模式切換只從案件板進入；固定 BPM 不顯示，自由模式將速度控制放進工作區上方。
+
+
+## 2026-10-28：多小節自由創作與樂器
+
+`game/composition.py` 的 CompositionNote／Pattern／Draft 獨立於固定 GridNote／MelodyPattern／Draft。自由模式為 MIDI 36–84、十六分格、可增加小節、八種拍號與不同音高和弦；時間仍為四分音符 BPM。`melody-workshop-v1` 外層及挑戰資料不變，自由欄位使用 schema 2，舊欄位在升級保存前保留精確備份。縮短小節不截音，換拍號保留時間格並按需增加容量。Qt 畫面一次顯示最多兩小節，49 行音高垂直捲動，總長度不擴張畫布；拖邊緣可翻頁。
+
+`audio/instruments.py` 將音色預設和場景預設分開。`supercollider/composition.scd` 的獨立聲部不修改挑戰用 voiceGraph；Piano 為帶輕微不諧性的衰減部分音，Violin 為持續諧波、揉弦及弓噪，Guitar 使用內建 Pluck 加琴身部分音。所有樂器可再改 H1–H8／ADSR。Room/Hall/Echo 使用既有共享效果匯流排。這些是合成近似音色，未引入 SoundFont、採樣授權或新依賴。
+
+`CompositionRequest` 可在原 PreviewRenderer 生命周期中傳入，保留版本、取消、快取與過期結果過濾；快取另含樂器與 SC 模型指紋，禁止用於 challenge match。`CompositionEngine` 重用 SC 啟動與基礎效果定義，但獨立排程，無原 30 秒／4096 事件限制；仍檢查最多 16 個含 Release 的聲部。SC 產生檔案後，Python 用分塊掃描做峰值、尾音、固定增益及匯出；尾音預算相對作品長度計算。音符與工作曲仍受可用記憶體／磁碟等實際資源限制。匯出在背景用暫存檔完成才原子發布，並與試聽 WAV 一致，不套用裝置音量。
+
+技術參考：SuperCollider Pluck (https://doc.sccode.org/Classes/Pluck.html), FreeVerb (https://doc.sccode.org/Classes/FreeVerb.html), Ableton Reverb (https://www.ableton.com/en/manual/live-audio-effect-reference/#reverb).

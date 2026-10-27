@@ -42,11 +42,21 @@ Use **Skip tutorial** whenever you want. You can reopen **Learn to play** from t
 | **Sound Wordle · W01** | Build a hidden sound from witness clues. The target becomes playable after you meet all three stages' requirements. |
 | **Sound Wordle · W02** | Reconstruct a hidden phrase in three stages: **rhythm → melody → timbre**. The target is revealed after completion. |
 | **Sound Wordle · W03–W06** | Choose **Nature**, **Instruments** or **Noise / electronics** and synthesize rain, bird-like chirps, a plucked note or radio static from witness clues. |
-| **Free composition** | Choose this card under **Music Studio**. Write a one-bar melody on a 16-step grid, adjust its sound and effects, and choose a tempo of 60–160 BPM. There is no score. |
+| **Free composition** | Choose this card under **Music Studio**. Select an instrument, write notes and chords across multiple bars, choose a meter and 60–160 BPM, add space effects and export WAV. There is no score. |
 
 The hidden-sound challenges allow unlimited submissions and free hints. Use **Help / guidance** to get the next clue and open the relevant equipment.
 
-Free composition supports one note at a time, within C4–C5. Its draft is saved separately from your W02 challenge, so you can switch between them without replacing either draft.
+Free composition covers **C2–C6** and supports chords. Its draft is saved separately from your W02 challenge, so you can switch between them without replacing either draft.
+
+### Create your own piece
+
+- Choose **Synthesizer, Piano, Violin or Guitar** on the left. A short C4 note plays automatically. These are original synthesized timbres: piano-like decaying partials, a sustained bowed tone with vibrato, and a plucked-string model. They are not recordings of acoustic instruments. Changing instruments keeps your notes and space effects, while loading the instrument's harmonic/envelope defaults.
+- Use **Bars** or **+** to extend the timeline. Choose **2/4, 3/4, 4/4, 5/4, 6/8, 7/8, 9/8 or 12/8**. BPM counts quarter notes. Changing meter keeps note positions; reducing the bar count is refused if it would cut off a note.
+- Scroll vertically for C2–C6 and use **View from bar** to navigate. One cell is a sixteenth note. Drag notes up/down for pitch and left/right for time; pull their edges for length. Holding a dragged note at the left/right edge turns the page. Notes can cross bar lines; different pitches can overlap to form chords. Playback supports 16 voices including release tails.
+- Select **Dry**, **Small room**, **Concert hall** or **Echo space**. The hall preset adds spacious reverb while retaining a clear direct sound; it does not add an audience recording. Device controls remain editable, and changed settings show **Manual**.
+- Click your tape to hear the piece; with an empty score it previews the instrument. **Export composition WAV** saves your instrument, notes and effects with the complete tail under **userdata/wordle/exports**, independent of master volume. Longer pieces are rendered in the background and can be stopped.
+
+Old free drafts migrate with an exact backup before the first upgraded save. Instrument, notes, bars, meter, tempo and effects persist; Undo/Redo works across these edits. Challenge pitch ranges, meters and grading remain specific to each case.
 
 ### New after-hours cases
 
@@ -227,11 +237,21 @@ If something is wrong:
 | **聲音重建 · W01** | 根據證人口供製作隱藏的單音；三個階段都達標後，才可播放目標。 |
 | **聲音重建 · W02** | 依序重建隱藏樂句的「**節奏 → 旋律 → 音色**」，完成後揭曉目標。 |
 | **聲音重建 · W03–W06** | 選擇「自然聲音」「樂器聲音」或「噪聲與電子」，根據口供合成小雨、鳥鳴般的哨音、撥弦音或收音機雜音。 |
-| **自由創作** | 在「音樂工作室」分類選擇此卡片。使用一小節、16 格的卷簾編寫旋律，調整音色與效果，並選擇 60–160 BPM 的速度；不評分。 |
+| **自由創作** | 在「音樂工作室」選擇此卡片。選樂器、編寫多小節旋律與和弦、選拍號及 60–160 BPM，加入場景效果並匯出 WAV；不評分。 |
 
 隱藏聲音挑戰不限提交次數，提示免費。按「**幫助／設備引導**」取得下一層線索，並前往相應設備。
 
-自由創作的音域為 C4–C5，一次演奏一個音。創作草稿與 W02 挑戰分開儲存，切換時會保留各自的內容。
+自由創作的音域為 **C2–C6**，支援和弦。創作草稿與 W02 挑戰分開儲存，切換時會保留各自的內容。
+
+### 編寫自己的作品
+
+- 在左邊選擇「**合成器、鋼琴、小提琴、吉他**」，會自動試聽一個 C4 短音。這些是原創合成音色：鋼琴般逐漸衰減的泛音、有揉弦的持續弓弦音，以及撥弦模型，並非真實樂器錄音。換樂器會保留音符和場景效果，載入該音色的諧波與包絡預設。
+- 用「**小節**」或「**+**」延長時間軸，選擇 **2/4、3/4、4/4、5/4、6/8、7/8、9/8、12/8**。BPM 以四分音符計；換拍號會保留音符起格，縮短小節數若會截斷音符則不執行。
+- 上下捲動尋找 C2–C6，用「**起始小節**」切換視角。一格為十六分音符；上下拖音塊改音高、左右拖移位置、拉邊緣改長短，拖到視窗左右邊緣可翻頁。音符可以跨小節，不同音高可重疊成和弦；播放支援含 Release 尾音在內的 16 音復音。
+- 場景可選「**乾聲、小房間、音樂廳、回聲空間**」。音樂廳加入較寬廣的混響並保留清楚原聲，不會加入觀眾錄音；設備仍能手動調整，改動後顯示「**手動調整**」。
+- 點錄音機播放作品；空白樂譜會試聽目前音色。「**匯出創作 WAV**」把樂器、音符、效果及完整尾音存到 **userdata/wordle/exports**，不套用主音量。長段作品在背景產生，可以停止。
+
+舊創作在首次升級保存前會先備份原檔。樂器、音符、小節、拍號、速度和效果皆會保存，並可復原／重做；挑戰關卡仍使用各自的音域、拍號和評分規則。
 
 ### 新增夜間異常案件
 

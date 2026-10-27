@@ -1,4 +1,4 @@
-"""One-bar composition and the W02 rhythm → melody → timbre challenge.
+"""W02 rhythm → melody → timbre challenges and separate composition saves.
 
 Scores measure authored reconstruction progress, not perceptual similarity.
 The original target phrase is composed for this project; no song is required.
@@ -17,6 +17,7 @@ from .parameters import PARAMETERS, replace_parameters
 from .progress import grade_progress
 from .storage import atomic_json_write
 from .catalog import MELODY_IDS
+from .composition import CompositionDraft
 
 STEPS, LOW_PITCH, HIGH_PITCH, TEMPO = 16, 60, 72, 100
 VERSION = "melody-workshop-v1"
@@ -228,7 +229,7 @@ def compare_draft(draft, case=None):
 @dataclass
 class MelodySession:
     challenge: Draft = field(default_factory=Draft)
-    free: Draft = field(default_factory=Draft)
+    free: CompositionDraft = field(default_factory=CompositionDraft)
     mode: str = "challenge"
     unlocked: int = 0
     attempts: int = 0
@@ -263,11 +264,12 @@ class MelodySession:
         self.mode = mode
 
     def update(self, draft):
-        if not isinstance(draft, Draft):
-            raise ValueError("Expected a draft")
         if self.mode == "free":
-            self.free = draft
+            if isinstance(draft,Draft):draft=CompositionDraft.from_legacy(draft)
+            if not isinstance(draft,CompositionDraft):raise ValueError('Expected a composition')
+            self.free=draft
             return
+        if not isinstance(draft, Draft):raise ValueError('Expected a challenge draft')
         if draft.tempo != TEMPO:
             raise ValueError("Challenge tempo is fixed")
         if (self.unlocked == 0 or 1 not in self.case.stages) and any(n.pitch != LOW_PITCH for n in draft.pattern.notes):
@@ -305,7 +307,7 @@ class MelodySession:
 
     def reset(self):
         if self.mode == "free":
-            self.free = Draft()
+            self.free = CompositionDraft()
         else:
             self.challenge, self.unlocked, self.attempts = Draft(sound=self.case.initial), 0, 0
             self.hints, self.records = [0, 0, 0], []
@@ -352,7 +354,7 @@ class MelodySession:
             validator.update(Draft.from_dict(solution))
             if not all(compare_draft(validator.challenge,case).passed):
                 raise ValueError("Invalid solution")
-        session.free = Draft.from_dict(data["free"])
+        session.free = CompositionDraft.from_dict(data["free"])
         session.set_mode(data["mode"])
         session.attempts, session.hints, session.records, session.solution = data["attempts"], list(hints), records, solution
         return session
@@ -363,13 +365,20 @@ def load_melody_session(path,case=None):
     case=case or MelodyCase()
     if not path.exists():
         return MelodySession(challenge=Draft(sound=case.initial),case=case)
-    if path.stat().st_size > 2_000_000:
+    if path.stat().st_size > 64_000_000:
         raise ValueError("Melody save is too large")
     return MelodySession.from_dict(json.loads(path.read_text(encoding="utf-8")),case)
 
 
 def save_melody_session(path, session):
     MelodySession.from_dict(session.to_dict(),session.case)
+    path=Path(path)
+    if path.exists():
+        try:old=json.loads(path.read_text('utf-8'))
+        except (ValueError,UnicodeError):old=None
+        if isinstance(old,dict) and isinstance(old.get('free'),dict) and 'schema_version' not in old['free']:
+            import shutil,uuid
+            shutil.copy2(path,path.with_name(path.stem+'.before-studio-v2-'+uuid.uuid4().hex[:8]+'.json'))
     atomic_json_write(path, session.to_dict())
 
 

@@ -2,6 +2,9 @@
 
 from pathlib import Path
 import math
+from dataclasses import replace
+from datetime import datetime
+import uuid
 
 from PySide6.QtCore import QEvent, QTimer, Qt, Signal
 from PySide6.QtGui import QKeySequence, QShortcut
@@ -12,6 +15,11 @@ from PySide6.QtWidgets import (QAbstractItemView, QComboBox, QGroupBox, QHBoxLay
 from ..audio.playback import AudioPlayer, PlaybackItem
 from ..audio.preview import PreviewRenderer
 from ..audio.sc_client import ROOT
+from ..audio.sequence import NoteEvent,NoteSequence
+from ..audio.composition_render import CompositionRequest
+from ..audio.instruments import INSTRUMENTS,SPACES,instrument_sound,space_sound,space_name
+from ..game.composition import CompositionDraft,CompositionPattern,METERS
+from .hardware import InlineChoices
 from ..game.melody import (Draft, MelodyCase, MelodySession, LOW_PITCH, TEMPO,
     compare_draft, load_melody_session, save_melody_session, teaching_pair,authored_melody_clue)
 from ..game.progress import PROGRESS_CLUES
@@ -123,6 +131,8 @@ class MelodyWindow(QMainWindow):
                                        enabled=lambda: not self._closed)
         from .device_layout import compact_workspace
         compact_workspace(self,(self.submit_button,self.reset_button,self.history_button),(self.action_row,))
+        self.export_button=QPushButton();self.export_button.clicked.connect(lambda:self._prepare('export'))
+        self.edit_bar.layout().insertWidget(5,self.export_button);self.export_button.setMaximumHeight(30)
         self.edit_bar.stack = self._edit_stacks[self.session.mode]
         self.renderer.ready.connect(self._ready)
         self.renderer.failed.connect(self._failed)
@@ -208,6 +218,15 @@ class MelodyWindow(QMainWindow):
         self.tempo_label.setStyleSheet('font-size:14px;font-weight:bold;')
         self.tempo.setStyleSheet('font-size:16px;padding:4px;')
         tempo_row.addWidget(self.tempo_label);tempo_row.addWidget(self.tempo);tempo_row.addStretch()
+        self.meter_label,self.bars_label=QLabel(),QLabel()
+        self.meter_choices=InlineChoices(columns=4)
+        for meter in METERS:self.meter_choices.addItem(f'{meter[0]}/{meter[1]}',meter)
+        self.meter_choices.currentIndexChanged.connect(self._meter_changed)
+        self.bars=QSpinBox();self.bars.setRange(1,1_000_000);self.bars.setFixedWidth(90);self.bars.setKeyboardTracking(False)
+        self.bars.valueChanged.connect(self._bars_changed)
+        self.add_bar=QPushButton('+');self.add_bar.clicked.connect(lambda:self.bars.setValue(self.bars.value()+1))
+        for index,widget in enumerate((self.meter_label,self.meter_choices,self.bars_label,self.bars,self.add_bar),2):tempo_row.insertWidget(index,widget)
+        for button in self.meter_choices.buttons:button.setMinimumHeight(22);button.setMaximumHeight(28)
         self.rules = self.label()
         self.rules.setStyleSheet("font-size: 12px; color: #bfb79f;")
         layout.addWidget(self.rules)
@@ -239,6 +258,16 @@ class MelodyWindow(QMainWindow):
         notes_layout.addStretch()
         self.note_scroll=QScrollArea();self.note_scroll.setWidgetResizable(True);self.note_scroll.setFrameShape(QFrame.Shape.NoFrame)
         self.note_scroll.setMinimumHeight(0);self.note_scroll.setWidget(notes);left.addWidget(self.note_scroll,1)
+        self.composition_tools=QWidget();tools=QVBoxLayout(self.composition_tools);tools.setContentsMargins(0,0,0,0);tools.setSpacing(4)
+        self.instrument_label,self.space_label=QLabel(),QLabel()
+        self.instrument_choices,self.space_choices=InlineChoices(columns=2),InlineChoices(columns=2)
+        for key in INSTRUMENTS:self.instrument_choices.addItem('',key)
+        for key in (*SPACES,'custom'):self.space_choices.addItem('',key)
+        for widget in (self.instrument_label,self.instrument_choices,self.space_label,self.space_choices):tools.addWidget(widget)
+        for button in (*self.instrument_choices.buttons,*self.space_choices.buttons):button.setMinimumHeight(22);button.setMaximumHeight(30)
+        self.instrument_choices.activated.connect(self._instrument_changed)
+        self.space_choices.activated.connect(self._space_changed)
+        left.insertWidget(0,self.composition_tools);self.composition_tools.hide()
         self.play_reference, self.play_current, self.stop_button, self.play_ab = [QPushButton() for _ in range(4)]
         self.play_reference.clicked.connect(lambda: self._prepare("target"))
         self.play_current.clicked.connect(lambda: self._prepare("current"))
@@ -374,6 +403,7 @@ class MelodyWindow(QMainWindow):
         self.tempo.setEnabled(free)
         self.tempo_panel.setVisible(free)
         self.tempo_label.setText('速度 · BPM' if self._language=='zh-Hant' else 'Tempo · BPM')
+        self._composition_controls()
         self.deck.set_reference_mode('never' if free else 'unlocked')
         self.editor.set_settings(s.current.sound)
         self.editor.set_locked(not free and s.unlocked < 2)
@@ -396,6 +426,8 @@ class MelodyWindow(QMainWindow):
         self.play_reference.setEnabled(s.solved and not free)
         self.play_ab.setEnabled(s.solved and not free)
         self.submit_button.setEnabled(not free)
+        self.submit_button.setVisible(not free);self.history_button.setVisible(not free)
+        self.export_button.setVisible(free)
         self.hint_button.setEnabled(not free)
         self.goto_button.hide();self.lesson_button.hide()
         self.hint_button.setVisible(not free)
@@ -510,7 +542,8 @@ class MelodyWindow(QMainWindow):
 
     def _pattern_changed(self, pattern):
         current = self.session.current
-        self._update(Draft(pattern, current.sound, current.tempo))
+        if self.session.mode=='free':self._update(replace(current,pattern=pattern if isinstance(pattern,CompositionPattern) else current.pattern.with_notes(pattern.notes)))
+        else:self._update(Draft(pattern, current.sound, current.tempo))
 
     def _restore_edit(self, draft):
         self.stop()
@@ -520,11 +553,63 @@ class MelodyWindow(QMainWindow):
 
     def _sound_changed(self):
         current = self.session.current
-        self._update(Draft(current.pattern, self.case.settings(**self.editor.values()), current.tempo))
+        sound=self.case.settings(**self.editor.values())
+        self._update(replace(current,sound=sound) if self.session.mode=='free' else Draft(current.pattern,sound,current.tempo))
 
     def _tempo_changed(self, value):
         current = self.session.current
-        self._update(Draft(current.pattern, current.sound, value))
+        self._update(replace(current,tempo=value) if self.session.mode=='free' else Draft(current.pattern,current.sound,value))
+
+    def _composition_controls(self):
+        free=self.session.mode=='free';self.composition_tools.setVisible(free)
+        if not free:return
+        zh=self._language=='zh-Hant';draft=self.session.free
+        self.instrument_label.setText('樂器音色 · 合成模型' if zh else 'Instrument · synthesized')
+        self.space_label.setText('場景效果' if zh else 'Space / effects')
+        self.tempo.setToolTip('每分鐘四分音符數；拍號改變分組，音高不變。' if zh else 'Quarter notes per minute. The meter changes the grouping, not the pitches.')
+        for i,(key,(names,_)) in enumerate(INSTRUMENTS.items()):
+            b=self.instrument_choices.buttons[i];b.setText(names[zh]);b.setToolTip(('選擇'+names[zh]+'並試聽 C4；保留音符與場景效果，重設這個音色的諧波及包絡。') if zh else
+                'Choose '+names[0]+' and hear C4. Keep notes and effects; reset the instrument harmonics and envelope.')
+        for i,key in enumerate((*SPACES,'custom')):
+            b=self.space_choices.buttons[i];b.setText(('手動調整' if zh else 'Manual') if key=='custom' else SPACES[key][0][zh])
+            descriptions={
+                'dry':('Remove the space effects for a clear, close sound.','關閉空間效果，聽清近距離的乾聲。'),
+                'room':('Add a short, subtle room reflection.','加入短而輕的房間混響。'),
+                'hall':('Add a spacious concert-hall reverb while keeping the direct sound clear.','加入較寬廣的音樂廳混響，仍保留清楚的原聲。'),
+                'echo':('Add rhythmic repeats and a reverberant tail.','加入有節奏的回聲與混響尾音。'),
+                'custom':('Keep the settings you adjusted on the devices.','保留你在設備上調整的設定。')}
+            b.setToolTip(descriptions[key][zh]+(' 不改樂器或音符。' if zh else ' Keep the instrument and notes.'))
+        for choice,value in ((self.instrument_choices,draft.instrument),(self.space_choices,space_name(draft.sound)),(self.meter_choices,(draft.pattern.numerator,draft.pattern.denominator))):
+            choice.blockSignals(True);choice.setCurrentIndex(choice.findData(value));choice.blockSignals(False)
+        self.bars.blockSignals(True);self.bars.setValue(draft.pattern.bars);self.bars.blockSignals(False)
+        self.meter_label.setText('拍號' if zh else 'Meter');self.bars_label.setText('小節' if zh else 'Bars')
+        self.bars.setToolTip('增加小節延長作品；縮短時保留全部音符，不會刪音。' if zh else 'Add bars to extend the piece. Reducing the count never deletes notes.')
+        self.add_bar.setToolTip('增加一個小節；原有音符保持原位。' if zh else 'Add one bar without moving existing notes.')
+        for b in self.meter_choices.buttons:b.setToolTip('選擇每小節的拍號，保留音符的時間格；BPM 以四分音符計。' if zh else 'Set the time signature; preserve note positions. BPM counts quarter notes.')
+        self.export_button.setText('匯出創作 WAV' if zh else 'Export composition WAV')
+        self.export_button.setToolTip('匯出目前樂器、旋律和效果，保留完整尾音；不套用主音量。' if zh else 'Export the current instrument, notes and effects with their full tail, independent of master volume.')
+
+    def _instrument_changed(self,index):
+        if self.session.mode!='free':return
+        name=self.instrument_choices.itemData(index);draft=self.session.free
+        self._update(replace(draft,instrument=name,sound=instrument_sound(draft.sound,name)))
+        self._prepare('instrument')
+
+    def _space_changed(self,index):
+        if self.session.mode!='free':return
+        name=self.space_choices.itemData(index)
+        if name=='custom':return
+        self._update(replace(self.session.free,sound=space_sound(self.session.free.sound,name)))
+        self._prepare('instrument')
+
+    def _bars_changed(self,value):
+        if self.session.mode!='free':return
+        try:self._update(replace(self.session.free,pattern=replace(self.session.free.pattern,bars=value)))
+        except ValueError:
+            self._composition_controls();self.status.setText('縮短會截斷音符；請先移動或縮短音符。' if self._language=='zh-Hant' else 'That would cut off notes. Move or shorten them first.')
+
+    def _meter_changed(self,index):
+        if self.session.mode=='free':self._update(replace(self.session.free,pattern=self.session.free.pattern.with_meter(*self.meter_choices.itemData(index))))
 
     def _set_mode(self, mode):
         if mode=='free' and self.case.id!='W02':return
@@ -614,7 +699,15 @@ class MelodyWindow(QMainWindow):
             self.status.setText(self.t("hidden"))
             return
         self.stop()
-        if mode == "lesson":
+        self._export_path=None
+        if self.session.mode=='free' and mode in ('current','instrument','export'):
+            draft=self.session.free;sequence=draft.sequence
+            if mode=='instrument' or mode=='current' and not sequence.events:
+                sequence=NoteSequence((NoteEvent(60,.07,.65,100),));mode='instrument'
+            if not sequence.events or draft.sound.patch.is_silent:self.status.setText(self.t('empty'));return
+            if mode=='export':self._export_path=self.save_path.parent/'exports'/('Composition-'+datetime.now().strftime('%Y%m%d-%H%M%S')+'-'+uuid.uuid4().hex[:6]+'.wav')
+            requests={mode:CompositionRequest(draft.sound,sequence,draft.instrument,self._export_path)}
+        elif mode == "lesson":
             requests = dict(zip(("lesson1", "lesson2"), teaching_pair(self.session.focus)))
         elif mode == "history":
             row = self.history.currentRow()
@@ -646,7 +739,9 @@ class MelodyWindow(QMainWindow):
         labels, self._armed = self._armed, None
         self.busy.hide()
         try:
-            self.player.play([PlaybackItem(previews[key].listening_path, key) for key in labels])
+            if self._export_path:
+                self.status.setText(('已匯出：' if self._language=='zh-Hant' else 'Exported: ')+str(self._export_path));self.status.setToolTip(str(self._export_path))
+            else:self.player.play([PlaybackItem(previews[key].listening_path, key) for key in labels])
         except (OSError, ValueError, RuntimeError, KeyError) as error:
             self.status.setText(self.t("error").format(message=str(error)))
 
@@ -658,7 +753,8 @@ class MelodyWindow(QMainWindow):
 
     def _player_state(self, state, label):
         if not self._closed and state in ("playing", "loading"):
-            if label.startswith("lesson"):
+            if label=='instrument':self.status.setText(('試聽音色：' if self._language=='zh-Hant' else 'Instrument preview: ')+INSTRUMENTS[self.session.free.instrument][0][self._language=='zh-Hant']+' · C4')
+            elif label.startswith("lesson"):
                 self.status.setText(self.t("lesson_note") + f" ({label[-1]}/2)")
             else:
                 self.status.setText(self.t("playing").format(label=self.t("current" if label == "current" else "target_open") if label != "history" else self.t("hear")))
@@ -667,6 +763,7 @@ class MelodyWindow(QMainWindow):
         if cancel_drag:
             self.piano.roll.cancel_drag()
         self._revision = self._armed = None
+        self._export_path=None
         self.renderer.cancel()
         self.player.stop()
         self.busy.hide()
