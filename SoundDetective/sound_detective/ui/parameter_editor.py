@@ -131,13 +131,14 @@ class ParameterEditor(QWidget):
                 if key in self.sliders:
                     slider = self.sliders[key]
                     slider.setOrientation(Qt.Orientation.Vertical)
-                    slider.setMinimumHeight(180)
+                    slider.setMinimumHeight(220)
                     slider.setFixedWidth(44)
                     control.setFixedWidth(58)
                     control.setButtonSymbols(QAbstractSpinBox.ButtonSymbols.NoButtons)
                     layout.addWidget(slider, 1, Qt.AlignmentFlag.AlignHCenter)
                 elif spec.kind in ("float", "int"):
                     knob = RotaryKnob()
+                    knob.setFixedSize(128,128)
                     factor = 10 ** spec.decimals
                     knob.setRange(0, round((spec.high - spec.low) * factor))
                     knob.setSingleStep(max(1, round(spec.step * factor)))

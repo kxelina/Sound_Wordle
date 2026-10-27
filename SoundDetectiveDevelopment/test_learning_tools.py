@@ -160,13 +160,15 @@ def test_embedded_difficulty_buttons_and_transport_fit(app,tmp_path,language,bas
         for index in range(3):
             c.difficulty.setCurrentIndex(index);app.processEvents()
             root=w.device_proxy.widget()
-            for button in (*c.difficulty.buttons,c.play_current,c.stop_button,c.example_button,c.loop_button,c.submit_button):
+            for button in (*c.difficulty.buttons,c.deck.display,c.stop_button,c.hint_button,c.loop_button,c.submit_button):
+                assert button.isVisible()
                 assert root.rect().contains(button.mapTo(root,button.rect().topLeft()))
                 assert root.rect().contains(button.mapTo(root,button.rect().bottomRight()))
                 assert button.toolTip()
-            for button in (c.play_current,c.play_reference,c.play_ab,c.stop_button):
+            for button in (c.deck.display,c.stop_button):
                 assert c.deck.rect().contains(button.mapTo(c.deck,button.rect().topLeft()))
                 assert c.deck.rect().contains(button.mapTo(c.deck,button.rect().bottomRight()))
+            assert not any(b.isVisible() for b in (c.play_current,c.play_reference,c.play_ab,c.example_button))
             assert sum(control.isEnabled() for control in c.editor.controls.values())==(2,4,5)[index]
         c.loop_button.click();c.editor.controls[next(iter(c.editor.controls))].setValue(dict(c.case.target.values)[next(iter(c.editor.controls))])
         w._show_page('desk');assert not c.update_timer.isActive() and not c.loop_button.isChecked()

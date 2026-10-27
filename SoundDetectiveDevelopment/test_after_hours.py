@@ -179,7 +179,7 @@ def test_new_cases_embed_clear_review_collect_and_restore(app,tmp_path,cid,langu
         assert w._accept_case(cid);w._show_page('desk');w._activate_device('delay' if cid=='T09' else 'synth')
         w.preferences.language=language;w._translate();app.processEvents();c=w.controller
         root=w.device_proxy.widget()
-        buttons=(c.compare_button,*c.theories.buttons) if cid=='T09' else (c.submit_button,c.play_current,c.stop_button,c.hint_button)
+        buttons=(c.compare_button,*c.theories.buttons) if cid=='T09' else (c.submit_button,c.deck.display,c.stop_button,c.hint_button)
         for button in buttons:
             assert root.rect().contains(button.mapTo(root,button.rect().topLeft()))
             assert root.rect().contains(button.mapTo(root,button.rect().bottomRight()))

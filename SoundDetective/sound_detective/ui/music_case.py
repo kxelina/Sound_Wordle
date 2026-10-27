@@ -238,7 +238,7 @@ class MusicCaseWindow(QMainWindow):
         left.addWidget(self.play_current)
         self.check_repair_button = QPushButton()
         self.check_repair_button.setObjectName("check_music_repair")
-        self.check_repair_button.clicked.connect(self._check_repair)
+        self.check_repair_button.clicked.connect(self._help_and_focus)
         self.busy = QProgressBar()
         self.busy.setRange(0, 0)
         self.busy.hide()
@@ -321,6 +321,7 @@ class MusicCaseWindow(QMainWindow):
         monitor_layout.addStretch()
         self.tabs.addTab(monitor_page, '')
         actions = QHBoxLayout()
+        self.action_row=actions
         self.goto_button = QPushButton()
         self.goto_button.clicked.connect(self._goto_stage)
         self.submit_button = QPushButton()
@@ -524,6 +525,9 @@ class MusicCaseWindow(QMainWindow):
                 pending = max(range(len(self.case.regions)), key=lambda i: abs(self.case.regions[i].cents+self.session.settings.corrections[i]))
                 self.pitch_editor.select_region(pending)
             self.stage_hint.setText(TEXT[self._language]["ready_submit"] if self._pitch_done() == len(self.case.regions) else module.hint(self._language))
+
+    def _help_and_focus(self):
+        self._check_repair();self._goto_stage()
 
     def _show_repair(self):
         from .investigation_feedback import guidance,device_for

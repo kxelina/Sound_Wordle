@@ -41,6 +41,14 @@ class EditHistoryBar(QWidget):
         self.undo_button.setEnabled(self.allowed() and self.stack.can_undo)
         self.redo_button.setEnabled(self.allowed() and self.stack.can_redo)
 
+    def append_actions(self,buttons):
+        row=self.layout()
+        for index,button in enumerate(buttons,2):
+            row.insertWidget(index,button)
+            button.setMaximumHeight(30)
+        self.setStyleSheet('QPushButton {font-size:12px;padding:4px 8px;min-height:18px;}')
+        for button in (self.undo_button,self.redo_button):button.setMaximumHeight(30)
+
     def record(self, state, *, merge=True):
         if not self.restoring:
             self.stack.record(state, merge=merge)

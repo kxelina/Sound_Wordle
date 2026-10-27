@@ -149,6 +149,8 @@ class HiddenSoundWindow(QMainWindow):
         from .edit_history import EditHistoryBar
         self.edit_bar = EditHistoryBar(self, self.session.current, self._restore_edit,
                                        enabled=lambda: not self._closed)
+        from .device_layout import compact_workspace
+        compact_workspace(self,(self.submit_button,self.reset_button,self.history_button),(self.action_row,))
         self.renderer.ready.connect(self._ready)
         self.renderer.failed.connect(self._failed)
         self.player.state_changed.connect(self._player_state)
@@ -235,18 +237,18 @@ class HiddenSoundWindow(QMainWindow):
         self.play_current.clicked.connect(lambda: self._prepare("current"))
         self.play_ab.clicked.connect(lambda: self._prepare("ab"))
         self.stop_button.clicked.connect(self.stop)
-        self.deck = PlaybackDeck(self.play_reference, self.play_current, self.stop_button, self.play_ab, compact=True)
+        self.deck = PlaybackDeck(self.play_reference, self.play_current, self.stop_button, self.play_ab, compact=True,reference_mode='unlocked',reference_titles=('Revealed target','揭曉目標'))
         left.addWidget(self.deck)
         self.feedback = self._label()
         self.feedback.setObjectName("wordle_hint")
-        right.addWidget(self.feedback)
+        notes_layout.insertWidget(notes_layout.count()-1,self.feedback)
         hints = QHBoxLayout()
         self.hint_button, self.lesson_button = QPushButton(), QPushButton()
-        self.hint_button.clicked.connect(self._hint)
+        self.hint_button.clicked.connect(self._help_and_focus)
         self.lesson_button.clicked.connect(lambda: self._prepare("lesson"))
-        hints.addWidget(self.hint_button)
-        hints.addWidget(self.lesson_button)
-        right.addLayout(hints)
+        left.insertWidget(1,self.hint_button)
+        self.lesson_button.hide()
+        self.lesson_button.setParent(body)
         self.editor = ParameterEditor(self.case)
         self.editor.use_hardware_controls()
         self.controls = self.editor.controls
@@ -256,7 +258,8 @@ class HiddenSoundWindow(QMainWindow):
         right.addWidget(self.locked)
         self.goto_button = QPushButton()
         self.goto_button.clicked.connect(self._goto_suggested)
-        right.addWidget(self.goto_button)
+        self.goto_button.hide()
+        self.goto_button.setParent(body)
         self.history = QTableWidget(0, 3)
         self.history.setEditTriggers(QAbstractItemView.EditTrigger.NoEditTriggers)
         self.history.setSelectionBehavior(QAbstractItemView.SelectionBehavior.SelectRows)
@@ -275,6 +278,7 @@ class HiddenSoundWindow(QMainWindow):
         columns.addWidget(self.machine, 7)
         layout.addLayout(columns, 1)
         buttons = QHBoxLayout()
+        self.action_row=buttons
         self.submit_button, self.history_button, self.reset_button = QPushButton(), QPushButton(), QPushButton()
         self.submit_button.setObjectName("wordle_submit")
         self.submit_button.clicked.connect(self._submit)
@@ -398,11 +402,11 @@ class HiddenSoundWindow(QMainWindow):
         self.history.setVisible(analyzing)
         self.restore_button.setVisible(analyzing)
         self.history_play.setVisible(analyzing)
-        self.hint_button.setVisible(not analyzing)
-        self.lesson_button.setVisible(not analyzing)
+        self.hint_button.show()
+        self.lesson_button.hide()
         self.locked.setVisible(not groups and not analyzing)
         self.locked.setText(self.t("locked" if device == "delay" else "unused"))
-        self.goto_button.setVisible(not groups or self._suggested_device() != device)
+        self.goto_button.hide()
 
     def _show_clue(self):
         s, result = self.session, assess(self.session.current)
@@ -421,6 +425,8 @@ class HiddenSoundWindow(QMainWindow):
             if s.solved:
                 message = self.t("practice") + "\n" + message
         self.feedback.setText(message)
+        from .device_layout import help_caption
+        help_caption(self.hint_button,self._language,s.hints[s.focus])
         problem=result.problem(s.focus)
         keys=()
         if s.hints[s.focus] and problem:
@@ -465,6 +471,10 @@ class HiddenSoundWindow(QMainWindow):
         self.session.request_hint()
         self._show_clue()
         self._save()
+
+    def _help_and_focus(self):
+        self._hint();self._goto_suggested()
+        self.note_scroll.ensureWidgetVisible(self.feedback)
 
     def _restore(self):
         index = self.history.currentRow()

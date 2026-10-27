@@ -187,7 +187,7 @@ def test_long_feedback_never_hides_transport(app,case,language,tmp_path):
         c.status.setText('An intentionally long device error or export path. '*50)
         app.processEvents()
         root=w.device_proxy.widget()
-        for button in (c.play_current,c.play_reference,c.play_ab,c.stop_button,c.hint_button,c.submit_button):
+        for button in (c.deck.display,c.deck.reference_display,c.stop_button,c.hint_button,c.submit_button):
             assert root.rect().contains(button.mapTo(root,button.rect().topLeft()))
             assert root.rect().contains(button.mapTo(root,button.rect().bottomRight()))
             if button is not c.submit_button:
@@ -215,7 +215,7 @@ def test_case_board_filters_scene_and_preferences(app,tmp_path):
             c = w.controller
             c.difficulty.setCurrentIndex(c.difficulty.findData('advanced'))
             assert c.case == case and w.scene_key == 'office'
-            assert w.device_proxy.size().height() <= 610
+            assert w.device_proxy.size().height() <= 624
             for field in c.editor.controls.values():
                 # Full five-control panel should be visible without scrolling.
                 center = field.mapTo(w.device_proxy.widget(),field.rect().center())

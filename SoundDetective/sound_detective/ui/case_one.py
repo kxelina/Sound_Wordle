@@ -205,6 +205,7 @@ class CaseWindow(AudioBench):
         layout.addLayout(columns, 1)
         self.editor.changed.connect(self._parameters_changed)
         transport = QHBoxLayout()
+        self.action_row=transport
         self.play_ab, self.compare_button, self.stop_button, self.restart_button = (QPushButton() for _ in range(4))
         for name, button in (("play_ab", self.play_ab), ("submit_answer", self.compare_button), ("stop", self.stop_button), ("restart_case", self.restart_button)):
             button.setObjectName(name)
@@ -215,6 +216,7 @@ class CaseWindow(AudioBench):
         self.restart_button.clicked.connect(self._restart)
         layout.addLayout(transport)
         volume_row = QHBoxLayout()
+        self.volume_row=volume_row
         self.volume_label, self.volume_value = QLabel(), QLabel("35%")
         self.volume = QSlider(Qt.Orientation.Horizontal)
         self.volume.setRange(0, 100)

@@ -18,8 +18,8 @@ from .sound_categories import ChirpCurve,StatusLabel
 
 STEPS = (
     ('Listen first','先聽聽看',
-     'Click the cassette or Play my sound. Listening and editing never count as submissions.',
-     '點磁帶或「試聽我的聲音」。試聽與調整都不計提交次數。'),
+     'Click the Your sound tape. Listening and editing never count as submissions.',
+     '點擊「你的聲音」錄音機。試聽與調整都不計提交次數。'),
     ('Make a clean ending','讓收尾俐落',
      'Lower Release to 0.25 seconds or less, then audition your edit. A shorter Release removes a lingering tail.',
      '把 Release 降到 0.25 秒以下，再試聽修改。Release 越短，尾音越俐落。'),
@@ -92,7 +92,8 @@ class TutorialPanel(QFrame):
         self.play_contrast.clicked.connect(lambda:self.play(False,contrast=True))
         self.play_ab.clicked.connect(lambda:self.play(True))
         self.stop_button.clicked.connect(self.stop)
-        self.deck=PlaybackDeck(self.play_contrast,self.play_current,self.stop_button,self.play_ab,compact=True)
+        self.deck=PlaybackDeck(self.play_contrast,self.play_current,self.stop_button,self.play_ab,compact=True,
+            reference_titles=('Before edit','修改前'))
         self.player.state_changed.connect(self.deck.set_state)
         left.addWidget(self.deck)
         left_widget=QWidget();left_widget.setLayout(left);left_widget.setMaximumWidth(390)

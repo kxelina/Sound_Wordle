@@ -592,6 +592,11 @@ class StudioWindow(QMainWindow):
                 self.controller.stop()
             self.controller._save()
         self.page = page
+        compact=page=='device'
+        self.room_proxy.widget().setStyleSheet(STYLE+('\nQPushButton {font-size:12px;padding:4px 7px;min-height:18px;}' if compact else ''))
+        self.room_title.setStyleSheet(('font-size:14px;padding:6px;' if compact else 'font-size:19px;padding:12px;')+
+            'color:#fff0d4;background:rgba(15,18,16,190);')
+        self.room_proxy.resize(1220,44 if compact else 52)
         base = self._settings_return if page == "settings" else page
         music = (self.preferences.active_case or "").startswith("M") or self.free_composition
         self._set_environment("music" if music and base != "menu" else "office")
@@ -830,6 +835,7 @@ class StudioWindow(QMainWindow):
             if case_id.startswith("T"):
                 case = next(case for case in self.cases if case.id == case_id)
                 candidate = (self._tone_factory or ToneDevicePanel)(case=case, save_path=self.progress_dir / f"{case_id}.json")
+                if hasattr(candidate,'device_requested'):candidate.device_requested.connect(self._guided_device)
             elif case_id == "W01":
                 from .hidden_sound import HiddenSoundWindow
                 candidate = (self._wordle_factory or HiddenSoundWindow)(case=self.board.wordle,
@@ -892,9 +898,13 @@ class StudioWindow(QMainWindow):
         layout = QVBoxLayout(frame)
         layout.setContentsMargins(0, 0, 0, 0)
         layout.addWidget(body)
-        self.device_proxy = self._proxy(frame, 50, 90, 1180, 610)
+        self.device_proxy = self._proxy(frame,24,76,1232,624)
         self.device_proxy.hide()
         return True
+
+    def _guided_device(self,device):
+        if self.page=='device' and self.controller is not None:
+            self.current_device=device;self.controller.present_device(device);self._show_page('device')
 
     def _guide_device(self,device):
         for key,item in self.device_hotspots.items():

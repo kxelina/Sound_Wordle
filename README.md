@@ -13,9 +13,11 @@ A Windows desktop sound-construction game built with Python, PySide6 and SuperCo
 - **M01 music restoration:** included as code/configuration; song recordings are local-only and are not distributed here.
 - English and Traditional Chinese interfaces, edit history, progress saves and WAV export.
 - A five-step interactive tutorial and persistent first-clear reviews with audio comparisons.
-- Category difficulties with 2/4/5 controls, one-control teaching examples, auto-updating loop auditions and an exportable evidence cabinet.
+- Category difficulties with 2/4/5 controls, equipment-directed hints, auto-updating loop auditions and an exportable evidence cabinet.
 - Optional local anonymous playtest logs; no participant data is uploaded.
 - Submission-to-submission score changes and improvement/setback summaries, plus gold control/device outlines for eligible clues. Scores, hint gates and hidden-target rules remain unchanged.
+
+- Enlarged equipment pages with directly clickable labelled tape machines, one Help / guidance action and compact Undo/Redo/Submit/Restart controls. Editable tempo is shown above the free-composition piano roll.
 
 [Full English / 繁體中文 player guide](SoundDetective/README.md)
 
@@ -90,7 +92,9 @@ with those assets present. See the dated validation notes for exact counts and s
 
 主選單「新手練習」提供獨立的五步操作教程，新玩家第一次開始遊戲時會獲得引導。通關後可查看首次結案復盤，比較起點、答案與目標聲音，查看分項進度及參考設定。音樂修復仍保留完整原曲播放，復盤手動開啟。
 
-分類聲音另有入門／標準／進階難度、單控制教學示例、循環更新試聽及首次作品收藏；可選擇啟用本機匿名試玩記錄。
+分類聲音另有入門／標準／進階難度、設備引導、循環更新試聽及首次作品收藏；可選擇啟用本機匿名試玩記錄。
+
+設備頁已放大操作區，直接點擊標有用途的錄音機試聽；幫助與設備引導統一入口，提交／重新挑戰與復原／重做共用底部操作列。自由創作從音樂工作室案件板進入，可調 BPM 顯示在卷簾上方。
 
 [開發測試與驗證紀錄](SoundDetectiveDevelopment/VALIDATION.md) ·
 [外部資源及 AI 輔助紀錄](SoundDetective/docs/AI_ASSISTANCE.md)

@@ -70,7 +70,7 @@ with TemporaryDirectory(dir=out) as directory:
     assert c.session.current.pattern!=before and c.session.attempts==2
     c=activate('W01');c._submit();c._hint();c.editor.controls['attack'].setValue(.02);c.editor.controls['release'].setValue(.12);c._submit();c._hint()
     assert c.guidance.keys and '→' in c.submission_feedback.text();screenshot('hidden-signal-guidance')
-    for button in (c.play_current,c.stop_button):
+    for button in (c.deck.display,c.stop_button):
         assert c.notebook.rect().contains(button.mapTo(c.notebook,button.rect().bottomRight()))
     music=False
     if music_availability().available:

@@ -152,7 +152,8 @@ def test_tutorial_controls_and_navigation_fit(app,tmp_path,language,step):
     panel.setStyleSheet(__import__('sound_detective.ui.studio',fromlist=['STYLE']).STYLE)
     panel.setFixedSize(1180,610);panel.show();app.processEvents()
     try:
-        for button in (panel.play_current,panel.play_contrast,panel.play_ab,panel.stop_button,panel.next_button,panel.skip_button):
+        for button in (panel.deck.display,panel.deck.reference_display,panel.stop_button,panel.next_button,panel.skip_button):
+            assert button.isVisible()
             assert panel.rect().contains(button.mapTo(panel,button.rect().bottomRight()))
         if step==3:
             assert panel.curve_box.rect().contains(panel.length.mapTo(panel.curve_box,panel.length.rect().bottomRight()))

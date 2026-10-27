@@ -204,7 +204,7 @@ class SourceEditor(QWidget):
             row.setContentsMargins(2,2,2,2)
             label, spin = QLabel(), QDoubleSpinBox()
             knob = QSlider(Qt.Orientation.Vertical) if patch.recipe=='harmonic' else RotaryKnob()
-            knob.setFixedSize(54,100) if patch.recipe=='harmonic' else knob.setFixedSize(72,72)
+            knob.setFixedSize(54,220) if patch.recipe=='harmonic' else knob.setFixedSize(108,108)
             label.setAlignment(Qt.AlignmentFlag.AlignCenter)
             label.setWordWrap(True)
             knob.setRange(0,1000)
@@ -325,6 +325,8 @@ class SourceCaseWindow(QMainWindow):
         self._build()
         self.language.currentIndexChanged.connect(self._language_changed)
         self.edit_bar = EditHistoryBar(self,self.session.current,self._restore_edit)
+        from .device_layout import compact_workspace
+        compact_workspace(self,(self.submit_button,self.reset_button,self.export_button),(self.action_row,))
         self.editor.set_editable(self.case.editable_parameters)
         self._translate()
 
@@ -376,7 +378,7 @@ class SourceCaseWindow(QMainWindow):
         self.score.setStyleSheet("font-size: 18px; color: #ecd091;")
         self.review.hide()
         self.hint_button = QPushButton()
-        self.hint_button.clicked.connect(self._hint)
+        self.hint_button.clicked.connect(self._help_and_focus)
         left.addWidget(self.hint_button)
         self.example_button=QPushButton()
         self.example_button.clicked.connect(lambda:self._prepare('example'))
@@ -385,7 +387,7 @@ class SourceCaseWindow(QMainWindow):
         self.play_reference.clicked.connect(lambda:self._prepare("target"))
         self.play_ab.clicked.connect(lambda:self._prepare("ab"))
         self.stop_button.clicked.connect(self.stop)
-        self.deck = PlaybackDeck(self.play_reference,self.play_current,self.stop_button,self.play_ab,compact=True)
+        self.deck = PlaybackDeck(self.play_reference,self.play_current,self.stop_button,self.play_ab,compact=True,reference_mode='unlocked',reference_titles=('Revealed target','揭曉目標'))
         self.player.state_changed.connect(self.deck.set_state)
         left.addWidget(self.deck)
         self.loop_button=QPushButton();self.loop_button.setCheckable(True)
@@ -398,7 +400,7 @@ class SourceCaseWindow(QMainWindow):
         self.source_button.clicked.connect(lambda:self.device_requested.emit("synth"))
         self.analysis_button.clicked.connect(lambda:self.device_requested.emit("analyzer"))
         nav.addWidget(self.source_button); nav.addWidget(self.analysis_button)
-        nav.addWidget(self.example_button);nav.addWidget(self.loop_button)
+        self.example_button.hide();self.example_button.setParent(root);nav.addWidget(self.loop_button)
         right.addLayout(nav)
         self.editor = SourceEditor(self.session.current)
         self.editor.changed.connect(self._changed)
@@ -450,6 +452,7 @@ class SourceCaseWindow(QMainWindow):
         columns.addWidget(self.workbench,7)
         layout.addLayout(columns,1)
         actions = QHBoxLayout()
+        self.action_row=actions
         self.submit_button,self.reset_button,self.export_button = QPushButton(),QPushButton(),QPushButton()
         self.submit_button.setObjectName("source_submit")
         self.submit_button.clicked.connect(self._submit)
@@ -606,7 +609,8 @@ class SourceCaseWindow(QMainWindow):
         self.play_reference.setText(self.text("Play target","播放目標") if s.solved else self.text("Target · hidden","目標 · 未揭曉"))
         self.play_reference.setEnabled(s.solved); self.play_ab.setEnabled(s.solved)
         set_help(self.play_reference,"hidden_target",self._language)
-        self.hint_button.setText(self.text(f"More help · free ({s.hints}/3)",f"再給我一點幫助 · 免費（{s.hints}/3）"))
+        from .device_layout import help_caption
+        help_caption(self.hint_button,self._language,s.hints)
         self.history.setHorizontalHeaderLabels(self.text(("Version","Progress","Result"),("版本","進度","結果")))
         self.history.setRowCount(len(s.records))
         for i,record in enumerate(s.records):
@@ -678,6 +682,11 @@ class SourceCaseWindow(QMainWindow):
         self._refresh();self._save()
         self._record('hint')
         QTimer.singleShot(0,lambda:self.note_scroll.ensureWidgetVisible(self.feedback) if not self._closed else None)
+
+    def _help_and_focus(self):
+        self._hint()
+        if self.embedded:self.device_requested.emit('synth')
+        else:self.present_device('synth')
 
     def _prepare(self,mode):
         if self._closed or mode in ("target","ab") and not self.session.solved:

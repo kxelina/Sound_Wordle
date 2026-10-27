@@ -2,7 +2,7 @@
 
 import numpy as np
 import soundfile as sf
-from PySide6.QtCore import QPointF, QRectF, Qt,QTimer
+from PySide6.QtCore import QPointF, QRectF, Qt,QTimer,Signal
 from PySide6.QtGui import QColor, QPainter, QPainterPath, QPen
 from PySide6.QtWidgets import QLabel, QWidget, QPushButton, QGroupBox, QVBoxLayout,QScrollArea,QFrame
 
@@ -85,6 +85,7 @@ class AudioTraces(QWidget):
 
 
 class ToneDevicePanel(CaseWindow):
+    device_requested=Signal(str)
     def __init__(self, **kwargs):
         self.device_kind = "synth"
         self._plot_sources = None
@@ -117,14 +118,29 @@ class ToneDevicePanel(CaseWindow):
             note_layout.addStretch()
             self.note_scroll=QScrollArea();self.note_scroll.setWidgetResizable(True);self.note_scroll.setFrameShape(QFrame.Shape.NoFrame)
             self.note_scroll.setMinimumHeight(0);self.note_scroll.setWidget(notes)
-            left.addWidget(self.note_scroll,1);left.addWidget(self.deck)
+            self.help_button=QPushButton();self.help_button.clicked.connect(self._help_and_focus)
+            left.addWidget(self.note_scroll,1);left.addWidget(self.help_button);left.addWidget(self.deck)
+            if self.investigation_box:note_layout.insertWidget(note_layout.count()-1,self.investigation_box)
+        from .device_layout import compact_workspace
+        compact_workspace(self,(self.compare_button,self.restart_button),(self.action_row,self.volume_row))
         self.shortcut.setEnabled(False)
-        self.centralWidget().layout().setContentsMargins(18, 12, 18, 12)
+        self.centralWidget().layout().setContentsMargins(10,8,10,6)
         for widget in (self.title, self.progress, self.language, self.volume,
                        self.volume_label, self.volume_value, self.device, self.note):
             widget.hide()
         self.present_device("synth")
         self._translate()
+
+    def _help_and_focus(self):
+        if not self.session.visible_diagnostics:
+            self.clue.setText(('請先提交；達到診斷門檻後會顯示引導。' if self._language=='zh-Hant' else
+                'Submit first; guidance is available after the diagnosis threshold.'))
+            self.note_scroll.ensureWidgetVisible(self.clue)
+            return
+        self._show_match()
+        device=getattr(getattr(self,'guidance',None),'device','')
+        if device:self.device_requested.emit(device)
+        self.note_scroll.ensureWidgetVisible(self.clue)
 
     def _choose_theory(self,index):
         self.theory_index=index
@@ -148,6 +164,11 @@ class ToneDevicePanel(CaseWindow):
         if hasattr(self, "deck"):
             self.deck.translate(self._language)
         self._translate_theory()
+        if hasattr(self,'help_button'):
+            from .device_layout import help_caption
+            help_caption(self.help_button,self._language)
+            self.help_button.setToolTip((f'本次提交達 {self.case.hint_threshold:g} 分後顯示診斷，並前往相應設備；不修改答案。' if self._language=='zh-Hant' else
+                f'Show this submitted answer’s diagnosis at {self.case.hint_threshold:g}+ and open its device; no settings change.'))
 
     def present_device(self, device):
         self.device_kind = device
@@ -161,7 +182,7 @@ class ToneDevicePanel(CaseWindow):
         if groups and not available:
             self.locked.setText("此案件尚未開放這台設備的控制項。" if self._language == "zh-Hant" else "This machine's controls are locked for this case.")
         elif device == "tape":
-            self.locked.setText("播放參照、目前答案或 A/B，聽出差異。" if self._language == "zh-Hant" else "Play the reference, your answer or A/B to listen for differences.")
+            self.locked.setText("點擊左邊兩台錄音機，分別聆聽參照與目前答案。" if self._language == "zh-Hant" else "Click the two tapes on the left to hear the reference and your answer.")
         self._update_plot()
 
     def _ready(self, revision, previews):
@@ -203,11 +224,19 @@ class MusicDevicePanel(MusicCaseWindow):
         self.deck_stop = QPushButton()
         self.deck_stop.setObjectName("music_deck_stop")
         self.deck_stop.clicked.connect(self.stop)
-        self.deck = PlaybackDeck(self.play_evidence, self.play_current, self.deck_stop, compact=True)
+        self.deck = PlaybackDeck(self.play_evidence,self.play_current,self.deck_stop,compact=True,
+            reference_titles=('Distorted clip','扭曲的證物'),current_titles=('Your restoration','你的還原'))
         self.clue_group.layout().addWidget(self.deck)
+        notes=self.clue_scroll.widget().layout()
+        for widget in (self.result,self.stage_banner,self.rules):notes.insertWidget(0,widget)
+        self.clue_group.layout().insertWidget(self.clue_group.layout().count()-1,self.check_repair_button)
+        from .device_layout import compact_workspace
+        compact_workspace(self,(self.submit_button,self.restart_button,self.reveal_button),(self.action_row,self.footer))
+        self.goto_button.hide()
+        self.ab_version_button.hide()
         self.player.state_changed.connect(self.deck.set_state)
         self.shortcut.setEnabled(False)
-        self.centralWidget().layout().setContentsMargins(18, 12, 18, 12)
+        self.centralWidget().layout().setContentsMargins(10,8,10,6)
         for widget in (self.title, self.language, self.volume, self.volume_label, self.device):
             widget.hide()
         self.present_device("synth")
@@ -222,6 +251,9 @@ class MusicDevicePanel(MusicCaseWindow):
             self.deck_stop.setText("■ 停止" if self._language == "zh-Hant" else "■ Stop")
             set_help(self.deck_stop, "stop", self._language)
             self.present_device(getattr(self, "device_kind", "synth"))
+            from .device_layout import help_caption
+            help_caption(self.check_repair_button,self._language)
+            self.goto_button.hide()
 
     def present_device(self, device):
         self.device_kind = device

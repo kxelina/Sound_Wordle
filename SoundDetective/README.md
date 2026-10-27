@@ -44,7 +44,7 @@ Use **Skip tutorial** whenever you want. You can reopen **Learn to play** from t
 | **Sound Wordle · W03–W06** | Choose **Nature**, **Instruments** or **Noise / electronics** and synthesize rain, bird-like chirps, a plucked note or radio static from witness clues. |
 | **Free composition** | Choose this card under **Music Studio**. Write a one-bar melody on a 16-step grid, adjust its sound and effects, and choose a tempo of 60–160 BPM. There is no score. |
 
-The hidden-sound challenges allow unlimited submissions and free hints. In W01/W02, **Hear the concept** plays a teaching example when you need help understanding a sound feature.
+The hidden-sound challenges allow unlimited submissions and free hints. Use **Help / guidance** to get the next clue and open the relevant equipment.
 
 Free composition supports one note at a time, within C4–C5. Its draft is saved separately from your W02 challenge, so you can switch between them without replacing either draft.
 
@@ -54,7 +54,7 @@ Free composition supports one note at a time, within C4–C5. Its draft is saved
 - **W07 · A Doorbell with a Message** — under Sound Wordle → Signals / melody. First build the two-note rhythm, then drag the notes vertically to tune the high, short first sound and lower, longer second sound. Timbre is already set. Passing the rhythm alone does not reveal the target.
 - **W08 · The Silent Beat** — in the same category. Recreate three short sounds across four beats, leaving beat 3 quiet. Pitch and timbre stay fixed; adding or extending a note into the required pause prevents completion even when the average timing score is high.
 
-W07/W08 have their own three-tier clues, drafts, histories and target unlocks. Use Hear the concept for a generic example. These original signals do not need song recordings. Free composition remains a separate activity in Music Studio. All three completed cases can be reviewed and collected.
+W07/W08 have their own three-tier clues, drafts, histories and target unlocks. These original signals do not need song recordings. Free composition is accessed separately from the Music Studio board. All three completed cases can be reviewed and collected.
 
 ### Build a sound by category
 
@@ -74,21 +74,21 @@ Accept a case, open the desk's **Synthesizer**, and use **Sound sources** to sha
 
 In W04, drag the two points on the pitch curve up or down to shape the chirp. Drag the right point left or right to shorten or lengthen it. Knobs and number fields update with the curve.
 
-The witness description is available immediately. **More help** gives three free layers: the largest difference, the control and direction to try, then a useful goal range. Help does not reduce progress. Submit whenever you want; edits and auditions do not count as attempts.
+The witness description is available immediately. **Help / guidance** gives three free layers: the largest difference, the control and direction to try, then a useful goal range. Help does not reduce progress. Submit whenever you want; edits and auditions do not count as attempts.
 
-Each submission shows **construction progress**, with attribute results below. The score rewards moving toward accepted ranges for the sound's construction controls, rather than comparing audio waveforms. Multiple settings can pass. Reach **90 overall and at least 85 for every attribute** to reveal the reference and unlock A/B playback. This value is not a listening-similarity percentage.
+Each submission shows **construction progress**, with attribute results below. The score rewards moving toward accepted ranges for the sound's construction controls, rather than comparing audio waveforms. Multiple settings can pass. Reach **90 overall and at least 85 for every attribute** to reveal a second tape for the reference. This value is not a listening-similarity percentage.
 
 **Analysis / versions** shows the measured spectrum and RMS envelope from your last audition. Open its **Versions** tab to restore one of your last 30 submissions. Gold is your sound; green is the revealed target. Play again after editing to update the plots. Reference settings appear here after completion. Extra Delay and Reverb are unused in these category cases.
 
 **Export my WAV** saves the full 3.6-second stereo passage under **userdata/wordle/exports**. Export uses the same synthesized sound as auditioning and excludes your playback-volume setting. **Reset sound** resets controls while keeping attempts, clues and completion. Undo/redo works for these edits; progress is saved automatically.
 
-### Difficulty, examples and continuous audition
+### Difficulty, guidance and continuous audition
 
 The category cases offer **Beginner (2 controls)**, **Standard (4)** and **Advanced (5)** at the top of the workshop. New players start with Beginner. Other controls are already set for that task. Each difficulty keeps its own draft, attempts and first-clear review. Existing five-control saves continue under Advanced.
 
-**Hear example** plays a neutral teaching sound twice, first with a lower setting and then a higher setting. Only that control changes. It does not reveal the hidden target, change your patch or add an attempt. Text clues also explain what the control does.
+**Help / guidance** combines clues and equipment navigation in one action. It opens the suggested device or marks a relevant control without changing your answer or adding a submission. Hover over a control for a short explanation.
 
-Enable **Loop mine · auto update** to repeat your sound. Pause editing briefly to generate and hear the latest version. This is a refreshed preview, rather than instantaneous continuous synthesis. Stop, changing difficulty, leaving the page and focus loss cancel the loop and pending updates. Target and A/B playback remain locked until completion.
+Enable **Loop mine · auto update** to repeat your sound. Pause editing briefly to generate and hear the latest version. This is a refreshed preview, rather than instantaneous continuous synthesis. Stop, changing difficulty, leaving the page and focus loss cancel the loop and pending updates. The reference tape appears after completion.
 
 ### Submission feedback and equipment guidance
 
@@ -115,9 +115,11 @@ Hover over buttons and controls for a short explanation of what they do.
 | **Filter** | Change which frequency regions are reduced, making a sound brighter, darker or thinner. |
 | **Delay** | Adjust repeated echoes, their spacing and how long they last. |
 | **Reverb** | Adjust the sense of space and the reverberant tail. |
-| **Audition deck** | Play the available evidence, your current version, or an A/B comparison. |
+| **Audition tapes** | Click a labelled tape directly to hear its sound. Restoration cases have two tapes; hidden-sound cases add the reference tape after completion. Use the shared Stop button below. |
 
 Drag a knob up or down to adjust it, or enter an exact value in the nearby number box. Hold **Shift** while dragging a knob for finer control. Locked controls become available when the current case or stage allows them.
+
+The equipment occupies most of the page. **Submit** and **Restart** sit beside **Undo / Redo** below it. Use the single **Help / guidance** button beside the tapes for assistance. Free composition is entered from the Music Studio board; its editable **Tempo · BPM** appears above the piano roll. Fixed-tempo challenges hide the BPM control.
 
 After changing a setting, play your sound again to hear the update. Listening and editing do not count as submissions; only pressing **Submit** records an attempt.
 
@@ -139,14 +141,14 @@ An empty W02 starting melody has no starting audio. Older saves may lack a clear
 
 ### Restore music and compare your progress
 
-In M01, enable the current repair device, adjust its estimates, and listen to **My repair**. Turning a repair device off leaves that part of the distortion in place. Use **Check & get a clue** whenever you need a direction; checking does not add a submission.
+In M01, enable the current repair device, adjust its estimates, and click the **Your restoration** tape. Turning a repair device off leaves that part of the distortion in place. Use **Help / guidance** whenever you need a direction; checking does not add a submission.
 
-Open **Audition & versions** to use the comparison tools:
+Open **Audition & versions** to choose a passage and keep repair versions:
 
-- Set the start and end times, then play **My repair** to hear that passage. Enable **Loop repair** to repeat it.
+- Set the start and end times, then click **Your restoration** to hear that passage. Enable **Loop repair** to repeat it.
 - During pitch calibration, **Selected note** sets the range to the selected note and a little surrounding audio.
 - **Remember version** keeps your current repair as a comparison reference.
-- **Before → now** plays your remembered version followed by your latest repair over the same range.
+- Click **Your restoration** to hear the current repair over that range.
 - **Restore version** brings back the remembered controls. You can undo this action.
 - Checking or submitting shows whether your score moved closer to or further from the goal compared with your previous check.
 
@@ -227,7 +229,7 @@ If something is wrong:
 | **聲音重建 · W03–W06** | 選擇「自然聲音」「樂器聲音」或「噪聲與電子」，根據口供合成小雨、鳥鳴般的哨音、撥弦音或收音機雜音。 |
 | **自由創作** | 在「音樂工作室」分類選擇此卡片。使用一小節、16 格的卷簾編寫旋律，調整音色與效果，並選擇 60–160 BPM 的速度；不評分。 |
 
-隱藏聲音挑戰不限提交次數，提示免費。W01/W02 中遇到不熟悉的聲音特徵，可以按「**聽聽概念**」聆聽教學示例。
+隱藏聲音挑戰不限提交次數，提示免費。按「**幫助／設備引導**」取得下一層線索，並前往相應設備。
 
 自由創作的音域為 C4–C5，一次演奏一個音。創作草稿與 W02 挑戰分開儲存，切換時會保留各自的內容。
 
@@ -237,7 +239,7 @@ If something is wrong:
 - **W07 · 會說話的門鈴**：位於 Sound Wordle → 信號與旋律。先建立兩音節奏，再上下拖動音符，完成先高而短、後低而長的門鈴。音色已設定；只通過節奏還不能播放目標。
 - **W08 · 空白的一拍**：位於同一分類。四拍內做出三次短聲，第三拍保持安靜。音高與音色固定；若在指定休止區加音或把音延長進去，即使平均時間分數高也不能通關。
 
-W07／W08 各自保存三層提示、草稿、提交歷史與目標解鎖。「聽聽概念」只播放一般示例。這些原創訊號不需要歌曲錄音；自由創作仍在音樂工作室。三個新案件均可復盤並收入收藏。
+W07／W08 各自保存三層提示、草稿、提交歷史與目標解鎖。這些原創訊號不需要歌曲錄音；自由創作請從音樂工作室的案件板進入。三個新案件均可復盤並收入收藏。
 
 ### 依類別製作聲音
 
@@ -257,21 +259,21 @@ W07／W08 各自保存三層提示、草稿、提交歷史與目標解鎖。「�
 
 W04 的音高曲線可以直接操作：上下拖曳兩個端點改變音高，左右拖動右端點改變鳥鳴長度。旋鈕、數值框與曲線會同步更新。
 
-一開始就能讀取口供。「**再給我一點幫助**」依序提供三層免費提示：主要差異、建議控制項及方向、可接受的目標範圍。提示不扣進度分數。調整和試聽不計次，只有提交才記錄一次嘗試。
+一開始就能讀取口供。「**幫助／設備引導**」依序提供三層免費提示：主要差異、建議控制項及方向、可接受的目標範圍。提示不扣進度分數。調整和試聽不計次，只有提交才記錄一次嘗試。
 
-每次提交顯示「**合成進度**」及分項結果。分數依合成控制所代表的聲音特徵與可接受範圍計算，允許不同設定通關，沒有直接比較音訊波形。達到**總分 90，各項至少 85**後，解鎖目標試聽與 A/B。此分數不是聽覺相似度百分比。
+每次提交顯示「**合成進度**」及分項結果。分數依合成控制所代表的聲音特徵與可接受範圍計算，允許不同設定通關，沒有直接比較音訊波形。達到**總分 90，各項至少 85**後，顯示可點擊試聽的目標錄音機。此分數不是聽覺相似度百分比。
 
 「**分析與版本**」顯示上次試聽的實測頻譜和 RMS 包絡；切換至「**版本記錄**」頁籤可恢復最近 30 次提交中的控制值。金色是你的聲音，綠色是通關後揭曉的目標；修改後請重新試聽以更新圖表。通關後此處也會顯示參考設定。這四關不使用額外的 Delay 或 Reverb。
 
 「**匯出我的 WAV**」將完整 3.6 秒雙聲道片段存到 **userdata/wordle/exports**，與試聽使用相同合成結果，不套用播放音量。「**重設聲音**」只重設控制，保留提交、提示及通關記錄；可以撤銷／重做修改，進度會自動儲存。
 
-### 難度、示例與循環試聽
+### 難度、引導與循環試聽
 
 分類案件的工作台上方可選 **入門（2 個控制）**、**標準（4 個）**、**進階（5 個）**。新玩家先從入門開始，其餘控制已代為設定。各難度的草稿、提交和首次復盤獨立保存；原有五控制存檔保留在進階。
 
-「**聽控制示例**」用中性教學聲音先播放較低設定，再播放較高設定，只有一項控制不同。不揭露隱藏答案、不改草稿，也不增加提交。文字提示也會解釋控制影響什麼。
+「**幫助／設備引導**」將線索與設備導航合在一起：取得提示後，前往建議設備或標出相關控制，不改答案、不增加提交。滑鼠停在控制項上可閱讀簡短說明。
 
-啟用「**循環我的聲音 · 自動更新**」後會重複自己的聲音。暫停調參片刻後，程式生成並播放最新版；這是更新預覽，並非瞬間連續合成。停止、切換難度、離開頁面及失焦均會取消循環和待更新請求。目標和 A/B 仍要通關才開放。
+啟用「**循環我的聲音 · 自動更新**」後會重複自己的聲音。暫停調參片刻後，程式生成並播放最新版；這是更新預覽，並非瞬間連續合成。停止、切換難度、離開頁面及失焦均會取消循環和待更新請求。目標錄音機通關後才顯示。
 
 ### 提交回饋與設備引導
 
@@ -298,9 +300,11 @@ W04 的音高曲線可以直接操作：上下拖曳兩個端點改變音高，�
 | **Filter 濾波** | 削弱不同頻段，讓聲音變亮、變暗或變薄。 |
 | **Delay 回聲** | 調整重複回聲、回聲間隔與持續時間。 |
 | **Reverb 混響** | 調整空間感與混響尾音。 |
-| **試聽機** | 播放目前可用的證物、自己的版本，或依次進行 A/B 比較。 |
+| **試聽錄音機** | 直接點擊有標籤的錄音機播放。還原案件有兩台；隱藏聲音通關後才加入目標錄音機。下方共用停止鍵。 |
 
 旋鈕可以上下拖曳，也可以在旁邊的數值框輸入精確數值。拖曳旋鈕時按住 **Shift**，可進行更細的調整。尚未開放的控制項會保持鎖定，直到目前案件或階段允許使用。
+
+設備操作區佔據頁面大部分空間。「**提交**」與「**重新挑戰**」位於下方的「**復原／重做**」右側；協助統一由錄音機旁的「**幫助／設備引導**」進入。自由創作請從音樂工作室案件板選擇，可調的「**速度 · BPM**」會顯示在卷簾上方；固定速度的挑戰不顯示 BPM 控制。
 
 修改設定後，請再次播放，聽取更新後的聲音。試聽與調整不計次數；只有按「**提交**」才會記錄一次嘗試。
 
@@ -322,14 +326,14 @@ W02 的空白起始旋律沒有起點音訊；舊存檔可能缺少歷史答案�
 
 ### 修復音樂與比較進度
 
-在 M01 中，先啟用目前的修復設備，調整估計值，再播放「**目前還原**」。關閉修復器會保留該類失真。需要調整方向時，按「**檢查並取得提示**」；檢查不增加提交次數。
+在 M01 中，先啟用目前的修復設備，調整估計值，再播放「**目前還原**」。關閉修復器會保留該類失真。需要調整方向時，按「**幫助／設備引導**」；檢查不增加提交次數。
 
 開啟「**試聽對比**」頁，即可使用以下工具：
 
 - 設定起止秒數，再播放「目前還原」，試聽指定片段；勾選「**循環還原**」可重複播放。
 - 音高校正階段可按「**選中音符**」，快速選取該音符及前後少許聲音。
 - 「**記住版本**」會將目前修復記為對比基準。
-- 「**之前 → 目前**」會在相同時間範圍內，依次播放記下的版本與最新修復。
+- 點擊「**你的還原**」錄音機，試聽此範圍的目前版本。
 - 「**恢復版本**」會恢復記下的控制項；這項操作也可以復原。
 - 檢查或提交後，畫面會顯示分數相較上次檢查更接近或更遠離目標。
 

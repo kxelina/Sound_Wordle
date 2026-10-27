@@ -121,6 +121,8 @@ class MelodyWindow(QMainWindow):
         self._edit_stacks = {mode: EditHistory(getattr(self.session, mode)) for mode in ('challenge', 'free')}
         self.edit_bar = EditHistoryBar(self, self.session.current, self._restore_edit,
                                        enabled=lambda: not self._closed)
+        from .device_layout import compact_workspace
+        compact_workspace(self,(self.submit_button,self.reset_button,self.history_button),(self.action_row,))
         self.edit_bar.stack = self._edit_stacks[self.session.mode]
         self.renderer.ready.connect(self._ready)
         self.renderer.failed.connect(self._failed)
@@ -187,23 +189,25 @@ class MelodyWindow(QMainWindow):
         self.volume.setVisible(not self.embedded)
         top.addWidget(self.volume)
         layout.addLayout(top)
-        mode_row = QHBoxLayout()
+        self._mode_storage=QWidget(body);self._mode_storage.hide()
         self.mode_buttons = {}
         for mode in ("challenge", "free"):
-            button = QPushButton()
+            button = QPushButton(self._mode_storage)
             button.setCheckable(True)
             button.clicked.connect(lambda checked=False, key=mode: self._set_mode(key))
             self.mode_buttons[mode] = button
-            mode_row.addWidget(button)
         self.tempo_label = QLabel()
         self.tempo = QSpinBox()
         self.tempo.setRange(60, 160)
         self.tempo.setFixedWidth(90)
         self.tempo_label.setMaximumWidth(40)
         self.tempo.valueChanged.connect(self._tempo_changed)
-        mode_row.addWidget(self.tempo_label)
-        mode_row.addWidget(self.tempo)
-        layout.addLayout(mode_row)
+        self.tempo_panel=QWidget()
+        tempo_row=QHBoxLayout(self.tempo_panel);tempo_row.setContentsMargins(0,0,0,0)
+        self.tempo_label.setMaximumWidth(160)
+        self.tempo_label.setStyleSheet('font-size:14px;font-weight:bold;')
+        self.tempo.setStyleSheet('font-size:16px;padding:4px;')
+        tempo_row.addWidget(self.tempo_label);tempo_row.addWidget(self.tempo);tempo_row.addStretch()
         self.rules = self.label()
         self.rules.setStyleSheet("font-size: 12px; color: #bfb79f;")
         layout.addWidget(self.rules)
@@ -222,6 +226,7 @@ class MelodyWindow(QMainWindow):
         self.notebook, self.machine = QGroupBox(), QGroupBox()
         self.notebook.setMaximumWidth(325)
         left, right = QVBoxLayout(self.notebook), QVBoxLayout(self.machine)
+        right.addWidget(self.tempo_panel)
         left.setSpacing(4)
         self.story, self.score, self.cards, self.stale, self.stage_label = [self.label() for _ in range(5)]
         self.story.setStyleSheet("font-size: 13px;")
@@ -239,20 +244,20 @@ class MelodyWindow(QMainWindow):
         self.play_current.clicked.connect(lambda: self._prepare("current"))
         self.play_ab.clicked.connect(lambda: self._prepare("ab"))
         self.stop_button.clicked.connect(self.stop)
-        self.deck = PlaybackDeck(self.play_reference, self.play_current, self.stop_button, self.play_ab, compact=True)
+        self.deck = PlaybackDeck(self.play_reference, self.play_current, self.stop_button, self.play_ab, compact=True,reference_mode='unlocked',reference_titles=('Revealed target','揭曉目標'))
         left.addWidget(self.deck)
         self.feedback = self.label()
         self.feedback.setStyleSheet("font-size: 13px;")
         self.feedback.setMaximumHeight(90)
-        right.addWidget(self.feedback)
+        notes_layout.insertWidget(notes_layout.count()-1,self.feedback)
         hints = QHBoxLayout()
         self.hint_button, self.lesson_button, self.goto_button = [QPushButton() for _ in range(3)]
-        self.hint_button.clicked.connect(self._hint)
+        self.hint_button.clicked.connect(self._help_and_focus)
         self.lesson_button.clicked.connect(lambda: self._prepare("lesson"))
         self.goto_button.clicked.connect(self._goto_suggested)
-        for button in (self.hint_button, self.lesson_button, self.goto_button):
-            hints.addWidget(button)
-        right.addLayout(hints)
+        left.insertWidget(1,self.hint_button)
+        self.lesson_button.hide();self.goto_button.hide()
+        self.lesson_button.setParent(body);self.goto_button.setParent(body)
         self.work_tabs = QTabWidget()
         self.piano = PianoRollEditor()
         if self.case.id!='W02':self.piano.viewport.setMinimumHeight(125)
@@ -290,6 +295,7 @@ class MelodyWindow(QMainWindow):
         columns.addWidget(self.machine, 8)
         layout.addLayout(columns, 1)
         bottom = QHBoxLayout()
+        self.action_row=bottom
         self.submit_button, self.history_button, self.reset_button = [QPushButton() for _ in range(3)]
         self.submit_button.clicked.connect(self._submit)
         self.history_button.clicked.connect(lambda: self.device_requested.emit("analyzer"))
@@ -366,6 +372,9 @@ class MelodyWindow(QMainWindow):
         self.tempo.setValue(s.current.tempo)
         self.tempo.blockSignals(False)
         self.tempo.setEnabled(free)
+        self.tempo_panel.setVisible(free)
+        self.tempo_label.setText('速度 · BPM' if self._language=='zh-Hant' else 'Tempo · BPM')
+        self.deck.set_reference_mode('never' if free else 'unlocked')
         self.editor.set_settings(s.current.sound)
         self.editor.set_locked(not free and s.unlocked < 2)
         rhythm_hints = tuple((n.start, n.length) for n in self.case.pattern.notes) if not free and s.hints[0] >= (2 if self.case.id=='W02' else 3) else ()
@@ -388,7 +397,8 @@ class MelodyWindow(QMainWindow):
         self.play_ab.setEnabled(s.solved and not free)
         self.submit_button.setEnabled(not free)
         self.hint_button.setEnabled(not free)
-        self.goto_button.setVisible(not free)
+        self.goto_button.hide();self.lesson_button.hide()
+        self.hint_button.setVisible(not free)
         self.history_button.setEnabled(bool(s.records))
         self.save_warning.setVisible(bool(self._warning))
         self.save_warning.setText(self.t(self._warning) if self._warning else "")
@@ -428,6 +438,8 @@ class MelodyWindow(QMainWindow):
             return
         result, stage = compare_draft(s.challenge,self.case), s.focus
         tier = s.hints[stage]
+        from .device_layout import help_caption
+        help_caption(self.hint_button,self._language,tier)
         self.feedback.setStyleSheet('')
         if all(result.passed) and s.current_is_submitted:
             text = self.t("solved")
@@ -556,6 +568,10 @@ class MelodyWindow(QMainWindow):
             self.piano.roll.selection=index;self.piano.roll.selected.emit()
             self.piano._reveal_selection();self._show_clue()
         self._save()
+
+    def _help_and_focus(self):
+        self._hint();self._goto_suggested()
+        self.note_scroll.ensureWidgetVisible(self.feedback)
 
     def _goto_suggested(self):
         stage = self.session.focus

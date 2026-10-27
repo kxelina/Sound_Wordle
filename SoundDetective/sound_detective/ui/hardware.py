@@ -3,7 +3,7 @@
 import math
 
 from PySide6.QtCore import QEvent, QPointF, QRectF, Qt, Signal
-from PySide6.QtGui import QColor, QLinearGradient, QPainter, QPen, QRadialGradient
+from PySide6.QtGui import QColor, QLinearGradient, QPainter, QPainterPath, QPen, QRadialGradient
 from PySide6.QtWidgets import (
     QAbstractButton, QButtonGroup, QCheckBox, QDial, QGridLayout, QHBoxLayout, QLabel,
     QPushButton, QSlider, QVBoxLayout, QWidget,
@@ -289,7 +289,7 @@ class TapeDisplay(QAbstractButton):
     def __init__(self, *, compact=False):
         super().__init__()
         self.compact = compact
-        self.setMinimumHeight(80 if compact else 96)
+        self.setMinimumHeight(70 if compact else 96)
         self.setFocusPolicy(Qt.FocusPolicy.StrongFocus)
         self.setCursor(Qt.CursorShape.PointingHandCursor)
         self.playing = False
@@ -303,78 +303,101 @@ class TapeDisplay(QAbstractButton):
         p.setPen(QPen(QColor("#d0b171" if self.hasFocus() or self.underMouse() else "#7c765b"), 1))
         p.setBrush(QColor("#141f19"))
         p.drawRoundedRect(r, 5, 5)
+        radius=min(22,max(12,r.width()*.17))
         for x in (r.width()*.27, r.width()*.73):
-            center = QPointF(x, 31 if self.compact else 38)
+            center = QPointF(x, 27 if self.compact else 38)
             p.setBrush(QColor("#757b62")); p.setPen(QPen(QColor("#b1ae85"), 1))
-            p.drawEllipse(center, 22, 22)
-            p.setBrush(QColor("#1b2820")); p.drawEllipse(center, 8, 8)
+            p.drawEllipse(center, radius, radius)
+            p.setBrush(QColor("#1b2820")); p.drawEllipse(center, radius*.36, radius*.36)
             for i in range(6):
                 angle = math.radians(i*60)
-                p.drawLine(center+QPointF(math.cos(angle)*10, math.sin(angle)*10),
-                           center+QPointF(math.cos(angle)*17, math.sin(angle)*17))
+                p.drawLine(center+QPointF(math.cos(angle)*radius*.45, math.sin(angle)*radius*.45),
+                           center+QPointF(math.cos(angle)*radius*.78, math.sin(angle)*radius*.78))
         p.setPen(QPen(QColor("#9e9f7d"), 2))
-        tape_y = 53 if self.compact else 60
+        tape_y = 46 if self.compact else 60
         p.drawLine(QPointF(r.width()*.27, tape_y), QPointF(r.width()*.73, tape_y))
         p.setBrush(QColor("#e0ae51" if self.playing else "#51482b"))
         p.setPen(Qt.PenStyle.NoPen); p.drawEllipse(QPointF(r.width()-15, 14), 4, 4)
         p.setPen(QColor("#e5d3a1"))
-        text_top = 56 if self.compact else 66
-        p.drawText(QRectF(8, text_top, self.width()-16, self.height()-text_top-4), Qt.AlignmentFlag.AlignCenter, self.caption)
+        text_top = 49 if self.compact else 66
+        if self.caption=='▶':
+            center=QPointF(self.width()/2,text_top+(self.height()-text_top-4)/2)
+            triangle=QPainterPath(center+QPointF(-4,-5))
+            triangle.lineTo(center+QPointF(5,0));triangle.lineTo(center+QPointF(-4,5));triangle.closeSubpath()
+            p.fillPath(triangle,QColor('#e5d3a1'))
+        else:
+            p.drawText(QRectF(8, text_top, self.width()-16, self.height()-text_top-4), Qt.AlignmentFlag.AlignCenter, self.caption)
 
 
 class PlaybackDeck(RackFace):
-    def __init__(self, reference, current, stop, ab=None, *, compact=False):
+    """Two physical tape players; hidden commands retain the shared transport."""
+    def __init__(self, reference, current, stop, ab=None, *, compact=False,
+                 reference_mode='always',reference_titles=('Reference','參照聲音'),
+                 current_titles=('Your sound','你的聲音')):
         super().__init__()
-        self.setObjectName("playback_deck")
-        layout = QVBoxLayout(self)
-        layout.setContentsMargins(14 if compact else 19, 10 if compact else 15, 14 if compact else 19, 10 if compact else 14)
-        layout.setSpacing(5 if compact else 7)
-        self.legend = QLabel("SD • AUDITION DECK")
-        self.legend.setStyleSheet("font-size: 12px; color: #e4cf98; letter-spacing: 2px;")
-        layout.addWidget(self.legend)
-        self.display = TapeDisplay(compact=compact)
-        self.display.setProperty("uiClickForwarded", True)
-        self.display.setObjectName("audition_tape")
-        self.display.clicked.connect(current.click)
-        self._current = current
-        current.installEventFilter(self)
-        self.display.setEnabled(current.isEnabled())
-        layout.addWidget(self.display)
-        row = QHBoxLayout()
-        for button in (reference, current):
-            row.addWidget(button)
-        layout.addLayout(row)
-        row = QHBoxLayout()
-        if ab is not None:
-            row.addWidget(ab, 1)
-        row.addWidget(stop)
-        layout.addLayout(row)
-        self.setStyleSheet("""
-            QPushButton { padding: 8px 5px; min-height: 20px; font-size: 13px;
-                border: 1px solid #968361; border-bottom: 4px solid #141b15;
-                border-radius: 3px; background: qlineargradient(x1:0,y1:0,x2:0,y2:1,stop:0 #5d6152,stop:1 #303b31); }
-            QPushButton:hover, QPushButton:focus { border-color: #efd393; }
-            QPushButton:pressed { border-bottom: 1px solid #141b15; background: #706c4c; }
-            QPushButton:disabled { color: #8a8876; border-color: #494d3f; }
-        """)
-        if compact:
-            self.setStyleSheet(self.styleSheet() + "\nQPushButton { padding: 5px 3px; min-height: 14px; font-size: 12px; }")
-            self.display.setStyleSheet("font-size: 12px;")
-            self.setMinimumHeight(200)
+        self.setObjectName('playback_deck')
+        self._reference,self._current=reference,current
+        self.reference_mode=reference_mode
+        self.reference_titles,self.current_titles=reference_titles,current_titles
+        self.language='en';self._state='stopped';self._label=''
+        layout=QVBoxLayout(self);layout.setContentsMargins(6,6,6,6);layout.setSpacing(4)
+        self.legend=QLabel();self.legend.hide()
+        players=QHBoxLayout();players.setSpacing(6)
+        self.reference_frame,self.reference_title,self.reference_display=self._tape(reference,'reference_tape')
+        self.current_frame,self.current_title,self.display=self._tape(current,'audition_tape')
+        players.addWidget(self.reference_frame,1);players.addWidget(self.current_frame,1)
+        layout.addLayout(players)
+        self.stop=stop;layout.addWidget(stop)
+        for button in (reference,current,ab):
+            if button is not None:
+                button.setParent(self);button.hide()
+        reference.installEventFilter(self);current.installEventFilter(self)
+        self.setStyleSheet('QPushButton {font-size:12px;padding:3px 6px;min-height:16px;}')
+        self.setMinimumHeight(144)
+        self.translate('en');self._sync()
 
-    def translate(self, language):
-        zh = language == "zh-Hant"
-        self.legend.setText("SD • 聲音試聽機" if zh else "SD • AUDITION DECK")
-        self.display.caption = "點擊試聽目前答案" if zh else "CLICK TO PLAY YOUR SOUND"
-        self.display.setAccessibleName("播放目前答案" if zh else "Play reconstruction")
-        set_help(self.display, "play_current", language)
-        self.display.update()
+    def _tape(self,command,name):
+        face=RackFace();row=QVBoxLayout(face);row.setContentsMargins(6,7,6,5);row.setSpacing(2)
+        title=QLabel();title.setWordWrap(True);title.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        title.setStyleSheet('font-size:12px;color:#e5d3a1;')
+        display=TapeDisplay(compact=True);display.setObjectName(name)
+        display.setProperty('uiClickForwarded',True);display.clicked.connect(command.click)
+        row.addWidget(title);row.addWidget(display,1)
+        return face,title,display
 
-    def set_state(self, state, label):
-        self.display.playing = state in ("playing", "loading", "gap")
-        self.display.update()
+    def set_reference_mode(self,mode):
+        if mode not in ('always','unlocked','never'):raise ValueError('Unknown tape layout')
+        self.reference_mode=mode;self._sync()
 
-    def eventFilter(self, watched, event):
-        if watched is self._current and event.type() == QEvent.Type.EnabledChange:
-            self.display.setEnabled(watched.isEnabled())
-        return super().eventFilter(watched, event)
+    def _sync(self):
+        self.display.setEnabled(self._current.isEnabled())
+        self.reference_display.setEnabled(self._reference.isEnabled())
+        self.reference_frame.setVisible(self.reference_mode=='always' or
+            self.reference_mode=='unlocked' and self._reference.isEnabled())
+        self._current.hide();self._reference.hide()
+
+    def translate(self,language):
+        self.language=language;zh=language=='zh-Hant'
+        self.legend.setText('聲音試聽機' if zh else 'Audition tapes')
+        for title,display,names,kind in (
+            (self.reference_title,self.reference_display,self.reference_titles,'reference'),
+            (self.current_title,self.display,self.current_titles,'current')):
+            title.setText(names[zh]);display.caption='▶'
+            display.setAccessibleName(names[zh])
+            display.setToolTip(('點擊錄音機播放'+names[zh]+'；使用下方停止鍵結束。') if zh else
+                ('Click this tape to play '+names[zh].lower()+'. Use Stop below to end playback.'))
+            display.update()
+        self._sync()
+
+    def set_state(self,state,label):
+        self._state,self._label=state,label
+        active=state in ('playing','loading')
+        is_reference=any(word in label.lower() for word in ('target','reference','evidence','before','contrast','目標','參照','證物','修改前','對比'))
+        self.reference_display.playing=active and is_reference
+        self.display.playing=active and not is_reference
+        self.reference_display.update();self.display.update()
+
+    def eventFilter(self,watched,event):
+        if watched in (self._reference,self._current) and event.type()==QEvent.Type.EnabledChange:
+            self._sync()
+        return super().eventFilter(watched,event)

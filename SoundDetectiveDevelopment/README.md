@@ -30,3 +30,6 @@ $testRun = Join-Path (Get-Location) ('.runtime/test-' + [guid]::NewGuid().ToStri
 - `validate_submission_guidance_ui.py`：真實音訊、場景旋鈕／音符指標拖動、分數差、雙語描邊、固定試聽機與當次首次復盤。
 
 - `test_knock_volume.py`：T09 專用播放電平、所有試聽入口、復盤／收藏導出、背景快取隔離、峰值上限及實際音訊／評分不變。
+
+- `test_device_workspace.py`：雙語實體錄音機、隱藏目標門檻、合併協助、底部操作列、場景尺寸及自由創作 BPM。
+- `validate_device_workspace_ui.py`：1280×720 場景直接點錄音機，以真實引擎靜音檢查切換、停止、提交、幫助及自由創作速度；截取各模式雙語畫面。

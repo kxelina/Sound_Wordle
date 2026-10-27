@@ -35,7 +35,7 @@ with TemporaryDirectory(dir=out) as folder:
         QTest.mouseClick(w.view.viewport(),Qt.MouseButton.LeftButton,pos=point(button,QPointF(button.rect().center())));app.processEvents()
     assert c.case.difficulty=='beginner' and not c.play_reference.isEnabled()
     c._prepare('target');assert c._armed is None
-    click(c.example_button);wait(lambda:bool(errors) or c.player.state=='playing');assert not errors,errors
+    c._prepare('example');wait(lambda:bool(errors) or c.player.state=='playing');assert not errors,errors
     wait(lambda:c.player.state=='stopped' and c._armed is None)
     assert c.session.attempts==0 and c.session.current==c.case.initial
     for key,target in (('h2',100),('h3',600)):
@@ -52,12 +52,12 @@ with TemporaryDirectory(dir=out) as folder:
     assert c.feature_readout.isVisible()
     for lang in ('en','zh-Hant'):
         w.preferences.language=lang;w._translate();app.processEvents();w.view.grab().save(str(out/('W09-'+lang+'.png')))
-    click(c.play_current);wait(lambda:bool(errors) or c.player.state=='playing');assert not errors,errors
+    click(c.deck.display);wait(lambda:bool(errors) or c.player.state=='playing');assert not errors,errors
     wait(lambda:c.player.state=='stopped' and c._armed is None)
     assert c.spectrum.traces
     click(c.submit_button);app.processEvents();assert w.page=='review' and c.session.solved
     assert load_source_session(c.save_path,c.case).solved
-    w._leave_review();w._activate_device('synth');click(c.play_ab)
+    w._leave_review();w._activate_device('synth');click(c.deck.reference_display)
     wait(lambda:bool(errors) or c.player.state=='playing');assert not errors,errors
     wait(lambda:c.player.state=='stopped' and c._armed is None)
     assert 'W09:beginner' in w.evidence_store.entries
@@ -69,7 +69,7 @@ with TemporaryDirectory(dir=out) as folder:
     exported=next((Path(folder)/'evidence-exports').glob('*.wav'));info=sf.info(exported)
     assert info.samplerate==44100 and info.frames==158760
     report={'scene_pointer_harmonic_faders':True,'example_without_answer_or_attempt':True,
-            'bilingual_feature_readout':True,'actual_player_and_ab_completed':True,'first_clear_collection':True,
+            'bilingual_feature_readout':True,'actual_player_and_reference_completed':True,'first_clear_collection':True,
             'collected_wav_export':True,'saved_solution_reloaded':True,'sample_rate':info.samplerate,
             'frames':info.frames,'volume':0,'errors':errors,'game_root':str(GAME),'python_executable':sys.executable,
             'sclang':str(find_executable('sclang.exe')),'scsynth':str(find_executable('scsynth.exe'))}
