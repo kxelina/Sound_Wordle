@@ -26,6 +26,7 @@ from ..game.source_learning import (DIFFICULTIES,with_difficulty,source_path,
 from .edit_history import EditHistoryBar
 from .hardware import PlaybackDeck, RackFace, RotaryKnob, InlineChoices
 from .hover_help import set_help
+from .investigation_feedback import SubmissionFeedback,ScoreSnapshot,guidance
 
 
 class StatusLabel(QLabel):
@@ -361,7 +362,8 @@ class SourceCaseWindow(QMainWindow):
         notes_layout = QVBoxLayout(notes)
         notes_layout.setContentsMargins(2,2,2,2)
         self.story, self.score, self.feedback, self.review = [QLabel() for _ in range(4)]
-        for label in (self.story,self.score,self.feedback):
+        self.submission_feedback=SubmissionFeedback()
+        for label in (self.story,self.score,self.submission_feedback,self.feedback):
             label.setWordWrap(True)
             notes_layout.addWidget(label)
         notes_layout.addStretch()
@@ -557,6 +559,22 @@ class SourceCaseWindow(QMainWindow):
 
     def _refresh(self):
         s = self.session
+        def snapshot(record):
+            if record is None:return None
+            result=assess_source(self.case,SourcePatch.from_dict(record['patch']))
+            return ScoreSnapshot(result.total,result.scores,self.case.fingerprint,record['number'])
+        self.submission_feedback.show_scores(snapshot(s.records[-1]) if s.records else None,
+            snapshot(s.records[-2]) if len(s.records)>1 else None,language=self._language,
+            labels={spec.key:spec.labels[self.zh] for spec in score_specs(self.case)},rounding='round')
+        keys=()
+        if s.hints and not assess_source(self.case,s.current).passed and not is_silent(s.current):
+            if self.case.scoring=='harmonic_groups':
+                from ..game.harmonic_rules import guidance_keys
+                keys=guidance_keys(self.case,s.current,assess_source(self.case,s.current))
+            else:
+                result=assess_source(self.case,s.current)
+                keys=(min(result.scores,key=result.scores.get),)
+        guidance(self).show_targets(self.editor,keys,'synth')
         if s.last:
             result = assess_source(self.case,s.last)
             suffix = self.text(" · edited since submission"," · 提交後已修改") if s.current != s.last else ""

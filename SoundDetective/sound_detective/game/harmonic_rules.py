@@ -39,10 +39,25 @@ def problem_key(patch, result):
 
 
 def suggested_control(case, patch, result):
+    return guidance_keys(case,patch,result)[0]
+
+
+def guidance_keys(case, patch, result):
     key = problem_key(patch,result)
-    candidates = {'odd_upper': ('h2', 'h3'), 'upper_power': ('h3', 'h1'),
-                  'spectral_center': ('h5', 'h3', 'h2')}[key]
-    return next(k for k in candidates if k in case.editable_parameters)
+    values=dict(patch.values);direction=result.directions[key]
+    if key=='odd_upper':
+        candidates=('h2','h4')
+        possible=lambda k:values[k]>0 if direction<0 else values[k]<1
+    elif key=='upper_power':
+        candidates=('h3','h5','h2','h4')
+        possible=lambda k:values[k]<1 if direction<0 else values[k]>0
+    else:
+        candidates=('h5','h4','h3','h2')
+        possible=lambda k:values[k]<1 if direction<0 else values[k]>0 and int(k[1:])>features(patch)['spectral_center']
+    available=tuple(k for k in candidates if k in case.editable_parameters and possible(k))
+    if available:return available[:2]
+    fallback=tuple(k for k in case.editable_parameters if k!='h1')
+    return fallback[:1] or ('h1',)
 
 
 def clue(case, patch, result, tier, language):

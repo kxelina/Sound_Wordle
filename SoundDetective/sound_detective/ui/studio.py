@@ -138,6 +138,7 @@ class Hotspot(QGraphicsPathItem):
         super().__init__(path)
         self.key, self.activate, self.hover = key, activate, hover
         self.highlighted = False
+        self.guided = False
         self.persistent = persistent
         self.setAcceptHoverEvents(True)
         self.setFlag(QGraphicsItem.GraphicsItemFlag.ItemIsFocusable)
@@ -146,7 +147,7 @@ class Hotspot(QGraphicsPathItem):
         self.setPen(QPen(QColor("#d9bd7f"), 1.4))
 
     def paint(self, painter, option, widget=None):
-        strong = self.highlighted or self.hasFocus()
+        strong = self.highlighted or self.hasFocus() or self.guided
         if not strong and not self.persistent:
             return
         painter.setRenderHint(QPainter.RenderHint.Antialiasing)
@@ -709,6 +710,10 @@ class StudioWindow(QMainWindow):
         store=self._case_journey()
         timing=store.timings.get(controller.case.id,{})
         seconds=timing.get('seconds') if timing.get('complete') else None
+        if not hasattr(self,'_clear_submission_feedback'):self._clear_submission_feedback={}
+        if controller.case.id not in store.reviews:
+            key=(controller.case.id,getattr(controller.case,'difficulty','advanced'))
+            self._clear_submission_feedback[key]=getattr(getattr(controller,'submission_feedback',None),'payload',None)
         record=store.remember(build_debrief(controller.case,controller.session,seconds=seconds))
         if record.kind!='music' and record.clips['final'] is not None:
             self.evidence_store.remember(record,getattr(controller.case,'difficulty','advanced'))
@@ -738,6 +743,8 @@ class StudioWindow(QMainWindow):
         controller.stop()
         self._review_return=self.page if self.page in ('room','desk','device') else 'device'
         self.debrief_panel.load(record,controller.case)
+        key=(controller.case.id,getattr(controller.case,'difficulty','advanced'))
+        self.debrief_panel.show_submission(getattr(self,'_clear_submission_feedback',{}).get(key))
         self._show_page('review')
         return True
 
@@ -861,6 +868,9 @@ class StudioWindow(QMainWindow):
             self.view.scene().removeItem(self.device_proxy)
             self.device_proxy.deleteLater()
         self.controller = candidate
+        from .investigation_feedback import guidance
+        guidance(candidate).changed.connect(self._guide_device)
+        self._guide_device(guidance(candidate).device)
         if hasattr(candidate,'difficulty_changed'):
             candidate.difficulty_changing.connect(self._flush_device_time)
             candidate.difficulty_changed.connect(self._source_difficulty_changed)
@@ -885,6 +895,11 @@ class StudioWindow(QMainWindow):
         self.device_proxy = self._proxy(frame, 50, 90, 1180, 610)
         self.device_proxy.hide()
         return True
+
+    def _guide_device(self,device):
+        for key,item in self.device_hotspots.items():
+            item.guided=key==device
+            item.update()
 
     def _wordle_device(self, device):
         if self.page == "device" and (self.preferences.active_case or "").startswith("W"):

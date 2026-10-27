@@ -21,6 +21,7 @@ from ..game.progress import PROGRESS_VERSION
 from ..game.diagnostics import describe_clue, visible_clue_codes
 from ..audio.clue_features import DiagnosticContext
 from .parameter_editor import ParameterEditor
+from .investigation_feedback import SubmissionFeedback,ScoreSnapshot,tone_guidance
 
 
 TEXT = {
@@ -159,7 +160,8 @@ class CaseWindow(AudioBench):
         self.target_group, self.current_group = QGroupBox(), QGroupBox()
         left, right = QVBoxLayout(self.target_group), QVBoxLayout(self.current_group)
         self.target_info, self.score, self.clue, self.review = (QLabel() for _ in range(4))
-        for label in (self.target_info, self.score, self.clue, self.review):
+        self.submission_feedback=SubmissionFeedback()
+        for label in (self.target_info, self.score, self.submission_feedback, self.clue, self.review):
             label.setWordWrap(True)
             left.addWidget(label)
         self.score.setObjectName("case_score")
@@ -279,6 +281,11 @@ class CaseWindow(AudioBench):
         text, session = TEXT[self._language], self.session
         self._show_progress()
         record = session.last
+        snapshot=lambda item:ScoreSnapshot(item.total,item.modules,item.version,item.number) if item else None
+        previous=session.attempts[-2] if len(session.attempts)>1 else None
+        self.submission_feedback.show_scores(snapshot(record),snapshot(previous),language=self._language,
+            labels={key:value[self._language=='zh-Hant'] for key,value in GROUPS.items()},
+            details=bool(record and record.total>=self.case.hint_threshold))
         self.target_info.setText(text["gate"].format(threshold=self.case.hint_threshold))
         if record and record.version != PROGRESS_VERSION:
             self.target_info.setText(self.target_info.text() + "\n" + text["legacy_note"])
@@ -326,6 +333,9 @@ class CaseWindow(AudioBench):
         if session.attempts:
             self.history.scrollToBottom()
         self._lock_controls()
+        # Audio comparison temporarily disables controls. Resolve the rings
+        # after restoring their enabled state, not during the pending lock.
+        tone_guidance(self,visible_clue_codes(session.visible_diagnostics,self.case) if session.visible_diagnostics else ())
 
     def _lock_controls(self):
         pending = self._submission_token is not None

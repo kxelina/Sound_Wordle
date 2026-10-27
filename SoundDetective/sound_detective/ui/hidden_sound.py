@@ -7,7 +7,7 @@ from PySide6.QtCore import QEvent, Qt, QTimer, Signal
 from PySide6.QtGui import QKeySequence, QShortcut
 from PySide6.QtWidgets import (QComboBox, QGroupBox, QHBoxLayout, QHeaderView, QLabel,
     QMainWindow, QProgressBar, QPushButton, QSlider, QTableWidget, QTableWidgetItem,
-    QVBoxLayout, QWidget, QAbstractItemView)
+    QVBoxLayout, QWidget, QAbstractItemView,QScrollArea,QFrame)
 
 from ..audio.sc_client import ROOT
 from ..audio.playback import AudioPlayer, PlaybackItem
@@ -18,6 +18,7 @@ from ..game.parameters import PARAMETERS
 from ..game.storage import SessionStore
 from .hardware import PlaybackDeck
 from .parameter_editor import ParameterEditor
+from .investigation_feedback import SubmissionFeedback,ScoreSnapshot,guidance,device_for
 
 
 TEXT = {
@@ -222,9 +223,13 @@ class HiddenSoundWindow(QMainWindow):
         self.score.setObjectName("wordle_score")
         self.score.setStyleSheet("font-size: 19px; color: #f1d59a;")
         self.cards.setObjectName("wordle_requirements")
-        for label in (self.story, self.score, self.stale, self.cards):
-            left.addWidget(label)
-        left.addStretch()
+        self.submission_feedback=SubmissionFeedback()
+        notes=QWidget();notes_layout=QVBoxLayout(notes);notes_layout.setContentsMargins(0,0,0,0)
+        for label in (self.story, self.score, self.submission_feedback, self.stale, self.cards):
+            notes_layout.addWidget(label)
+        notes_layout.addStretch()
+        self.note_scroll=QScrollArea();self.note_scroll.setWidgetResizable(True);self.note_scroll.setFrameShape(QFrame.Shape.NoFrame)
+        self.note_scroll.setMinimumHeight(0);self.note_scroll.setWidget(notes);left.addWidget(self.note_scroll,1)
         self.play_reference, self.play_current, self.stop_button, self.play_ab = (QPushButton() for _ in range(4))
         self.play_reference.clicked.connect(lambda: self._prepare("reference"))
         self.play_current.clicked.connect(lambda: self._prepare("current"))
@@ -315,10 +320,19 @@ class HiddenSoundWindow(QMainWindow):
         self.deck.translate(self._language)
         self.status.setText(self.t("initial"))
         self._refresh(history=True)
+        QTimer.singleShot(0,lambda:self.note_scroll.ensureWidgetVisible(self.score) if not self._closed else None)
         apply_window_help(self, "hidden", self._language)
 
     def _refresh(self, *, history=False):
         s = self.session
+        def snapshot(record):
+            if record is None:return None
+            result=assess(settings_from_parameters(record['parameters']))
+            return ScoreSnapshot(result.total,dict(zip(('envelope','harmonics','delay'),result.scores)),'W01-v1',record['number'])
+        from ..game.parameters import GROUPS
+        self.submission_feedback.show_scores(snapshot(s.records[-1]) if s.records else None,
+            snapshot(s.records[-2]) if len(s.records)>1 else None,language=self._language,
+            labels={key:label[self._language=='zh-Hant'] for key,label in GROUPS.items()})
         self.stage_label.setText(self.t("stage").format(n=s.focus + 1, name=self.t("stages")[s.focus].split("·", 1)[1].strip()))
         if not s.records:
             self.score.setText(self.t("unscored"))
@@ -407,6 +421,11 @@ class HiddenSoundWindow(QMainWindow):
             if s.solved:
                 message = self.t("practice") + "\n" + message
         self.feedback.setText(message)
+        problem=result.problem(s.focus)
+        keys=()
+        if s.hints[s.focus] and problem:
+            keys={'brightness':('h2','h3','h4'),'echo':('delay_enabled',)}.get(problem.code,(problem.code,))
+        guidance(self).show_targets(self.editor,keys,device_for(keys[0]) if keys else '')
 
     def _parameters_changed(self):
         if self._closed:

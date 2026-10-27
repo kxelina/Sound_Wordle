@@ -25,3 +25,6 @@ $testRun = Join-Path (Get-Location) ('.runtime/test-' + [guid]::NewGuid().ToStri
 
 - `test_wire_ghost.py`：W09 群組特徵、多解、音量縮放、方向提示、靜音、存檔指紋、難度、推桿、收藏，以及實際頻譜核對。既有逐控制測試只參數化舊規則，W09 以獨立群組規則檢查；共用流程仍包含 W09。
 - `validate_wire_ghost_ui.py`：實際場景座標拖推桿，真實引擎、靜音完成示例／試聽／A/B、雙語、通關與收藏 WAV 匯出；可用 SOUND_DETECTIVE_QA_GAME 指定安裝目錄。
+
+- `test_submission_guidance.py`：相鄰提交、診斷門檻、規則隔離、透明高亮、異步鎖定、旋律選取、雙語布局、首次結案與歌曲步驟比較。
+- `validate_submission_guidance_ui.py`：真實音訊、場景旋鈕／音符指標拖動、分數差、雙語描邊、固定試聽機與當次首次復盤。

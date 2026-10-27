@@ -90,7 +90,7 @@ class ToneDevicePanel(CaseWindow):
         self._plot_sources = None
         super().__init__(**kwargs)
         self.editor.use_hardware_controls()
-        self.deck = PlaybackDeck(self.play_a, self.play_b, self.stop_button, self.play_ab,compact=self.case.id=='T09')
+        self.deck = PlaybackDeck(self.play_a, self.play_b, self.stop_button, self.play_ab,compact=True)
         self.target_group.setMaximumWidth(430)
         self.target_group.layout().addWidget(self.deck)
         self.player.state_changed.connect(self.deck.set_state)
@@ -109,11 +109,11 @@ class ToneDevicePanel(CaseWindow):
             row.addWidget(self.question);row.addWidget(self.theories);row.addWidget(self.theory_feedback)
             self.current_group.layout().insertWidget(0,self.investigation_box)
         self.target_group.layout().insertWidget(0, self.subtitle)
-        if self.case.id=='T09':
+        if self.case.id.startswith('T'):
             left=self.target_group.layout()
             while left.count():left.takeAt(0)
             notes=QWidget();note_layout=QVBoxLayout(notes);note_layout.setContentsMargins(0,0,0,0)
-            for widget in (self.subtitle,self.target_info,self.score,self.clue,self.review,self.review_button):note_layout.addWidget(widget)
+            for widget in (self.subtitle,self.target_info,self.score,self.submission_feedback,self.clue,self.review,self.review_button):note_layout.addWidget(widget)
             note_layout.addStretch()
             self.note_scroll=QScrollArea();self.note_scroll.setWidgetResizable(True);self.note_scroll.setFrameShape(QFrame.Shape.NoFrame)
             self.note_scroll.setMinimumHeight(0);self.note_scroll.setWidget(notes)

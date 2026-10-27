@@ -79,6 +79,9 @@ class DebriefPanel(QFrame):
         layout.addWidget(self.heading);layout.addWidget(self.statistics)
         self.tabs=QTabWidget();layout.addWidget(self.tabs,1)
         summary=QWidget();summary_layout=QVBoxLayout(summary)
+        from .investigation_feedback import SubmissionFeedback
+        self.submission_feedback=SubmissionFeedback();self.submission_payload=None
+        summary_layout.addWidget(self.submission_feedback)
         self.changes,self.note=QLabel(),QLabel()
         self.changes.setWordWrap(True);self.note.setWordWrap(True)
         summary_layout.addWidget(self.changes);summary_layout.addWidget(self.note)
@@ -107,14 +110,26 @@ class DebriefPanel(QFrame):
         self.busy=QProgressBar();self.busy.setRange(0,0);self.busy.setFixedHeight(3);self.busy.hide();layout.addWidget(self.busy)
         self.status=StatusLabel();layout.addWidget(self.status)
 
+    def show_submission(self,payload):
+        self.submission_payload=payload
+        if payload:
+            current,previous,options=payload
+            # The first-clear summary remains tied to the clearing submission;
+            # component captions use the review's own bilingual definitions.
+            labels={key:self.record.label(key,self.zh) for key in current.components} if self.record else {}
+            self.submission_feedback.show_scores(current,previous,**dict(options,language=self.language,labels=labels))
+        else:self.submission_feedback.show_scores()
+
     def load(self,record,case):
         self.stop()
         if not isinstance(record,Debrief) or record.case_id!=case.id:raise ValueError('Review belongs to another case')
         self.record,self.case=record,case
+        self.submission_payload=None
         self.translate(self.language)
 
     def translate(self,language):
         self.language=language
+        self.show_submission(self.submission_payload)
         for i,title in enumerate(self.text(('Case closed','Component progress','Reference controls'),('結案復盤','分項進度','參考設定'))):self.tabs.setTabText(i,title)
         for role,title in zip(('initial','final','target'),self.text(('Play starting sound','Play cleared answer','Play target'),('播放起點聲音','播放通關答案','播放目標'))):
             button=self.audio_buttons[role];button.setText(title);set_help(button,'debrief_'+role,language)

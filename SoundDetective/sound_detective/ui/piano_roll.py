@@ -3,7 +3,7 @@
 from PySide6.QtCore import Qt, Signal, QRectF, QPointF, QSize, QTimer
 from PySide6.QtGui import QColor, QPainter, QPen, QValidator
 from PySide6.QtWidgets import (QWidget, QVBoxLayout, QHBoxLayout, QLabel, QPushButton,
-                               QSpinBox, QLayout, QScrollArea)
+                               QSpinBox, QLayout, QScrollArea,QSizePolicy)
 
 from ..game.melody import GridNote, MelodyPattern, STEPS, LOW_PITCH, HIGH_PITCH
 
@@ -334,9 +334,11 @@ class PianoRollEditor(QWidget):
         # Wrapping gives the outer scroll area's layout a height-for-width
         # minimum based on the full canvas, hiding low notes and the inspector.
         self.instructions.setWordWrap(False)
+        self.instructions.setSizePolicy(QSizePolicy.Policy.Ignored,QSizePolicy.Policy.Preferred)
         self.instructions.setStyleSheet("font-size: 12px;")
         layout.addWidget(self.instructions)
         self.readout = QLabel()
+        self.readout.setSizePolicy(QSizePolicy.Policy.Ignored,QSizePolicy.Policy.Preferred)
         self.readout.setStyleSheet('font-size: 13px; color: #ead29a;')
         layout.addWidget(self.readout)
         self.roll = PianoRoll()
@@ -371,6 +373,7 @@ class PianoRollEditor(QWidget):
         row.addWidget(self.delete_button)
         layout.addLayout(row)
         self.message = QLabel()
+        self.message.setSizePolicy(QSizePolicy.Policy.Ignored,QSizePolicy.Policy.Preferred)
         self.message.setStyleSheet("font-size: 12px; color: #deb46d;")
         layout.addWidget(self.message)
         layout.addStretch()
@@ -494,3 +497,4 @@ class PianoRollEditor(QWidget):
             text = ('上下拖音塊調音高；左右拖動移位置；拉左右邊緣改長短。每拍 4 格。' if zh else
                     'Drag up/down for pitch, left/right for time; pull either edge for length. 4 cells per beat.')
         self.instructions.setText(text)
+        self.instructions.setToolTip(text)

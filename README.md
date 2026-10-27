@@ -15,6 +15,7 @@ A Windows desktop sound-construction game built with Python, PySide6 and SuperCo
 - A five-step interactive tutorial and persistent first-clear reviews with audio comparisons.
 - Category difficulties with 2/4/5 controls, one-control teaching examples, auto-updating loop auditions and an exportable evidence cabinet.
 - Optional local anonymous playtest logs; no participant data is uploaded.
+- Submission-to-submission score changes and improvement/setback summaries, plus gold control/device outlines for eligible clues. Scores, hint gates and hidden-target rules remain unchanged.
 
 [Full English / 繁體中文 player guide](SoundDetective/README.md)
 
@@ -51,7 +52,7 @@ Read [environment notes](SoundDetective/docs/ENVIRONMENT.md) for engine path con
 After installing the dependencies, run the source-only Wordle and piano-roll checks from the repository root:
 
 ```powershell
-.\SoundDetective\.venv\Scripts\python.exe -m pytest SoundDetectiveDevelopment/test_wire_ghost.py SoundDetectiveDevelopment/test_after_hours.py SoundDetectiveDevelopment/test_learning_tools.py SoundDetectiveDevelopment/test_player_journey.py SoundDetectiveDevelopment/test_sound_categories.py SoundDetectiveDevelopment/test_note_dragging.py -q
+.\SoundDetective\.venv\Scripts\python.exe -m pytest SoundDetectiveDevelopment/test_submission_guidance.py SoundDetectiveDevelopment/test_wire_ghost.py SoundDetectiveDevelopment/test_after_hours.py SoundDetectiveDevelopment/test_learning_tools.py SoundDetectiveDevelopment/test_player_journey.py SoundDetectiveDevelopment/test_sound_categories.py SoundDetectiveDevelopment/test_note_dragging.py -q
 ```
 
 These checks include actual SuperCollider rendering. Some additional music-restoration
@@ -93,3 +94,5 @@ with those assets present. See the dated validation notes for exact counts and s
 
 [開發測試與驗證紀錄](SoundDetectiveDevelopment/VALIDATION.md) ·
 [外部資源及 AI 輔助紀錄](SoundDetective/docs/AI_ASSISTANCE.md)
+
+新增提交前後的分數差與改善／退步摘要，以及提示控制和設備的金色描邊。音色診斷門檻、隱藏目標和原計分規則保持不變。

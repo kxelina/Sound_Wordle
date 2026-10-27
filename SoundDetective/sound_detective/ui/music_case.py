@@ -102,6 +102,8 @@ class MusicCaseWindow(QMainWindow):
     def __init__(self, parent=None, *, case=None, player=None, renderer=None, save_path=None,
                  language=None, volume=None):
         super().__init__(parent)
+        self._submission_snapshots={}
+        self._submitted_feedback=None
         self.case = case or load_music_case()
         self.pitch_map = load_recorded_pitch_map(self.case)
         self.session = MusicSession(self.case)
@@ -209,6 +211,9 @@ class MusicCaseWindow(QMainWindow):
         clue_body = QWidget()
         clue_layout = QVBoxLayout(clue_body)
         clue_layout.setContentsMargins(0, 0, 2, 0)
+        from .investigation_feedback import SubmissionFeedback
+        self.submission_feedback=SubmissionFeedback()
+        clue_layout.addWidget(self.submission_feedback)
         self.clue_labels = []
         for _ in range(3):
             label = QLabel()
@@ -521,13 +526,23 @@ class MusicCaseWindow(QMainWindow):
             self.stage_hint.setText(TEXT[self._language]["ready_submit"] if self._pitch_done() == len(self.case.regions) else module.hint(self._language))
 
     def _show_repair(self):
+        from .investigation_feedback import guidance,device_for
+        self._show_submission_feedback()
         text = TEXT[self._language]
         if self._repair_stale or self._repair_report is None:
+            guidance(self).show_targets()
             message = text["repair_stale" if self._repair_stale else "repair_pending"]
             self.repair_result.setText(message)
             self.stage_hint.setText(message)
             return
         current = next((module for module in self._repair_report.modules if module.group == self.session.stage), None)
+        keys=();extra=();device=''
+        if current and current.issue not in ('matched','inactive'):
+            if current.group=='pitch':extra=(self.pitch_editor,);device='synth'
+            else:
+                key=f'{current.group}_enabled' if current.issue=='off' else 'filter_mode' if current.issue=='mode' else current.issue
+                keys=(key,);device=device_for(key)
+        guidance(self).show_targets(self.effects_editor,keys,device,extra)
         lines = [text["repair_total"].format(score=100*current.fraction if current else 100), text["repair_pending"]]
         for group in self.session.stages:
             module = next(item for item in self._repair_report.modules if item.group == group)
@@ -637,6 +652,16 @@ class MusicCaseWindow(QMainWindow):
         self._invalidate()
         self._update_comparison()
         result = self.session.submit()
+        from .investigation_feedback import ScoreSnapshot
+        current=ScoreSnapshot(result.score,{result.stage:result.score},'music:'+result.stage,self.session.attempts)
+        previous=self._submission_snapshots.get(result.stage)
+        # Other stages can intervene; consecutive means consecutive submissions
+        # within this step, not an unrelated global attempt number.
+        if previous is not None:
+            from dataclasses import replace
+            previous=replace(previous,number=current.number-1)
+        self._submitted_feedback=(current,previous,result.stage)
+        self._submission_snapshots[result.stage]=current
         if result.passed:
             self.edit_bar.reset(self.session.settings)
             self._reset_comparison()
@@ -687,6 +712,7 @@ class MusicCaseWindow(QMainWindow):
 
     def _restart(self):
         self.stop()
+        self._submission_snapshots={};self._submitted_feedback=None
         self.session.restart()
         self.edit_bar.reset(self.session.settings)
         self._reset_comparison()
@@ -702,6 +728,17 @@ class MusicCaseWindow(QMainWindow):
         self._lock()
         self._goto_stage()
         self._save()
+
+    def _show_submission_feedback(self):
+        if not hasattr(self,'submission_feedback'):return
+        if self._submitted_feedback is None:
+            self.submission_feedback.show_scores();return
+        current,previous,stage=self._submitted_feedback
+        zh=self._language=='zh-Hant'
+        name=GROUP_NAMES[stage][zh]
+        self.submission_feedback.show_scores(current,previous,language=self._language,labels={stage:name},rounding='round')
+        text=(f'上次提交 · {name}\n' if zh else f'Last submission · {name}\n')+self.submission_feedback.text()
+        self.submission_feedback.setText(text);self.submission_feedback.setToolTip(text)
 
     def _reset_comparison(self):
         self._reference_settings = self.session.settings

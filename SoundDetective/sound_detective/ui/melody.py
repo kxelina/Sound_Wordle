@@ -18,6 +18,7 @@ from ..game.progress import PROGRESS_CLUES
 from ..game.storage import SessionStore
 from .hardware import PlaybackDeck
 from .parameter_editor import ParameterEditor
+from .investigation_feedback import SubmissionFeedback,ScoreSnapshot,guidance,progress_control,device_for
 from .piano_roll import PianoRollEditor
 
 
@@ -227,7 +228,8 @@ class MelodyWindow(QMainWindow):
         self.score.setStyleSheet("font-size: 17px; color: #efd6a0;")
         self.stale.setStyleSheet("font-size: 12px; color: #bfb79f;")
         notes=QWidget();notes_layout=QVBoxLayout(notes);notes_layout.setContentsMargins(0,0,0,0)
-        for label in (self.story, self.stage_label, self.score, self.cards, self.stale):
+        self.submission_feedback=SubmissionFeedback()
+        for label in (self.story, self.stage_label, self.score, self.submission_feedback, self.cards, self.stale):
             notes_layout.addWidget(label)
         notes_layout.addStretch()
         self.note_scroll=QScrollArea();self.note_scroll.setWidgetResizable(True);self.note_scroll.setFrameShape(QFrame.Shape.NoFrame)
@@ -344,6 +346,14 @@ class MelodyWindow(QMainWindow):
 
     def _refresh(self, *, history=False):
         s, free = self.session, self.session.mode == "free"
+        def snapshot(record):
+            if record is None:return None
+            result=compare_draft(Draft.from_dict(record['draft']),self.case)
+            labels=('rhythm','melody','timbre')
+            return ScoreSnapshot(result.total,{labels[i]:result.scores[i] for i in self.case.stages},self.case.fingerprint or 'W02-v1',record['number'])
+        names=dict(zip(('rhythm','melody','timbre'),self.t('groups')))
+        self.submission_feedback.show_scores(snapshot(s.records[-1]) if s.records and not free else None,
+            snapshot(s.records[-2]) if len(s.records)>1 and not free else None,language=self._language,labels=names)
         self.notebook.setTitle(self.t("free_notebook" if free else "notebook"))
         self.machine.setTitle(self.t("free_machine") if free else self.case.title[self._language])
         self.rules.setText(self.t("free_rules" if free else "rules"))
@@ -414,6 +424,7 @@ class MelodyWindow(QMainWindow):
         s, zh = self.session, self._language == "zh-Hant"
         if s.mode == "free":
             self.feedback.setText(self.t("free_help"))
+            guidance(self).show_targets()
             return
         result, stage = compare_draft(s.challenge,self.case), s.focus
         tier = s.hints[stage]
@@ -464,6 +475,16 @@ class MelodyWindow(QMainWindow):
             text = self.t("practice") + " " + text
         self.feedback.setText(text)
         self.feedback.setToolTip(text)
+        keys=();extra=();device=''
+        if tier and not result.passed[stage]:
+            if stage<2:
+                extra=(self.piano.viewport,self.piano.pitch) if stage==1 else (self.piano.viewport,self.piano.start,self.piano.length)
+                if not s.challenge.pattern.notes:extra=(self.piano.add_button,)
+                device='synth'
+            elif result.timbre:
+                key=progress_control(result.timbre.diagnostics[0])
+                if key:keys=(key,);device=device_for(key)
+        guidance(self).show_targets(self.editor,keys,device,extra)
 
     def _update(self, draft):
         self.stop()
@@ -526,6 +547,14 @@ class MelodyWindow(QMainWindow):
     def _hint(self):
         self.session.request_hint()
         self._refresh()
+        if self.session.mode!='free' and self.session.focus<2 and self.session.current.pattern.notes:
+            result=compare_draft(self.session.current,self.case)
+            index=next((j for i,j,_ in result.pairs if self.session.focus==1 and
+                self.case.pattern.notes[i].pitch!=self.session.current.pattern.notes[j].pitch),0)
+            # Select an existing player note, never insert a reference note or
+            # change its pitch/timing. Its inspector and drag handles light up.
+            self.piano.roll.selection=index;self.piano.roll.selected.emit()
+            self.piano._reveal_selection();self._show_clue()
         self._save()
 
     def _goto_suggested(self):

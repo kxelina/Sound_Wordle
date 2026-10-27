@@ -90,6 +90,14 @@ The category cases offer **Beginner (2 controls)**, **Standard (4)** and **Advan
 
 Enable **Loop mine · auto update** to repeat your sound. Pause editing briefly to generate and hear the latest version. This is a refreshed preview, rather than instantaneous continuous synthesis. Stop, changing difficulty, leaving the page and focus loss cancel the loop and pending updates. Target and A/B playback remain locked until completion.
 
+### Submission feedback and equipment guidance
+
+After each scored submission, the notebook compares it with your previous submission: for example, **76.0 → 84.0 (+8.0)**, followed by the component that improved most or had the largest setback. The first recorded submission establishes a baseline. Edits, listening and hints do not create submissions. Comparisons stay within the same rules and difficulty. Free composition remains ungraded.
+
+When a diagnosis or requested clue suggests a control, a gold outline marks its knob, fader, number field or piano-roll inspector. The related device also lights up when you return to the desk. These outlines do not change values. Melody hints can select one of your existing notes so you can drag it; they never insert the answer. Timbre-case guidance still requires the diagnosis threshold. Editing clears an outdated timbre diagnosis; hidden-sound guidance updates with your requested clue.
+
+Music-restoration submissions are compared within each device step, separately from the **Check** button. Restarting the investigation or reopening the application establishes a new baseline; earlier per-step comparisons are not reconstructed. The clearing submission's comparison is also shown in its first-clear review during the current run. Existing saved answers and scores remain unchanged.
+
 ### Your evidence cabinet
 
 Use **Cabinet** at the top of the room or desk to browse collected synthetic first-clear answers. Replay their sounds, inspect the controls or export the saved answer to WAV. Category difficulties are collected separately; practice edits do not overwrite the first answer. Music recordings are not collected. Existing first-clear reviews with available audio are imported when the game opens.
@@ -264,6 +272,14 @@ W04 的音高曲線可以直接操作：上下拖曳兩個端點改變音高，�
 「**聽控制示例**」用中性教學聲音先播放較低設定，再播放較高設定，只有一項控制不同。不揭露隱藏答案、不改草稿，也不增加提交。文字提示也會解釋控制影響什麼。
 
 啟用「**循環我的聲音 · 自動更新**」後會重複自己的聲音。暫停調參片刻後，程式生成並播放最新版；這是更新預覽，並非瞬間連續合成。停止、切換難度、離開頁面及失焦均會取消循環和待更新請求。目標和 A/B 仍要通關才開放。
+
+### 提交回饋與設備引導
+
+每次提交後，筆記會與上一次提交比較，例如 **76.0 → 84.0（+8.0 分）**，並指出改善最多或退步最大的分項。第一次記錄作為比較起點；調參、試聽、領提示不算提交。只比較相同規則與難度，自由創作仍不評分。
+
+當診斷或已領取的提示建議某個控制時，旋鈕、推桿、數字框或卷簾操作區會出現金色描邊；返回桌面時，相應設備也會亮起。描邊不改參數；旋律提示可以選中玩家已有的音符，方便直接拖動，不會加入答案音符。音色案件仍需達到原本的診斷分數門檻；修改後會清除過期診斷，高亮不會繞過門檻。隱藏聲音的引導則隨已領取的提示更新。
+
+歌曲修復按目前設備步驟比較提交，與「檢查」按鈕分開。重開調查或重新啟動程式後建立新的比較起點，不補造以前未保存的逐步提交資料。當次遊玩中首次通關的復盤也會顯示最後一次提交的變化；既有首次答案和成績保持不變。
 
 ### 聲音證物收藏櫃
 
