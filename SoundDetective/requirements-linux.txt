@@ -1,0 +1,7 @@
+# Linux runtime dependencies, using the versions verified in the Windows lock.
+librosa==0.11.0
+numpy==1.26.4
+python-osc==1.9.3
+PySide6==6.8.3
+scipy==1.14.1
+soundfile==0.13.1

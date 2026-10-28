@@ -87,6 +87,11 @@ class RenderResult:
     request_id: int | None = None
 
 
+def supercollider_executable_names() -> tuple[str, str]:
+    suffix = ".exe" if os.name == "nt" else ""
+    return f"sclang{suffix}", f"scsynth{suffix}"
+
+
 def find_executable(name: str, sc_directory: Path | None = None) -> Path:
     candidates = []
     configured = sc_directory or os.environ.get("SOUND_DETECTIVE_SC_DIR")
@@ -101,9 +106,10 @@ def find_executable(name: str, sc_directory: Path | None = None) -> Path:
     found = shutil.which(name)
     if found:
         return Path(found).resolve()
-    for base in (Path(os.environ.get("ProgramFiles", "C:/Program Files")),
-                 Path(os.environ.get("LOCALAPPDATA", "C:/Users/Default/AppData/Local")) / "Programs"):
-        candidates.extend(sorted(base.glob(f"SuperCollider*/{name}"), reverse=True))
+    if os.name == "nt":
+        for base in (Path(os.environ.get("ProgramFiles", "C:/Program Files")),
+                     Path(os.environ.get("LOCALAPPDATA", "C:/Users/Default/AppData/Local")) / "Programs"):
+            candidates.extend(sorted(base.glob(f"SuperCollider*/{name}"), reverse=True))
     if candidates:
         return candidates[0].resolve()
     raise FileNotFoundError("Install SuperCollider or set SOUND_DETECTIVE_SC_DIR to its installation folder")
@@ -125,8 +131,9 @@ def write_score(events: list, path: Path) -> None:
 
 class SCEngine:
     def __init__(self, sc_directory: Path | None = None, runtime_dir: Path | None = None):
-        self.sclang = find_executable("sclang.exe", sc_directory)
-        self.scsynth = find_executable("scsynth.exe", sc_directory)
+        sclang, scsynth = supercollider_executable_names()
+        self.sclang = find_executable(sclang, sc_directory)
+        self.scsynth = find_executable(scsynth, sc_directory)
         self.runtime = Path(runtime_dir) if runtime_dir else ROOT / ".runtime"
         self.runtime.mkdir(parents=True, exist_ok=True)
         self._lock = threading.Lock()

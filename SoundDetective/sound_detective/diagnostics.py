@@ -37,8 +37,8 @@ def collect_diagnostics(*, root=None, probe_audio=True):
               '重新安裝遊戲，或依 requirements-lock.txt 重建 .venv。')
 
     def engine():
-        from .audio.sc_client import find_executable
-        return {name: str(find_executable(name)) for name in ('sclang.exe', 'scsynth.exe')}
+        from .audio.sc_client import find_executable, supercollider_executable_names
+        return {name: str(find_executable(name)) for name in supercollider_executable_names()}
     check('engine', engine, 'SuperCollider audio engine', 'SuperCollider 音訊引擎',
           'Keep engine/SuperCollider with the packaged game, or set SOUND_DETECTIVE_SC_DIR.',
           '保留安裝包的 engine/SuperCollider，或設定 SOUND_DETECTIVE_SC_DIR。')
@@ -103,8 +103,8 @@ def collect_diagnostics(*, root=None, probe_audio=True):
                 raise RuntimeError('No audio output / 沒有音訊輸出裝置')
             return [d.description() for d in devices]
         check('audio_device', audio, 'Audio output devices', '音訊輸出裝置',
-              'Connect headphones or speakers and select a Windows output device.',
-              '連接耳機或喇叭，並在 Windows 選擇輸出裝置。', warning=True)
+              'Connect headphones or speakers and select an audio output device.',
+              '連接耳機或喇叭，並選擇音訊輸出裝置。', warning=True)
     return {'schema_version': 1, 'created_utc': datetime.now(timezone.utc).isoformat(),
             'project': str(root), 'python': sys.version.split()[0], 'executable': sys.executable,
             'platform': platform.platform(), 'checks': checks,

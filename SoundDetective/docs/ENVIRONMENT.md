@@ -1,6 +1,6 @@
 # 執行環境
 
-目前使用本專案 `.python/` 的 CPython 3.11.15、`.venv/`、PySide6 6.8.3，以及系統安裝的 SuperCollider 3.14.1。沒有依賴舊 SoundAlchemy 專案。
+Windows 開發環境使用本專案 `.python/` 的 CPython 3.11.15、`.venv/`、PySide6 6.8.3，以及系統安裝的 SuperCollider 3.14.1。沒有依賴舊 SoundAlchemy 專案。
 
 完整離線安裝包會將 Python／依賴放在 `runtime/`，SuperCollider 放在 `engine/SuperCollider/`；引擎查找優先使用指定路徑及遊戲附帶版本，不依賴開發機器的系統安裝。[安裝與建置](EXE_LAUNCHER.md)。
 
@@ -14,6 +14,23 @@
 音樂工作室裡可選 M01 或自由創作；預設主入口保留主選單。單獨的 `sound_detective.wordle`、`sound_detective.melody`、`sound_detective.music_case` 設備視窗仍保留。
 
 若無法找到音頻引擎，設定 `SOUND_DETECTIVE_SC_DIR` 為含 `sclang.exe`、`scsynth.exe` 的 SuperCollider 安裝資料夾。不需要手動啟動 SC。
+
+## Linux 開發
+
+Linux 使用系統安裝的 Python 與 SuperCollider，透過 `run-linux.sh` 啟動 Python
+遊戲，不需要 Windows `.exe`。從 `SoundDetective/` 目錄執行：
+
+```bash
+python3.11 -m venv .venv
+.venv/bin/python -m pip install -r requirements-linux.txt
+bash run-linux.sh
+```
+
+先用發行版的套件管理器安裝 SuperCollider 和 PySide6 Qt Multimedia 所需的系統
+音訊套件。啟動器支援 `--check`、`--smoke-test`、`--diagnose` 及 `--diagnostics`；
+例如 `bash run-linux.sh --check` 可檢查依賴、遊戲素材及 `sclang`／`scsynth`。
+`requirements-lock.txt` 是 Windows x86-64 的完整鎖定環境，Linux 開發請使用
+`requirements-linux.txt`。
 
 ## 重建 Python 環境
 

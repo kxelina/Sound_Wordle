@@ -1,5 +1,9 @@
 # Windows EXE 入口
 
+本文件涵蓋 Windows `.exe` 和安裝器。Linux 原始碼開發請使用
+[`run-linux.sh`](../run-linux.sh)；它使用 Linux venv 和系統安裝的 SuperCollider，
+不需要 Windows 啟動器。
+
 雙擊根目錄 `SoundDetective.exe` 進主選單，沒有命令列視窗。原生 .NET GUI 啟動器優先使用旁邊的 `runtime/pythonw.exe`；開發目錄則使用 `.venv/Scripts/pythonw.exe`。請與完整遊戲資料夾保留。
 
 ## 離線安裝包

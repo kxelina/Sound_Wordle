@@ -2,7 +2,7 @@
 
 **Sound Detective — Every sound leaves a trace.**
 
-A Windows desktop sound-construction game built with Python, PySide6 and SuperCollider.
+A desktop sound-construction game built with Python, PySide6 and SuperCollider.
 
 - **T01–T09:** recreate timbres with harmonics, ADSR, filters, delay and reverb.
 - **Sound Wordle:** build hidden sounds from witness clues, with unlimited submissions and free hints.
@@ -40,6 +40,27 @@ The public offline installer can be built without those recordings using `--publ
 recordings and bundled installers are excluded from this source repository.
 SuperCollider is invoked automatically; it does not need to be opened manually.
 
+## Run from source on Linux
+
+Install **Python 3.11**, **SuperCollider**, and the system packages required by
+PySide6's Qt Multimedia backend using your distribution's package manager. In a
+terminal, from the repository root:
+
+```bash
+cd SoundDetective
+python3.11 -m venv .venv
+.venv/bin/python -m pip install -r requirements-linux.txt
+bash run-linux.sh
+```
+
+The launcher uses the project `.venv` (or an existing `venv`) and starts the
+same Python game entry point as the Windows launcher. It also accepts
+`--check`, `--smoke-test`, `--diagnose`, and `--diagnostics`; for example,
+`bash run-linux.sh --check` verifies dependencies, game files and SuperCollider.
+Install SuperCollider before running checks or the game; Linux executables are
+discovered as `sclang` and `scsynth` from `PATH` or `SOUND_DETECTIVE_SC_DIR`.
+The Windows `.exe` launcher and offline installer remain Windows-only.
+
 Choose **Learn to play** for isolated exercises in listening, Release, H2, chirp editing
 and practice submission. Fresh players are offered the lesson on Start Game.
 Cleared cases unlock a first-clear review with starting/answer/target auditions,
@@ -74,7 +95,7 @@ with those assets present. See the dated validation notes for exact counts and s
 
 **Sound Detective：每個聲音都留下線索。**
 
-這是一款 Windows 桌面聲音合成遊戲，使用 Python、PySide6 與 SuperCollider。
+這是一款使用 Python、PySide6 與 SuperCollider 的桌面聲音合成遊戲。
 
 - **T01–T09 音色案件：**調整諧波、ADSR、濾波、回聲與混響來還原聲音。
 - **Sound Wordle：**依證人口供製作隱藏聲音，不限提交，提示免費。
@@ -86,9 +107,14 @@ with those assets present. See the dated validation notes for exact counts and s
 
 [完整玩家指南：英文及繁體中文](SoundDetective/README.md)
 
-安裝 Python 3.11 與 SuperCollider 後，依上方 PowerShell 指令建立環境，
-並使用 `python -m sound_detective.play` 啟動此原始碼版本。
+Windows 使用者安裝 Python 3.11 與 SuperCollider 後，依上方 PowerShell 指令建立環境，
+並使用 `python -m sound_detective.play` 啟動原始碼版本。Linux 開發方式請見上方
+Linux 指令。
 環境建立後，也可以使用原生 `SoundDetective.exe`。缺少或無法驗證 M01 音源時，只有歌曲案件暫不可玩，其他合成挑戰與自由創作仍可啟動。此倉庫不提供原曲錄音或完整執行環境；可用 `--public` 建立不帶歌曲的離線安裝包。
+
+Linux 開發者可在終端執行 `cd SoundDetective`，再依上方 Linux 指令建立 `.venv`、
+安裝 `requirements-linux.txt`，並執行 `bash run-linux.sh`。此啟動器使用系統的
+SuperCollider；Windows `.exe` 與離線安裝包仍僅支援 Windows。
 
 主選單「新手練習」提供獨立的五步操作教程，新玩家第一次開始遊戲時會獲得引導。通關後可查看首次結案復盤，比較起點、答案與目標聲音，查看分項進度及參考設定。音樂修復仍保留完整原曲播放，復盤手動開啟。
 

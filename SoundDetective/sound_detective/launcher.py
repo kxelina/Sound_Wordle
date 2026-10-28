@@ -16,7 +16,7 @@ def check_environment():
     import pythonosc
     from PySide6 import __version__ as qt_version
     from PySide6 import QtMultimedia  # Include the actual native playback module.
-    from .audio.sc_client import ROOT, find_executable
+    from .audio.sc_client import ROOT, find_executable, supercollider_executable_names
     from .game.cases import load_campaign
     from .game.availability import music_availability
     from .ui.studio_scenes import SCENES
@@ -35,7 +35,7 @@ def check_environment():
     return {"project": str(ROOT), "python": sys.version.split()[0], "python_executable": sys.executable,
             "pyside": qt_version, "timbre_cases": len(cases), "music_case": music.case_id if music.available else None,
             "optional_music": music.to_dict(), "category_cases": len(source_cases),"melody_cases":len(melodies),
-            "supercollider": {name: str(find_executable(name)) for name in ("sclang.exe", "scsynth.exe")}}
+            "supercollider": {name: str(find_executable(name)) for name in supercollider_executable_names()}}
 
 
 def smoke_test(music):
