@@ -8,6 +8,7 @@ A desktop sound-construction game built with Python, PySide6 and SuperCollider.
 - **Sound Wordle:** build hidden sounds from witness clues, with unlimited submissions and free hints.
   W01/W02 cover a signal and a melody. W03/W04 cover rain and bird-like chirps,
   W05 a plucked string-like note, and W06 radio static. W07 is an original two-note doorbell; W08 reconstructs a rhythm with a required silent beat. W09 builds a hollow electronic tone using harmonic faders and grouped, multi-solution requirements.
+  **Every Sound Wordle case, W01–W09, shows green/amber/gray feedback after a submission.** Piano-roll cases W02/W07 show note colors for rhythm and pitch, and W08 shows note colors for rhythm; the other cases show colored feature tiles. Pitch-stage green requires exact pitch and timing (position and duration); amber means both are in range but at least one is not exact; gray means at least one needs more work.
 - **T09 · The Extra Knock:** use one short source event and Delay to reconstruct fading repeats, with an optional ungraded cause question.
 - **Free composition:** Piano/Violin/Guitar/synth timbres, C2–C6 chords, extendable bars, eight meters, editable room/hall/echo presets and WAV export.
 - **M01 music restoration:** included as code/configuration; song recordings are local-only and are not distributed here.
@@ -100,6 +101,7 @@ with those assets present. See the dated validation notes for exact counts and s
 - **T01–T09 音色案件：**調整諧波、ADSR、濾波、回聲與混響來還原聲音。
 - **Sound Wordle：**依證人口供製作隱藏聲音，不限提交，提示免費。
   W01/W02 為信號及旋律；W03/W04 為小雨及鳥鳴般哨音；W05 為撥弦音；W06 為收音機雜音。
+  **所有 Sound Wordle 案件 W01–W09 提交後都會顯示綠、琥珀、灰色回饋。**W02、W07 以音符顏色顯示節奏與音高；W08 以音符顏色顯示節奏；其他案件則以特徵方塊顯示。音高階段的綠色代表音高與節奏（起點、長度）均正確；琥珀色代表兩者都在接近範圍內但至少一項尚未完全正確；灰色代表至少一項仍需調整。
 - **自由創作：**可選鋼琴／小提琴／吉他合成音色，C2–C6 旋律和弦、增加小節、八種拍號、可編輯的空間效果及 WAV 匯出。
 - **M01 音樂修復：**保留程式與設定，原曲及證物錄音僅保存在本機。
 

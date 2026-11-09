@@ -120,6 +120,12 @@ def test_workshop_hidden_target_edits_hints_and_recovery(app,case,tmp_path):
         assert not w.play_reference.isEnabled()
         w._prepare('target');w._prepare('ab');assert not renderer.requests
         w._submit();assert w.session.attempts == 1
+        assert w.session.hints == 0
+        assert w.feedback.text() != w.text(
+            "Shape the sound described above. Ask for a clue to find the largest remaining difference.",
+            "先製作口供描述的聲音；領取提示可找出目前最大的差異。")
+        assert guidance(w).keys
+        assert all(w.editor.controls[key].property("hintTarget") for key in guidance(w).keys)
         w._hint();assert w.session.hints == 1
         spec = CONTROLS[case.target.recipe][0]
         w.editor.controls[spec.key].setValue(dict(case.target.values)[spec.key])
@@ -204,11 +210,17 @@ def test_case_board_filters_scene_and_preferences(app,tmp_path):
     w = StudioWindow(progress_dir=tmp_path,animation_ms=0)
     w.resize(1280,720);w.volume_slider.setValue(0);w.show()
     try:
+        assert not w.board.mode_buttons['music'].isVisible()
+        w.board.open('M01','en')
+        assert w.board.mode == 'wordle'
+        assert tuple(w.board.cards) == ('W01','W02','W03','W04','W05','W06','W07','W08','W09')
+        w.board.open('W02','en',free_composition=True)
+        assert w.board.mode == 'wordle' and 'FREE' not in w.board.cards
         w.board.open(None,'en');w.board.set_mode('wordle')
-        assert set(w.board.cards) == {'W01','W02','W03','W04','W05','W06','W07','W08','W09'}
+        assert tuple(w.board.cards) == ('W01','W02','W03','W04','W05','W06','W07','W08','W09')
         for category,ids in {'nature':{'W03','W04'},'instrument':{'W05'},'noise':{'W06','W09'},'classic':{'W01','W02','W07','W08'}}.items():
             w.board.set_category(category)
-            assert set(w.board.cards) == ids
+            assert tuple(w.board.cards) == tuple(sorted(ids))
         for case in CASES:
             assert w._accept_case(case.id)
             w._show_page('desk');w._activate_device('synth');app.processEvents()

@@ -59,6 +59,7 @@ class PianoRoll(QWidget):
         self.pattern, self.selection = MelodyPattern(), -1
         self.pitch_locked = True
         self.hint_notes, self.rhythm_hints = (), ()
+        self.feedback_marks = ()
         self._drag = None
         self.view_start=0
         self._drag_view_start=0;self._edge_direction=0
@@ -213,7 +214,11 @@ class PianoRoll(QWidget):
             rect = self.note_rect(note)
             invalid = candidate is not None and index == self.selection and not self._valid_candidate(candidate)
             painter.setPen(QPen(QColor("#fff0b5" if index == self.selection else "#ad9159"), 2 if index == self.selection else 1))
-            painter.setBrush(QColor('#a25042' if invalid else "#9c7e42" if index == self.selection else "#4f7865"))
+            mark_colors = {"correct": "#347a50", "close": "#a87824", "wrong": "#58635e"}
+            color = "#a25042" if invalid else mark_colors.get(
+                self.feedback_marks[index] if index < len(self.feedback_marks) else "",
+                "#9c7e42" if index == self.selection else "#4f7865")
+            painter.setBrush(QColor(color))
             painter.drawRoundedRect(rect, 2, 2)
             handle = min(8, rect.width()/3)
             painter.fillRect(QRectF(rect.left()+1, rect.top()+1, handle, rect.height()-2), QColor(240, 211, 152, 70))

@@ -1,4 +1,6 @@
 """Small submission summaries and non-interactive, value-neutral hint rings."""
+from html import escape
+
 from PySide6.QtCore import QEvent,QObject,Qt,Signal
 from PySide6.QtGui import QColor,QPainter,QPen
 from PySide6.QtWidgets import QLabel,QWidget
@@ -6,12 +8,52 @@ from ..game.submission_feedback import ScoreSnapshot,describe_submission
 from ..game.parameters import PARAMETERS
 
 
+class WordleGuessFeedback(QLabel):
+    COLORS = {
+        "correct": ("#347a50", "Correct", "正確"),
+        "close": ("#a87824", "Close", "接近"),
+        "wrong": ("#58635e", "Needs work", "需調整"),
+        "locked": ("#424a46", "Locked", "未開放"),
+    }
+
+    def __init__(self):
+        super().__init__()
+        self.setObjectName("wordle_guess_feedback")
+        self.setTextFormat(Qt.TextFormat.RichText)
+        self.setWordWrap(True)
+        self.statuses = ()
+        self.hide()
+
+    def show_guesses(self, guesses, language="en"):
+        self.statuses = tuple((label, status) for label, status in guesses)
+        if not self.statuses:
+            self.clear()
+            self.hide()
+            self.setAccessibleDescription("")
+            return
+        zh = language == "zh-Hant"
+        tiles = []
+        descriptions = []
+        for label, status in self.statuses:
+            color, english, chinese = self.COLORS[status]
+            text = chinese if zh else english
+            tiles.append(
+                f'<span style="display:inline-block;background-color:{color};'
+                f'color:#fff;padding:3px 7px;margin:2px;border-radius:4px;">'
+                f'{escape(str(label))} · {text}</span>'
+            )
+            descriptions.append(f"{label}: {text}")
+        self.setText(" ".join(tiles))
+        self.setAccessibleDescription("; ".join(descriptions))
+        self.show()
+
+
 class SubmissionFeedback(QLabel):
     def __init__(self):
         super().__init__()
         self.setObjectName('submission_feedback')
         self.setTextFormat(Qt.TextFormat.PlainText)
-        self.setWordWrap(True);self.setMaximumHeight(62)
+        self.setWordWrap(True)
         self.setStyleSheet('font-size: 12px; color: #bdcbb5;')
         self.hide()
         self.payload=None

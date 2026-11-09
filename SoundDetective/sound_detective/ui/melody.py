@@ -59,6 +59,10 @@ TEXT = {
         "solved": "Message reconstructed! Target playback and A/B are unlocked.",
         "practice": "Practice · the target has already been revealed.",
         "ready": "This stage is ready. Submit to record it and unlock the next stage.",
+        "guess_rhythm": "Rhythm guess · {notes}\nGreen = exact timing; amber = close; gray = needs work. Adjust note positions or lengths, then submit again.",
+        "guess_pitch": "Pitch guess · {notes}\nGreen = exact pitch and timing; amber = pitch and timing are close, but not both exact; gray = pitch or timing needs work. Adjust note pitch, position, or length, then submit again.",
+        "guess_note": "Note {number}: {status}",
+        "guess_status": ("exact", "close", "needs work"),
         "free_help": "Choose any pitches and rhythm. All sound controls are available; no score or attempt penalty.",
         "lesson_note": "Generic teaching pair; this is not the hidden target.",
         "error": "Audio error: {message}", "saved_bad": "Unreadable W02 progress backed up; starting a new draft.",
@@ -91,6 +95,10 @@ TEXT = {
         "submitted": "已記錄重建進度；這不是人耳相似度百分比。",
         "solved": "留言重建完成！已解鎖目標試聽與 A/B。", "practice": "練習 · 目標已曾揭曉。",
         "ready": "這部分已達標，提交後記錄成果並開放下一階段。",
+        "guess_rhythm": "節奏猜測 · {notes}\n綠色＝節奏正確；琥珀色＝接近；灰色＝需要調整。修改音符起點或長度後再提交。",
+        "guess_pitch": "音高猜測 · {notes}\n綠色＝音高與節奏都正確；琥珀色＝音高與節奏接近，但至少一項尚未完全正確；灰色＝音高或節奏需要調整。修改音符音高、起點或長度後再提交。",
+        "guess_note": "第 {number} 音：{status}",
+        "guess_status": ("正確", "接近", "需調整"),
         "free_help": "音高、節奏自由編排；全部音色控制已開放，不評分、不計次。",
         "lesson_note": "一般教學對比，並非隱藏的目標旋律。",
         "error": "音訊錯誤：{message}", "saved_bad": "無法讀取的 W02 進度已備份，開始新草稿。",
@@ -112,6 +120,7 @@ class MelodyWindow(QMainWindow):
         self._language, self.embedded = language, embedded
         self._closed = self._save_blocked = False
         self._warning, self._revision, self._armed = "", None, None
+        self._guess_feedback = None
         self.device_kind = "synth"
         try:
             self.session = load_melody_session(self.save_path,self.case)
@@ -277,7 +286,6 @@ class MelodyWindow(QMainWindow):
         left.addWidget(self.deck)
         self.feedback = self.label()
         self.feedback.setStyleSheet("font-size: 13px;")
-        self.feedback.setMaximumHeight(90)
         notes_layout.insertWidget(notes_layout.count()-1,self.feedback)
         hints = QHBoxLayout()
         self.hint_button, self.lesson_button, self.goto_button = [QPushButton() for _ in range(3)]
@@ -467,6 +475,7 @@ class MelodyWindow(QMainWindow):
         if s.mode == "free":
             self.feedback.setText(self.t("free_help"))
             guidance(self).show_targets()
+            self._apply_wordle_feedback()
             return
         result, stage = compare_draft(s.challenge,self.case), s.focus
         tier = s.hints[stage]
@@ -529,6 +538,37 @@ class MelodyWindow(QMainWindow):
                 key=progress_control(result.timbre.diagnostics[0])
                 if key:keys=(key,);device=device_for(key)
         guidance(self).show_targets(self.editor,keys,device,extra)
+        self._apply_wordle_feedback()
+
+    def _apply_wordle_feedback(self):
+        self.piano.roll.feedback_marks = ()
+        guess = self._guess_feedback
+        if self.session.mode == "free" or not guess or guess[1] not in (0, 1):
+            self.piano.roll.update()
+            return
+        draft, stage = guess
+        marks = self._wordle_marks(draft, stage)
+        self.piano.roll.feedback_marks = marks
+        self.piano.roll.update()
+        states = {"correct": 0, "close": 1, "wrong": 2}
+        details = " · ".join(self.t("guess_note").format(
+            number=index + 1, status=self.t("guess_status")[states[mark]])
+            for index, mark in enumerate(marks))
+        message = self.t("guess_rhythm" if stage == 0 else "guess_pitch").format(notes=details)
+        self.feedback.setText(f"{self.feedback.text()}\n{message}")
+        self.feedback.setToolTip(self.feedback.text())
+
+    def _wordle_marks(self, draft, stage):
+        result = compare_draft(draft, self.case)
+        marks = ["wrong"] * len(draft.pattern.notes)
+        for expected, actual, timing_quality in result.pairs:
+            if stage == 0:
+                marks[actual] = "correct" if timing_quality == 1 else "close" if timing_quality > 0 else "wrong"
+            else:
+                pitch_error = abs(self.case.pattern.notes[expected].pitch - draft.pattern.notes[actual].pitch)
+                marks[actual] = ("correct" if pitch_error == 0 and timing_quality == 1 else
+                                 "close" if pitch_error <= 3 and timing_quality > 0 else "wrong")
+        return tuple(marks)
 
     def _update(self, draft):
         self.stop()
@@ -626,6 +666,7 @@ class MelodyWindow(QMainWindow):
 
     def _submit(self):
         was_solved = self.session.solved
+        submitted_stage, submitted_draft = self.session.focus, self.session.challenge
         self.stop()
         try:
             result = self.session.submit()
@@ -634,6 +675,7 @@ class MelodyWindow(QMainWindow):
             return
         if result is None:
             return
+        self._guess_feedback = (submitted_draft, submitted_stage) if submitted_stage in (0, 1) else None
         self._refresh(history=True)
         QTimer.singleShot(0,lambda:self.note_scroll.ensureWidgetVisible(self.score) if not self._closed else None)
         self.status.setText(self.t("solved" if all(result.passed) else "submitted"))
@@ -677,6 +719,7 @@ class MelodyWindow(QMainWindow):
         if row >= 0:
             previous_mode = self.session.mode
             self.stop()
+            self._guess_feedback = None
             self.session.restore(row)
             self.edit_bar.stack = self._edit_stacks[self.session.mode]
             self.edit_bar.record(self.session.current, merge=False)
@@ -687,6 +730,7 @@ class MelodyWindow(QMainWindow):
 
     def _restart(self):
         self.stop()
+        self._guess_feedback = None
         self.session.reset()
         self.edit_bar.reset(self.session.current)
         self._refresh(history=True)
@@ -728,7 +772,8 @@ class MelodyWindow(QMainWindow):
         self._armed = tuple(requests)
         self.busy.show()
         try:
-            self._revision = self.renderer.prepare(requests)
+            playback_options = {"playback_rms": .25} if self.case.id == "W02" else {}
+            self._revision = self.renderer.prepare(requests, **playback_options)
             self.status.setText(self.t("lesson_note" if mode == "lesson" else "generating"))
         except (OSError, ValueError, RuntimeError) as error:
             self._failed(self._revision, str(error))

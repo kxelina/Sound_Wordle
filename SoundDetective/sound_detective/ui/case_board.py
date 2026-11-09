@@ -43,6 +43,7 @@ class CaseBoard(QFrame):
             button = QPushButton()
             button.setObjectName(f"mode_{key}")
             button.setCheckable(True)
+            button.setVisible(key != "music")
             group.addButton(button)
             button.clicked.connect(lambda checked=False, mode=key: self.set_mode(mode))
             modes.addWidget(button)
@@ -89,9 +90,9 @@ class CaseBoard(QFrame):
 
     def open(self, active_case, language, *, free_composition=False):
         self.free_composition = free_composition
-        self.selected = "FREE" if free_composition else active_case
         self.music_room = bool(free_composition or active_case and active_case.startswith("M"))
-        self.mode = "music" if self.music_room else "wordle" if active_case and active_case.startswith("W") else "tone"
+        self.mode = "wordle" if self.music_room or active_case and active_case.startswith("W") else "tone"
+        self.selected = None if self.music_room else active_case
         self.category = "all"
         self.translate(language)
 
@@ -138,6 +139,8 @@ class CaseBoard(QFrame):
         available = self.cases if self.mode == "tone" else (self.wordle, self.melody, *self.source_cases,*tuple(self.melody_cases.values())[1:]) if self.mode == "wordle" else ((self.music,) if self.music else ())
         if self.mode == "wordle" and self.category != "all":
             available = tuple(case for case in available if getattr(case,"category","classic") == self.category)
+        if self.mode == "wordle":
+            available = tuple(sorted(available, key=lambda case: case.id))
         for index, case in enumerate(available):
             button = QPushButton()
             button.setObjectName(f"case_card_{case.id}")

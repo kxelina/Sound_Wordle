@@ -26,7 +26,7 @@ from ..game.source_learning import (DIFFICULTIES,with_difficulty,source_path,
 from .edit_history import EditHistoryBar
 from .hardware import PlaybackDeck, RackFace, RotaryKnob, InlineChoices
 from .hover_help import set_help
-from .investigation_feedback import SubmissionFeedback,ScoreSnapshot,guidance
+from .investigation_feedback import SubmissionFeedback,WordleGuessFeedback,ScoreSnapshot,guidance
 
 
 class StatusLabel(QLabel):
@@ -365,7 +365,8 @@ class SourceCaseWindow(QMainWindow):
         notes_layout.setContentsMargins(2,2,2,2)
         self.story, self.score, self.feedback, self.review = [QLabel() for _ in range(4)]
         self.submission_feedback=SubmissionFeedback()
-        for label in (self.story,self.score,self.submission_feedback,self.feedback):
+        self.guess_feedback=WordleGuessFeedback()
+        for label in (self.story,self.score,self.submission_feedback,self.guess_feedback,self.feedback):
             label.setWordWrap(True)
             notes_layout.addWidget(label)
         notes_layout.addStretch()
@@ -562,6 +563,7 @@ class SourceCaseWindow(QMainWindow):
 
     def _refresh(self):
         s = self.session
+        guidance_available = bool(s.hints or s.attempts)
         def snapshot(record):
             if record is None:return None
             result=assess_source(self.case,SourcePatch.from_dict(record['patch']))
@@ -569,8 +571,21 @@ class SourceCaseWindow(QMainWindow):
         self.submission_feedback.show_scores(snapshot(s.records[-1]) if s.records else None,
             snapshot(s.records[-2]) if len(s.records)>1 else None,language=self._language,
             labels={spec.key:spec.labels[self.zh] for spec in score_specs(self.case)},rounding='round')
+        if s.records:
+            submitted=SourcePatch.from_dict(s.records[-1]['patch'])
+            result=assess_source(self.case,submitted)
+            guesses=[]
+            for spec in score_specs(self.case):
+                if spec.key not in result.scores:
+                    continue
+                score=result.scores[spec.key]
+                status='correct' if score>=85 else 'close' if score>=60 else 'wrong'
+                guesses.append((spec.labels[self.zh],status))
+            self.guess_feedback.show_guesses(guesses,self._language)
+        else:
+            self.guess_feedback.show_guesses((),self._language)
         keys=()
-        if s.hints and not assess_source(self.case,s.current).passed and not is_silent(s.current):
+        if guidance_available and not assess_source(self.case,s.current).passed and not is_silent(s.current):
             if self.case.scoring=='harmonic_groups':
                 from ..game.harmonic_rules import guidance_keys
                 keys=guidance_keys(self.case,s.current,assess_source(self.case,s.current))
@@ -584,7 +599,7 @@ class SourceCaseWindow(QMainWindow):
             self.score.setText(self.text(f"Construction {result.total:.1f} / 100 · #{s.attempts}",f"合成進度 {result.total:.1f} / 100 · 第 {s.attempts} 次")+suffix)
         else:
             self.score.setText(self.text("No submission yet","尚未提交"))
-        clue = source_clue(self.case,s.current,s.hints,self._language) if s.hints else self.text(
+        clue = source_clue(self.case,s.current,s.hints,self._language) if guidance_available else self.text(
             "Shape the sound described above. Ask for a clue to find the largest remaining difference.","先製作口供描述的聲音；領取提示可找出目前最大的差異。")
         self.feedback.setText(self.text("Reconstructed! Target unlocked.\n","合成完成！目標已解鎖。\n")+clue if s.solved else clue)
         self.review.hide()

@@ -4,7 +4,7 @@ import numpy as np
 import soundfile as sf
 from PySide6.QtCore import QPointF, QRectF, Qt,QTimer,Signal
 from PySide6.QtGui import QColor, QPainter, QPainterPath, QPen
-from PySide6.QtWidgets import QLabel, QWidget, QPushButton, QGroupBox, QVBoxLayout,QScrollArea,QFrame
+from PySide6.QtWidgets import QLabel, QWidget, QPushButton, QGroupBox, QVBoxLayout,QScrollArea,QFrame,QLayout
 
 from .case_one import CaseWindow
 from .music_case import MusicCaseWindow
@@ -114,6 +114,7 @@ class ToneDevicePanel(CaseWindow):
             left=self.target_group.layout()
             while left.count():left.takeAt(0)
             notes=QWidget();note_layout=QVBoxLayout(notes);note_layout.setContentsMargins(0,0,0,0)
+            note_layout.setSizeConstraint(QLayout.SizeConstraint.SetMinimumSize)
             for widget in (self.subtitle,self.target_info,self.score,self.submission_feedback,self.clue,self.review,self.review_button):note_layout.addWidget(widget)
             note_layout.addStretch()
             self.note_scroll=QScrollArea();self.note_scroll.setWidgetResizable(True);self.note_scroll.setFrameShape(QFrame.Shape.NoFrame)

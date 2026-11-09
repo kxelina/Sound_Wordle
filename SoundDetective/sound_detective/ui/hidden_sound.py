@@ -18,7 +18,7 @@ from ..game.parameters import PARAMETERS
 from ..game.storage import SessionStore
 from .hardware import PlaybackDeck
 from .parameter_editor import ParameterEditor
-from .investigation_feedback import SubmissionFeedback,ScoreSnapshot,guidance,device_for
+from .investigation_feedback import SubmissionFeedback,WordleGuessFeedback,ScoreSnapshot,guidance,device_for
 
 
 TEXT = {
@@ -226,8 +226,9 @@ class HiddenSoundWindow(QMainWindow):
         self.score.setStyleSheet("font-size: 19px; color: #f1d59a;")
         self.cards.setObjectName("wordle_requirements")
         self.submission_feedback=SubmissionFeedback()
+        self.guess_feedback=WordleGuessFeedback()
         notes=QWidget();notes_layout=QVBoxLayout(notes);notes_layout.setContentsMargins(0,0,0,0)
-        for label in (self.story, self.score, self.submission_feedback, self.stale, self.cards):
+        for label in (self.story, self.score, self.submission_feedback, self.guess_feedback, self.stale, self.cards):
             notes_layout.addWidget(label)
         notes_layout.addStretch()
         self.note_scroll=QScrollArea();self.note_scroll.setWidgetResizable(True);self.note_scroll.setFrameShape(QFrame.Shape.NoFrame)
@@ -350,6 +351,17 @@ class HiddenSoundWindow(QMainWindow):
                 word = self.t("status_words")[3 if i > s.unlocked else 0 if result.passed[i] else 1 if result.scores[i] >= 60 else 2]
                 lines.append(f"{word} · {goal}")
             self.cards.setText("\n".join(lines))
+        if s.records:
+            result = assess(settings_from_parameters(s.records[-1]["parameters"]))
+            labels = ("Envelope", "Harmonics", "Echo") if self._language == "en" else ("包絡", "諧波", "回聲")
+            guesses = []
+            for index, label in enumerate(labels):
+                status = ("locked" if index > s.unlocked else "correct" if result.passed[index]
+                          else "close" if result.scores[index] >= 60 else "wrong")
+                guesses.append((label, status))
+            self.guess_feedback.show_guesses(guesses, self._language)
+        else:
+            self.guess_feedback.show_guesses((), self._language)
         self.stale.setText(self.t("outdated"))
         self.stale.setVisible(bool(s.records) and not s.current_is_submitted)
         self.play_reference.setText(self.t("reference_open" if s.solved else "reference"))

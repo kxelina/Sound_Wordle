@@ -9,16 +9,17 @@ from PySide6.QtTest import QTest
 from PySide6.QtWidgets import QApplication
 from sound_detective.game.submission_feedback import ScoreSnapshot,describe_submission
 from sound_detective.game.cases import load_campaign
-from sound_detective.game.sound_categories import load_source_cases,assess_source
+from sound_detective.game.sound_categories import load_source_cases,assess_source,score_specs
 from sound_detective.game.melody import load_melody_cases,Draft,MelodyPattern,GridNote
 from sound_detective.game.parameters import PARAMETERS,replace_parameters
-from sound_detective.game.hidden_sound import parameters
+from sound_detective.game.hidden_sound import parameters,assess,settings_from_parameters
 from sound_detective.game.availability import music_availability
 from sound_detective.ui.device_panel import ToneDevicePanel,MusicDevicePanel
 from sound_detective.ui.sound_categories import SourceCaseWindow
 from sound_detective.ui.hidden_sound import HiddenSoundWindow
 from sound_detective.ui.melody import MelodyWindow
-from sound_detective.ui.investigation_feedback import guidance
+from sound_detective.ui.piano_roll import PianoRoll
+from sound_detective.ui.investigation_feedback import SubmissionFeedback,WordleGuessFeedback,guidance
 from sound_detective.ui.studio import StudioWindow
 from test_features import Renderer,Player
 from test_after_hours import result
@@ -142,6 +143,43 @@ def test_harmonic_guidance_avoids_pointing_at_an_already_zero_fader(app,tmp_path
     finally:w.close()
 
 
+def test_non_melody_wordle_cases_show_color_coded_submission_feedback(app,tmp_path):
+    hidden=HiddenSoundWindow(save_path=tmp_path/'W01.json',renderer=Renderer(),player=Player())
+    try:
+        hidden._submit()
+        assert not hidden.guess_feedback.isHidden()
+        submitted=assess(settings_from_parameters(hidden.session.records[-1]['parameters']))
+        expected=['correct' if submitted.passed[0] else
+                  'close' if submitted.scores[0]>=60 else 'wrong','locked','locked']
+        assert [status for _,status in hidden.guess_feedback.statuses]==expected
+        assert not hidden.play_reference.isEnabled()
+    finally:hidden.close()
+
+    for case in load_source_cases():
+        window=SourceCaseWindow(case=case,save_path=tmp_path/(case.id+'.json'),
+                                renderer=Renderer(),player=Player())
+        try:
+            window._submit()
+            scores=assess_source(case,case.initial).scores
+            expected=tuple((spec.labels[False],
+                'correct' if scores[spec.key]>=85 else 'close' if scores[spec.key]>=60 else 'wrong')
+                for spec in score_specs(case)
+                if spec.key in scores)
+            assert window.guess_feedback.statuses==expected,case.id
+            assert not window.guess_feedback.isHidden(),case.id
+        finally:window.close()
+
+
+def test_wordle_guess_feedback_hides_when_no_submission_and_localizes(app):
+    feedback=WordleGuessFeedback()
+    feedback.show_guesses((('Pitch','correct'),('Density','close'),('Noise','wrong')),'zh-Hant')
+    assert feedback.isVisible() and all(text in feedback.text() for text in ('正確','接近','需調整'))
+    assert all(color in feedback.text() for color in ('#347a50','#a87824','#58635e'))
+    assert feedback.accessibleDescription()=='Pitch: 正確; Density: 接近; Noise: 需調整'
+    feedback.show_guesses(())
+    assert not feedback.isVisible() and not feedback.statuses
+
+
 @pytest.mark.parametrize('cid',['W02','W07','W08'])
 def test_melody_rhythm_pitch_highlights_and_free_mode_clear(app,tmp_path,cid):
     case=next(c for c in load_melody_cases() if c.id==cid)
@@ -159,6 +197,109 @@ def test_melody_rhythm_pitch_highlights_and_free_mode_clear(app,tmp_path,cid):
             w._set_mode('free');assert not w.submission_feedback.text() and not guidance(w).device
             assert not w.piano.pitch.property('hintTarget')
     finally:w.close()
+
+
+def test_long_guidance_text_can_be_scrolled(app,tmp_path):
+    summary=SubmissionFeedback()
+    summary.setText('\n'.join(['Detailed submission feedback.']*8))
+    assert summary.maximumHeight()>62
+    assert summary.sizeHint().height()>62
+
+    w=MelodyWindow(save_path=tmp_path/'W02.json',renderer=Renderer(),player=Player())
+    w.resize(1220,760);w.show();app.processEvents()
+    try:
+        w.feedback.setText('\n'.join(['Detailed melody guidance for the current stage.']*10))
+        app.processEvents()
+        assert w.feedback.maximumHeight()>90
+        assert w.feedback.sizeHint().height()>90
+        scrollbar=w.note_scroll.verticalScrollBar()
+        w.note_scroll.ensureWidgetVisible(w.feedback)
+        app.processEvents()
+        assert scrollbar.maximum()>0
+    finally:w.close();app.processEvents()
+
+
+def test_timbre_case_long_guidance_scrolls_in_compact_device(app,tmp_path):
+    from PySide6.QtWidgets import QFrame,QVBoxLayout
+    case=next(c for c in load_campaign() if c.id=='T08')
+    w=ToneDevicePanel(case=case,save_path=tmp_path/'T08.json',renderer=Renderer(),player=Player())
+    frame=QFrame();layout=QVBoxLayout(frame);layout.setContentsMargins(0,0,0,0)
+    layout.addWidget(w.takeCentralWidget())
+    frame.resize(1232,624);frame.show();app.processEvents()
+    try:
+        w.clue.setText('\n'.join(
+            f'Guidance detail {index}: adjust the highlighted control and listen again.'
+            for index in range(24)))
+        app.processEvents()
+        scrollbar=w.note_scroll.verticalScrollBar()
+        assert scrollbar.maximum()>0
+        w.note_scroll.ensureWidgetVisible(w.clue)
+        app.processEvents()
+        assert scrollbar.value()>0
+    finally:w.close();frame.close();app.processEvents()
+
+
+@pytest.mark.parametrize(('cid','expected_rms'),[('W02',.25),('W08',.1)])
+def test_melody_preview_level_is_case_specific(app,tmp_path,cid,expected_rms):
+    case=next(c for c in load_melody_cases() if c.id==cid)
+    renderer=Renderer()
+    w=MelodyWindow(case=case,save_path=tmp_path/(cid+'.json'),renderer=renderer,player=Player())
+    try:
+        w._update(Draft(MelodyPattern((GridNote(0,1,60),)),case.initial))
+        w._prepare('current')
+        _,_,options=renderer.requests[-1]
+        assert options.get('playback_rms',.1)==expected_rms
+    finally:w.close()
+
+
+@pytest.mark.parametrize('cid',['W02','W07','W08'])
+def test_piano_roll_cases_give_wordle_like_note_feedback(app,tmp_path,cid):
+    case=next(c for c in load_melody_cases() if c.id==cid)
+    w=MelodyWindow(case=case,save_path=tmp_path/(cid+'.json'),renderer=Renderer(),player=Player())
+    try:
+        rhythm=MelodyPattern(tuple(GridNote(note.start,note.length,60) for note in case.pattern.notes))
+        w._update(Draft(rhythm,case.initial));w._submit()
+        assert w.piano.roll.feedback_marks==('correct',)*len(case.pattern.notes),cid
+        assert 'Rhythm guess' in w.feedback.text() and 'Green = exact timing' in w.feedback.text()
+
+        if 1 in case.stages:
+            pitch=MelodyPattern(tuple(
+                GridNote(note.start,note.length,note.pitch+1 if index==0 else note.pitch)
+                for index,note in enumerate(case.pattern.notes)))
+            w._update(Draft(pitch,case.initial))
+            assert w.piano.roll.feedback_marks==('correct',)*len(case.pattern.notes),cid
+            w._submit()
+            assert w.piano.roll.feedback_marks==('close',)+('correct',)*(len(case.pattern.notes)-1),cid
+            assert 'Pitch guess' in w.feedback.text() and 'Green = exact pitch and timing' in w.feedback.text()
+
+            shorter_last_note=MelodyPattern(tuple(
+                GridNote(note.start,note.length-1 if index==len(case.pattern.notes)-1 else note.length,note.pitch)
+                for index,note in enumerate(case.pattern.notes)))
+            assert w._wordle_marks(Draft(shorter_last_note,case.initial),1)==(
+                ('correct',)*(len(case.pattern.notes)-1)+('close',)),cid
+        else:
+            changed_length=MelodyPattern(tuple(
+                GridNote(note.start,note.length+1 if index==0 else note.length,note.pitch)
+                for index,note in enumerate(case.pattern.notes)))
+            w._update(Draft(changed_length,case.initial))
+            assert w.piano.roll.feedback_marks==('correct',)*len(case.pattern.notes),cid
+    finally:w.close()
+
+
+def test_piano_roll_paints_wordle_feedback_colors(app):
+    roll=PianoRoll()
+    roll.resize(1000,500)
+    roll.set_pattern(MelodyPattern((GridNote(0,2,60),GridNote(4,2,60),GridNote(8,2,60))))
+    roll.feedback_marks=('correct','close','wrong')
+    roll.show();app.processEvents()
+    try:
+        image=roll.grab().toImage()
+        colors=[]
+        for note in roll.pattern.notes:
+            rect=roll.note_rect(note)
+            colors.append(image.pixelColor(round(rect.left()+15),round(rect.top()+2)).name())
+        assert colors==['#347a50','#a87824','#58635e']
+    finally:roll.close();app.processEvents()
 
 
 def test_guidance_survives_hover_but_does_not_change_scene_or_edit(app,tmp_path):

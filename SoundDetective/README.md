@@ -38,13 +38,17 @@ Use **Skip tutorial** whenever you want. You can reopen **Learn to play** from t
 | Activity | What you do |
 | --- | --- |
 | **Timbre Cases · T01–T09** | Listen to a reference tone and recreate it. Cases gradually introduce envelopes, harmonics, filters, delay and reverb. |
-| **Music Studio · M01** | Restore a distorted recording, one step at a time: **Filter → Delay → Reverb → Pitch**. Completing every step unlocks playback of the full original song. |
+| **Music Studio · M01** | Temporarily hidden from the case board. The direct `--music-studio` launch option remains available when the required local recording is present. |
 | **Sound Wordle · W01** | Build a hidden sound from witness clues. The target becomes playable after you meet all three stages' requirements. |
-| **Sound Wordle · W02** | Reconstruct a hidden phrase in three stages: **rhythm → melody → timbre**. The target is revealed after completion. |
+| **Sound Wordle · W02** | Reconstruct a hidden phrase in three stages: **rhythm → melody → timbre**. After rhythm guesses, note colors judge onset and duration. After pitch guesses, green means both pitch and timing (onset and duration) are exact, amber means both are in range but at least one is not exact, and gray means pitch or timing needs work. The target is revealed after completion. |
+| **Sound Wordle · W07** | Rebuild a two-note doorbell in rhythm and pitch stages. Pitch feedback considers pitch, onset and duration together. |
+| **Sound Wordle · W08** | Recreate three short sounds and leave beat 3 silent. Its single stage gives rhythm feedback based on note onset and duration. |
 | **Sound Wordle · W03–W06** | Choose **Nature**, **Instruments** or **Noise / electronics** and synthesize rain, bird-like chirps, a plucked note or radio static from witness clues. |
-| **Free composition** | Choose this card under **Music Studio**. Select an instrument, write notes and chords across multiple bars, choose a meter and 60–160 BPM, add space effects and export WAV. There is no score. |
+| **Free composition** | Temporarily hidden from the case board with Music Studio. Its implementation and saved draft are retained. |
 
-The hidden-sound challenges allow unlimited submissions and free hints. Use **Help / guidance** to get the next clue and open the relevant equipment.
+**Every Sound Wordle case, W01–W09, shows green/amber/gray feedback after a submission.** W02 and W07 show note colors after rhythm and pitch submissions; W08 shows note colors for its rhythm-only stage. W01 and the source-synthesis cases show colored feature tiles instead. Rhythm colors reflect note onset and duration. In the pitch stage, **green** means pitch and timing are exact, **amber** means both are close but at least one is not exact, and **gray** means pitch or timing needs more work. Colors describe the submitted guess and do not update until the next submission.
+
+After submitting, W01 and the sound-category cases show green, amber and gray Wordle-style tiles for the submitted guess. W01 marks future stages as locked without revealing their diagnostic state. Tiles describe construction progress, not listening similarity. The hidden-sound challenges allow unlimited submissions and free hints. Use **Help / guidance** to get the next clue and open the relevant equipment.
 
 Free composition covers **C2–C6** and supports chords. Its draft is saved separately from your W02 challenge, so you can switch between them without replacing either draft.
 
@@ -84,9 +88,9 @@ Accept a case, open the desk's **Synthesizer**, and use **Sound sources** to sha
 
 In W04, drag the two points on the pitch curve up or down to shape the chirp. Drag the right point left or right to shorten or lengthen it. Knobs and number fields update with the curve.
 
-The witness description is available immediately. **Help / guidance** gives three free layers: the largest difference, the control and direction to try, then a useful goal range. Help does not reduce progress. Submit whenever you want; edits and auditions do not count as attempts.
+The witness description is available immediately. After your first unsuccessful submission, a directional clue appears and the relevant control or controls are outlined in gold; this does not use a hint. **Help / guidance** gives up to three free layers: the largest difference, the control and direction to try, then a useful goal range. Help does not reduce progress. Submit whenever you want; edits and auditions do not count as attempts.
 
-Each submission shows **construction progress**, with attribute results below. The score rewards moving toward accepted ranges for the sound's construction controls, rather than comparing audio waveforms. Multiple settings can pass. Reach **90 overall and at least 85 for every attribute** to reveal a second tape for the reference. This value is not a listening-similarity percentage.
+Each submission shows **construction progress**, with attribute results below and green, amber or gray tiles for the latest submitted guess. Green means an attribute meets its goal band, amber is close, and gray needs more adjustment. The score rewards moving toward accepted ranges for the sound's construction controls, rather than comparing audio waveforms. Multiple settings can pass. Reach **90 overall and at least 85 for every attribute** to reveal a second tape for the reference. This value is not a listening-similarity percentage.
 
 **Analysis / versions** shows the measured spectrum and RMS envelope from your last audition. Open its **Versions** tab to restore one of your last 30 submissions. Gold is your sound; green is the revealed target. Play again after editing to update the plots. Reference settings appear here after completion. Extra Delay and Reverb are unused in these category cases.
 
@@ -131,7 +135,7 @@ Drag a knob up or down to adjust it, or enter an exact value in the nearby numbe
 
 The equipment occupies most of the page. **Submit** and **Restart** sit beside **Undo / Redo** below it. Use the single **Help / guidance** button beside the tapes for assistance. Free composition is entered from the Music Studio board; its editable **Tempo · BPM** appears above the piano roll. Fixed-tempo challenges hide the BPM control.
 
-After changing a setting, play your sound again to hear the update. Listening and editing do not count as submissions; only pressing **Submit** records an attempt.
+After changing a setting, play your sound again to hear the update. W02 previews receive a stronger playback-only loudness lift because its starting envelope has a slow attack; this does not change the synth controls, score, or saved draft. Listening and editing do not count as submissions; only pressing **Submit** records an attempt.
 
 ### Scores and clues
 
@@ -235,11 +239,15 @@ If something is wrong:
 | **音色還原 · T01–T09** | 聆聽參照單音，調整設備來還原它。各關逐步介紹包絡、諧波、濾波、回聲與混響。 |
 | **音樂工作室 · M01** | 分階段修復扭曲的錄音，順序為「**濾波 → 回聲 → 混響 → 音高**」。全部完成後，解鎖完整原曲播放。 |
 | **聲音重建 · W01** | 根據證人口供製作隱藏的單音；三個階段都達標後，才可播放目標。 |
-| **聲音重建 · W02** | 依序重建隱藏樂句的「**節奏 → 旋律 → 音色**」，完成後揭曉目標。 |
+| **聲音重建 · W02** | 依序重建隱藏樂句的「**節奏 → 旋律 → 音色**」。提交節奏猜測後，顏色反映音符起點與長度；提交音高猜測後，綠色代表音高與節奏（起點、長度）均正確，琥珀色代表兩者都在接近範圍內但至少一項尚未完全正確，灰色代表音高或節奏仍需調整。完成後揭曉目標。 |
+| **聲音重建 · W07** | 分兩階段重建雙音門鈴：先編節奏，再調音高。音高回饋會同時檢查音高、起點與長度。 |
+| **聲音重建 · W08** | 重建三個短音並保留第三拍空白。此關只有節奏階段，顏色依音符起點與長度顯示。 |
 | **聲音重建 · W03–W06** | 選擇「自然聲音」「樂器聲音」或「噪聲與電子」，根據口供合成小雨、鳥鳴般的哨音、撥弦音或收音機雜音。 |
 | **自由創作** | 在「音樂工作室」選擇此卡片。選樂器、編寫多小節旋律與和弦、選拍號及 60–160 BPM，加入場景效果並匯出 WAV；不評分。 |
 
-隱藏聲音挑戰不限提交次數，提示免費。按「**幫助／設備引導**」取得下一層線索，並前往相應設備。
+**所有 Sound Wordle 案件 W01–W09 提交後都會顯示綠、琥珀、灰色回饋。**W02、W07 在節奏與音高提交後以音符顏色顯示；W08 的節奏階段也會以音符顏色顯示。W01 與聲源合成案件則顯示特徵色塊。節奏顏色反映音符起點與長度。音高階段的**綠色**代表音高與節奏均正確，**琥珀色**代表兩者接近但至少一項尚未完全正確，**灰色**代表音高或節奏仍需調整。顏色只代表已提交的答案，下一次提交前不會更新。
+
+提交後，W01 與聲源案件會以綠、琥珀、灰色方塊顯示最近一次提交的 Wordle 式回饋。W01 會將後續階段標示為未開放，不會透露其診斷結果。方塊反映合成進度，不代表聆聽相似度。隱藏聲音挑戰不限提交次數，提示免費。按「**幫助／設備引導**」取得下一層線索，並前往相應設備。
 
 自由創作的音域為 **C2–C6**，支援和弦。創作草稿與 W02 挑戰分開儲存，切換時會保留各自的內容。
 
@@ -281,7 +289,7 @@ W04 的音高曲線可以直接操作：上下拖曳兩個端點改變音高，�
 
 一開始就能讀取口供。「**幫助／設備引導**」依序提供三層免費提示：主要差異、建議控制項及方向、可接受的目標範圍。提示不扣進度分數。調整和試聽不計次，只有提交才記錄一次嘗試。
 
-每次提交顯示「**合成進度**」及分項結果。分數依合成控制所代表的聲音特徵與可接受範圍計算，允許不同設定通關，沒有直接比較音訊波形。達到**總分 90，各項至少 85**後，顯示可點擊試聽的目標錄音機。此分數不是聽覺相似度百分比。
+每次提交顯示「**合成進度**」、分項結果，以及最近提交答案的綠、琥珀或灰色方塊。綠色代表特徵符合目標範圍，琥珀色代表接近，灰色表示仍需調整。分數依合成控制所代表的聲音特徵與可接受範圍計算，允許不同設定通關，沒有直接比較音訊波形。達到**總分 90，各項至少 85**後，顯示可點擊試聽的目標錄音機。此分數不是聽覺相似度百分比。
 
 「**分析與版本**」顯示上次試聽的實測頻譜和 RMS 包絡；切換至「**版本記錄**」頁籤可恢復最近 30 次提交中的控制值。金色是你的聲音，綠色是通關後揭曉的目標；修改後請重新試聽以更新圖表。通關後此處也會顯示參考設定。這四關不使用額外的 Delay 或 Reverb。
 
@@ -326,7 +334,7 @@ W04 的音高曲線可以直接操作：上下拖曳兩個端點改變音高，�
 
 設備操作區佔據頁面大部分空間。「**提交**」與「**重新挑戰**」位於下方的「**復原／重做**」右側；協助統一由錄音機旁的「**幫助／設備引導**」進入。自由創作請從音樂工作室案件板選擇，可調的「**速度 · BPM**」會顯示在卷簾上方；固定速度的挑戰不顯示 BPM 控制。
 
-修改設定後，請再次播放，聽取更新後的聲音。試聽與調整不計次數；只有按「**提交**」才會記錄一次嘗試。
+修改設定後，請再次播放，聽取更新後的聲音。W02 的試聽會單獨提高播放響度，因為起始音色的起音較慢；這不會改變合成器控制、分數或已儲存的草稿。試聽與調整不計次數；只有按「**提交**」才會記錄一次嘗試。
 
 ### 分數與線索
 
