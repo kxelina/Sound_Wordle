@@ -7,14 +7,12 @@ from PySide6.QtWidgets import (QFrame,QGridLayout,QHBoxLayout,QHeaderView,QLabel
     QVBoxLayout,QWidget,QAbstractItemView)
 
 from ..audio.models import SoundSettings
-from ..audio.music_preview import MusicPreviewRenderer
 from ..audio.playback import AudioPlayer,PlaybackItem
 from ..audio.preview import PreviewRenderer
 from ..audio.sequence import NoteSequence
 from ..audio.source_preview import SourcePreviewRenderer
 from ..audio.sound_sources import SourcePatch
 from ..game.debrief import Debrief
-from ..game.music_cases import MusicSettings
 from .hover_help import set_help
 from .sound_categories import StatusLabel
 
@@ -51,15 +49,14 @@ class DebriefPanel(QFrame):
     back_requested=Signal()
     cases_requested=Signal()
 
-    def __init__(self,*,language='en',volume=.35,tone_renderer=None,source_renderer=None,music_renderer=None,player=None):
+    def __init__(self,*,language='en',volume=.35,tone_renderer=None,source_renderer=None,player=None):
         super().__init__()
         self.setObjectName('panel');self.language=language;self.record=None;self.case=None;self._closed=False
-        self._backend=None;self._revision=-1;self._armed=();self._music_jobs=[];self._music_previews={}
+        self._backend=None;self._revision=-1;self._armed=()
         self.player=player or AudioPlayer(self)
         self.tone_renderer=tone_renderer or PreviewRenderer(self)
         self.source_renderer=source_renderer or SourcePreviewRenderer(self)
-        self.music_renderer=music_renderer or MusicPreviewRenderer(self)
-        for backend in (self.tone_renderer,self.source_renderer,self.music_renderer):
+        for backend in (self.tone_renderer,self.source_renderer):
             backend.ready.connect(lambda revision,data,b=backend:self._ready(b,revision,data))
             backend.failed.connect(lambda revision,error,b=backend:self._failed(b,revision,error))
         self.player.error.connect(lambda message:self.status.setText(message))
@@ -211,10 +208,7 @@ class DebriefPanel(QFrame):
         self.stop();self._armed=roles;self.busy.show()
         self.status.setText(self.text('Preparing review audio…','正在準備復盤聲音……'))
         try:
-            if self.record.kind=='music':
-                self._backend=self.music_renderer
-                self._music_jobs=list(roles);self._music_previews={};self._next_music()
-            elif self.record.kind=='source':
+            if self.record.kind=='source':
                 self._backend=self.source_renderer
                 self._revision=self.source_renderer.prepare({key:SourcePatch.from_dict(self.record.clips[key]['patch']) for key in roles})
             else:
@@ -223,20 +217,8 @@ class DebriefPanel(QFrame):
                 self._revision=self.tone_renderer.prepare({key:(SoundSettings.from_dict(self.record.clips[key]['settings']),NoteSequence.from_dict(self.record.clips[key]['sequence'])) for key in roles},**audition_options(self.record.case_id))
         except (OSError,ValueError,RuntimeError) as error:self._failed(self._backend,self._revision,str(error))
 
-    def _next_music(self):
-        self._music_role=self._music_jobs.pop(0)
-        settings=MusicSettings.from_dict(self.record.clips[self._music_role]['settings'],self.case)
-        self._revision=self.music_renderer.prepare(self.case,settings)
-
     def _ready(self,backend,revision,data):
         if self._closed or backend is not self._backend or revision!=self._revision or not self._armed:return
-        if backend is self.music_renderer:
-            self._music_previews[self._music_role]=data
-            if self._music_jobs:
-                try:self._next_music()
-                except (OSError,ValueError,RuntimeError) as error:self._failed(backend,self._revision,str(error))
-                return
-            data=self._music_previews
         roles,self._armed=self._armed,()
         self.busy.hide()
         try:
@@ -256,12 +238,12 @@ class DebriefPanel(QFrame):
     def set_volume(self,value):self.player.set_volume(value)
 
     def stop(self):
-        self._armed=();self._backend=None;self._music_jobs=[];self._music_previews={}
-        for renderer in (self.tone_renderer,self.source_renderer,self.music_renderer):renderer.cancel()
+        self._armed=();self._backend=None
+        for renderer in (self.tone_renderer,self.source_renderer):renderer.cancel()
         self.player.stop()
         if hasattr(self,'busy'):self.busy.hide()
 
     def shutdown(self):
         if not self._closed:
             self.stop();self._closed=True;self.player.close()
-            for renderer in (self.tone_renderer,self.source_renderer,self.music_renderer):renderer.close()
+            for renderer in (self.tone_renderer,self.source_renderer):renderer.close()

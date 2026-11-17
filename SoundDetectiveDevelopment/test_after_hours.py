@@ -13,7 +13,7 @@ from sound_detective.audio.matching import MatchResult
 from sound_detective.audio.sc_client import SCEngine
 from sound_detective.game.cases import load_campaign
 from sound_detective.game.catalog import CASE_IDS
-from sound_detective.game.desktop import DesktopPreferences
+from sound_detective.game.desktop import DesktopPreferences,DesktopStore
 from sound_detective.game.melody import (MelodyCase,MelodyPattern,GridNote,Draft,MelodySession,
     load_melody_cases,load_melody_session,save_melody_session,compare_draft,authored_melody_clue)
 from sound_detective.game.session import SessionState
@@ -52,9 +52,41 @@ def solve(case):
 def test_catalog_and_preferences_accept_new_cases_only():
     assert len(load_campaign())==9 and KNOCK.id=='T09'
     assert set(CASES)=={'W02','W07','W08'}
+    assert 'M01' not in CASE_IDS
     for cid in ('T09','W07','W08'):
         p=DesktopPreferences(active_case=cid);assert DesktopPreferences.from_dict(p.to_dict()).active_case==cid
     with pytest.raises(ValueError):DesktopPreferences.from_dict(DesktopPreferences(active_case='W99').to_dict())
+
+
+def test_m01_active_case_migration_preserves_other_preferences(tmp_path):
+    path=tmp_path/'desktop-preferences.json'
+    original=DesktopPreferences(language='zh-Hant',volume=24,width=960,height=540,active_case='M01')
+    path.write_text(json.dumps(original.to_dict()),'utf-8')
+
+    store=DesktopStore(path)
+    loaded=store.load()
+    persisted=json.loads(path.read_text('utf-8'))
+    assert store.warning==''
+    assert loaded==DesktopPreferences(language='zh-Hant',volume=24,width=960,height=540)
+    assert persisted==loaded.to_dict()
+
+
+def test_m01_active_case_write_failure_keeps_original_preferences(tmp_path,monkeypatch):
+    from sound_detective.game import desktop
+
+    path=tmp_path/'desktop-preferences.json'
+    original=DesktopPreferences(language='zh-Hant',volume=24,width=960,height=540,active_case='M01')
+    saved=json.dumps(original.to_dict())
+    path.write_text(saved,'utf-8')
+    def fail_write(*args,**kwargs):raise OSError('disk full')
+    monkeypatch.setattr(desktop,'atomic_json_write',fail_write)
+
+    store=DesktopStore(path)
+    loaded=store.load()
+    assert store.warning=='save_error'
+    assert loaded==DesktopPreferences(language='zh-Hant',volume=24,width=960,height=540)
+    assert path.read_text('utf-8')==saved
+
 
 def test_doorbell_stages_are_independent_and_reachable(tmp_path):
     case=CASES['W07'];s=MelodySession(case=case)

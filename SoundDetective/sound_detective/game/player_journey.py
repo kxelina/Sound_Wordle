@@ -40,7 +40,8 @@ class JourneyStore:
                 validate_tutorial(data['tutorial'])
                 if not isinstance(data['reviews'],dict) or len(data['reviews'])>64:
                     raise ValueError('Invalid review archive')
-                records={k:Debrief.from_dict(v) for k,v in data['reviews'].items()}
+                retired_m01 = 'M01' in data['reviews']
+                records={k:Debrief.from_dict(v) for k,v in data['reviews'].items() if k != 'M01'}
                 if any(k!=r.case_id for k,r in records.items()):
                     raise ValueError('Mismatched review archive')
                 self.tutorial=data['tutorial']
@@ -52,6 +53,8 @@ class JourneyStore:
                         raise ValueError('Invalid case timing')
                     bounded('case time',value['seconds'],0,365*86400)
                 self.timings=timings
+                if retired_m01:
+                    self.save()
             except (OSError,ValueError,TypeError,KeyError):
                 try:
                     self.tutorial=fresh_tutorial();self.reviews={};self.timings={}

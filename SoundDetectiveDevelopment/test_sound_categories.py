@@ -25,6 +25,7 @@ from sound_detective.audio.sound_sources import CONTROLS, SourcePatch, measure_s
 from sound_detective.audio.source_preview import SourcePreviewRenderer
 from sound_detective.game.sound_categories import (SourceSession, assess_source, load_source_cases,
     load_source_session, save_source_session, source_clue)
+from sound_detective.ui.investigation_feedback import guidance
 from sound_detective.ui.sound_categories import SourceCaseWindow
 from test_features import Renderer, Player
 
@@ -210,14 +211,22 @@ def test_case_board_filters_scene_and_preferences(app,tmp_path):
     w = StudioWindow(progress_dir=tmp_path,animation_ms=0)
     w.resize(1280,720);w.volume_slider.setValue(0);w.show()
     try:
-        assert not w.board.mode_buttons['music'].isVisible()
         w.board.open('M01','en')
-        assert w.board.mode == 'wordle'
-        assert tuple(w.board.cards) == ('W01','W02','W03','W04','W05','W06','W07','W08','W09')
-        w.board.open('W02','en',free_composition=True)
+        assert w.board.mode == 'tone' and 'M01' not in w.board.cards
+        assert not w._accept_case('M01')
+        w.board.open('W02','en')
         assert w.board.mode == 'wordle' and 'FREE' not in w.board.cards
         w.board.open(None,'en');w.board.set_mode('wordle')
         assert tuple(w.board.cards) == ('W01','W02','W03','W04','W05','W06','W07','W08','W09')
+        w.board.set_mode('music')
+        assert w.board.mode == 'wordle'
+        w.board.select('W01')
+        w.board.cards['W01'].setEnabled(False)
+        w.board.select('W01')
+        assert not w.board.accept_button.isEnabled()
+        w.board.cards['W01'].setEnabled(True)
+        w.board.select('W01')
+        assert w.board.accept_button.isEnabled()
         for category,ids in {'nature':{'W03','W04'},'instrument':{'W05'},'noise':{'W06','W09'},'classic':{'W01','W02','W07','W08'}}.items():
             w.board.set_category(category)
             assert tuple(w.board.cards) == tuple(sorted(ids))

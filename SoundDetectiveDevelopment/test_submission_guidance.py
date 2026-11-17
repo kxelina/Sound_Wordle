@@ -4,7 +4,8 @@ from pathlib import Path
 os.environ['QT_QPA_PLATFORM']='offscreen';os.environ['SOUND_DETECTIVE_UI_AUDIO']='0'
 sys.path.insert(0,str(Path(__file__).resolve().parents[1]/'SoundDetective'))
 import pytest
-from PySide6.QtCore import Qt
+from PySide6.QtCore import QPoint, Qt
+from PySide6.QtGui import QWheelEvent
 from PySide6.QtTest import QTest
 from PySide6.QtWidgets import QApplication
 from sound_detective.game.submission_feedback import ScoreSnapshot,describe_submission
@@ -13,8 +14,7 @@ from sound_detective.game.sound_categories import load_source_cases,assess_sourc
 from sound_detective.game.melody import load_melody_cases,Draft,MelodyPattern,GridNote
 from sound_detective.game.parameters import PARAMETERS,replace_parameters
 from sound_detective.game.hidden_sound import parameters,assess,settings_from_parameters
-from sound_detective.game.availability import music_availability
-from sound_detective.ui.device_panel import ToneDevicePanel,MusicDevicePanel
+from sound_detective.ui.device_panel import ToneDevicePanel
 from sound_detective.ui.sound_categories import SourceCaseWindow
 from sound_detective.ui.hidden_sound import HiddenSoundWindow
 from sound_detective.ui.melody import MelodyWindow
@@ -199,6 +199,43 @@ def test_melody_rhythm_pitch_highlights_and_free_mode_clear(app,tmp_path,cid):
     finally:w.close()
 
 
+def test_piano_roll_feedback_stays_with_notes_after_add_delete_and_move(app):
+    roll=PianoRoll()
+    roll.set_pattern(MelodyPattern((GridNote(0,1,60),GridNote(4,1,61))))
+    roll.feedback_marks=('correct','wrong')
+
+    roll.add(2,60)
+    assert roll.feedback_marks==('correct','unscored','wrong')
+
+    roll.selection=0
+    roll.delete()
+    assert roll.feedback_marks==('unscored','wrong')
+
+    roll.selection=1
+    assert roll.replace_selected(GridNote(6,1,61))
+    assert roll.feedback_marks==('unscored','wrong')
+    assert tuple(note.start for note in roll.pattern.notes)==(2,6)
+
+
+def test_melody_submission_feedback_survives_structural_edits(app,tmp_path):
+    case=next(c for c in load_melody_cases() if c.id=='W02')
+    w=MelodyWindow(case=case,save_path=tmp_path/'W02.json',renderer=Renderer(),player=Player())
+    try:
+        submitted=Draft(MelodyPattern((GridNote(0,1,60),)),case.initial)
+        w._update(submitted)
+        w._submit()
+        original_mark=w.piano.roll.feedback_marks[0]
+
+        w.piano.roll.add(4,60)
+        assert w.piano.roll.feedback_marks==(original_mark,'unscored')
+        assert 'New notes have no feedback' in w.feedback.text()
+
+        w.piano.roll.selection=0
+        w.piano.roll.delete()
+        assert w.piano.roll.feedback_marks==('unscored',)
+    finally:w.close()
+
+
 def test_long_guidance_text_can_be_scrolled(app,tmp_path):
     summary=SubmissionFeedback()
     summary.setText('\n'.join(['Detailed submission feedback.']*8))
@@ -219,24 +256,63 @@ def test_long_guidance_text_can_be_scrolled(app,tmp_path):
     finally:w.close();app.processEvents()
 
 
-def test_timbre_case_long_guidance_scrolls_in_compact_device(app,tmp_path):
-    from PySide6.QtWidgets import QFrame,QVBoxLayout
-    case=next(c for c in load_campaign() if c.id=='T08')
-    w=ToneDevicePanel(case=case,save_path=tmp_path/'T08.json',renderer=Renderer(),player=Player())
-    frame=QFrame();layout=QVBoxLayout(frame);layout.setContentsMargins(0,0,0,0)
-    layout.addWidget(w.takeCentralWidget())
-    frame.resize(1232,624);frame.show();app.processEvents()
+def test_timbre_case_long_guidance_scrolls_in_embedded_device(app,tmp_path):
+    w=StudioWindow(progress_dir=tmp_path,animation_ms=0)
+    w.resize(1280,720);w.volume_slider.setValue(0);w.show();app.processEvents()
     try:
-        w.clue.setText('\n'.join(
+        assert w._accept_case('T08')
+        w._show_page('desk');w._activate_device('synth');app.processEvents()
+        panel=w.controller
+        panel.clue.setText('\n'.join(
             f'Guidance detail {index}: adjust the highlighted control and listen again.'
             for index in range(24)))
+        panel._fit_notes()
         app.processEvents()
-        scrollbar=w.note_scroll.verticalScrollBar()
+        scrollbar=panel.note_scroll.verticalScrollBar()
         assert scrollbar.maximum()>0
-        w.note_scroll.ensureWidgetVisible(w.clue)
+        scrollbar.setValue(0)
+        proxy_rect=w.device_proxy.subWidgetRect(panel.note_scroll.viewport())
+        position=w.view.mapFromScene(w.device_proxy.mapToScene(proxy_rect.center()))
+        event=QWheelEvent(position,w.view.viewport().mapToGlobal(position),QPoint(0,0),QPoint(0,-120),
+            Qt.MouseButton.NoButton,Qt.KeyboardModifier.NoModifier,Qt.ScrollPhase.ScrollUpdate,False)
+        QApplication.sendEvent(w.view.viewport(),event)
         app.processEvents()
         assert scrollbar.value()>0
-    finally:w.close();frame.close();app.processEvents()
+    finally:w.close();app.processEvents()
+
+
+def test_timbre_submission_results_are_not_vertically_compressed(app,tmp_path):
+    w=StudioWindow(progress_dir=tmp_path,animation_ms=0)
+    w.resize(1280,720);w.volume_slider.setValue(0);w.show();app.processEvents()
+    try:
+        assert w._accept_case('T08')
+        w._show_page('desk');w._activate_device('synth');app.processEvents()
+        panel=w.controller
+        panel.session.complete_submission(panel.session.begin_submission(),result(panel.case,40))
+        panel._show_match()
+        app.processEvents()
+
+        assert panel.score.height()>=panel.score.sizeHint().height()
+        assert panel.submission_feedback.height()>=panel.submission_feedback.minimumHeight()
+
+        panel._restore_edit(replace_parameters(panel.case.reference,{'delay_enabled':False}))
+        panel.session.complete_submission(panel.session.begin_submission(),result(panel.case,80))
+        panel._show_match()
+        app.processEvents()
+        assert panel.target_info.height()>=panel.target_info.sizeHint().height()
+        assert panel.score.height()>=panel.score.sizeHint().height()
+
+        panel.score.setText('\n'.join(f'Result detail {index}: keep adjusting the sound controls.'
+                                      for index in range(12)))
+        panel._fit_notes()
+        app.processEvents()
+        scrollbar=panel.note_scroll.verticalScrollBar()
+        assert scrollbar.maximum()>0
+        scrollbar.setValue(scrollbar.maximum())
+        app.processEvents()
+        score_bottom=panel.score.mapTo(panel.note_scroll.viewport(),QPoint(0,panel.score.height())).y()
+        assert score_bottom<=panel.note_scroll.viewport().height()
+    finally:w.close();app.processEvents()
 
 
 @pytest.mark.parametrize(('cid','expected_rms'),[('W02',.25),('W08',.1)])
@@ -343,20 +419,3 @@ def test_melody_guidance_inspector_and_buttons_fit_scene(app,tmp_path,language):
         for control in (c.piano.pitch,c.piano.start,c.piano.length,c.piano.add_button,c.piano.delete_button):
             assert frame.rect().contains(control.mapTo(frame,control.rect().bottomRight()))
     finally:w.close();app.processEvents();app.setFont(previous)
-
-
-@pytest.mark.skipif(not music_availability().available,reason='Local M01 recording not included')
-def test_music_submissions_are_separate_from_checks_and_steps(app,tmp_path):
-    w=MusicDevicePanel(save_path=tmp_path/'M01.json',renderer=Renderer(),player=Player())
-    try:
-        w._check_repair();assert guidance(w).device=='synth' and guidance(w).keys==('filter_enabled',)
-        assert not w.session.attempts and not w.submission_feedback.text()
-        w._submit();assert 'baseline' in w.submission_feedback.text()
-        before=w.submission_feedback.text();w._check_repair();assert w.submission_feedback.text()==before
-        from sound_detective.audio.models import SoundSettings
-        current=SoundSettings(effects=w.session.settings.repair.estimates)
-        w.effects_editor.set_settings(replace_parameters(current,{'filter_enabled':True}))
-        w._controls_changed();assert not guidance(w).keys
-        w._submit();assert '→' in w.submission_feedback.text() and w.session.attempts==2
-        w._restart();assert not w.submission_feedback.text() and not w._submission_snapshots
-    finally:w.close()

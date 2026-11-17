@@ -47,13 +47,13 @@ def test_all_audition_buttons_and_comparison_use_the_same_profile(app,tmp_path,c
 
 def test_review_and_collected_export_share_the_t09_profile(app,tmp_path):
     session=SessionState(CASE);tone_submit(session,True);record=build_debrief(CASE,session)
-    backend=Renderer();panel=DebriefPanel(tone_renderer=backend,source_renderer=Renderer(),music_renderer=Renderer(),player=Player())
+    backend=Renderer();panel=DebriefPanel(tone_renderer=backend,source_renderer=Renderer(),player=Player())
     try:
         panel.load(record,CASE);panel.play(('initial','final','target'))
         assert backend.requests[-1][2]['playback_rms']==.18
     finally:panel.shutdown();panel.close()
     store=EvidenceStore(tmp_path/'cabinet.json');store.remember(record)
-    backend=Renderer();panel=EvidencePanel(store,load_campaign(),tone_renderer=backend,source_renderer=Renderer(),music_renderer=Renderer(),player=Player())
+    backend=Renderer();panel=EvidencePanel(store,load_campaign(),tone_renderer=backend,source_renderer=Renderer(),player=Player())
     try:
         panel.export_final();assert backend.requests[-1][2]['playback_rms']==.18
     finally:panel.shutdown();panel.close()

@@ -13,11 +13,10 @@ from sound_detective.ui.studio import StudioWindow
 from sound_detective.ui.hidden_sound import HiddenSoundWindow
 from sound_detective.ui.melody import MelodyWindow
 from sound_detective.ui.sound_categories import SourceCaseWindow
-from sound_detective.ui.device_panel import ToneDevicePanel,MusicDevicePanel
+from sound_detective.ui.device_panel import ToneDevicePanel
 from sound_detective.game.sound_categories import load_source_cases
 from sound_detective.game.cases import load_campaign
 from sound_detective.game.parameters import replace_parameters
-from sound_detective.game.availability import music_availability
 from test_features import Renderer,Player
 from test_after_hours import result
 
@@ -52,9 +51,8 @@ def test_tapes_route_clicks_keyboard_and_disabled_reference(app):
     finally:deck.close()
 
 @pytest.mark.parametrize('language',['en','zh-Hant'])
-@pytest.mark.parametrize('cid',['T01','T09','W01','W02','W04','W09','M01'])
+@pytest.mark.parametrize('cid',['T01','T09','W01','W02','W04','W09'])
 def test_scene_workspace_transport_footer_and_hidden_chrome(app,tmp_path,language,cid):
-    if cid=='M01' and not music_availability().available:pytest.skip('Optional local music is absent')
     w=StudioWindow(progress_dir=tmp_path,animation_ms=0);w.resize(1280,720);w.volume_slider.setValue(0);w.show()
     try:
         assert w._accept_case(cid);w._show_page('desk');w._activate_device('synth');w.preferences.language=language;w._translate();app.processEvents()
@@ -83,7 +81,7 @@ def test_scene_workspace_transport_footer_and_hidden_chrome(app,tmp_path,languag
 def test_free_tempo_is_in_workspace_and_survives_board_switch(app,tmp_path):
     w=StudioWindow(progress_dir=tmp_path,animation_ms=0);w.resize(1280,720);w.volume_slider.setValue(0);w.show()
     try:
-        assert w.open_free_composition();w._show_page('desk');w._activate_device('synth');app.processEvents();c=w.controller
+        assert w._accept_case('W02');w.controller._set_mode('free');w._show_page('desk');w._activate_device('synth');app.processEvents();c=w.controller
         assert c.tempo_panel.isVisible() and c.tempo.isEnabled() and c.machine.isAncestorOf(c.tempo)
         assert c.tempo_label.text().endswith('BPM') and c.tempo.font().pixelSize()>=16
         inside(w.device_proxy.widget(),c.tempo);assert not c.deck.reference_frame.isVisible()
@@ -91,7 +89,7 @@ def test_free_tempo_is_in_workspace_and_survives_board_switch(app,tmp_path):
         c.tempo.setValue(126);assert c.session.current.tempo==126
         assert w._accept_case('W02');w._show_page('desk');w._activate_device('synth');app.processEvents()
         assert not c.tempo_panel.isVisible() and not c.tempo.isVisible()
-        assert w.open_free_composition();w._show_page('desk');w._activate_device('synth');app.processEvents()
+        assert w._accept_case('W02');w.controller._set_mode('free');w._show_page('desk');w._activate_device('synth');app.processEvents()
         assert c.session.current.tempo==126 and c.tempo_panel.isVisible()
     finally:w.close();app.processEvents()
 

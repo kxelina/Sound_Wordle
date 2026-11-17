@@ -12,7 +12,6 @@ from PySide6.QtWidgets import QApplication
 from sound_detective.ui.studio import StudioWindow
 from sound_detective.game.parameters import replace_parameters
 from sound_detective.game.melody import Draft,MelodyPattern,GridNote
-from sound_detective.game.availability import music_availability
 from sound_detective.audio.sc_client import find_executable
 
 app=QApplication([])
@@ -72,14 +71,10 @@ with TemporaryDirectory(dir=out) as directory:
     assert c.guidance.keys and '→' in c.submission_feedback.text();screenshot('hidden-signal-guidance')
     for button in (c.deck.display,c.stop_button):
         assert c.notebook.rect().contains(button.mapTo(c.notebook,button.rect().bottomRight()))
-    music=False
-    if music_availability().available:
-        c=activate('M01');c._check_repair();assert c.guidance.keys==('filter_enabled',)
-        c._submit();assert c.submission_feedback.text();screenshot('music-repair-guidance');music=True
     report={'real_tone_submissions_and_delta':True,'transparent_knob_drag_clears_stale_diagnosis':True,
         'harmonic_fader_hint_rings':True,'real_category_playback_finished':True,'first_clear_delta_visible':True,
         'melody_player_note_selected_and_dragged':True,'hidden_signal_deck_visible':True,
-        'optional_music_checked':music,'errors':errors,'volume':0,'game_root':str(GAME),'python_executable':sys.executable,
+        'errors':errors,'volume':0,'game_root':str(GAME),'python_executable':sys.executable,
         'sclang':str(find_executable('sclang.exe')),'scsynth':str(find_executable('scsynth.exe'))}
     assert not errors,errors
     w.close();app.processEvents();(out/'result.json').write_text(json.dumps(report,ensure_ascii=False,indent=2),'utf-8')

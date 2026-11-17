@@ -453,6 +453,7 @@ class CaseWindow(AudioBench):
             self._show_match()
 
     def _matched(self, revision, result):
+        # A cancelled or superseded render must not submit an old answer.
         if self._closed or revision != self._revision or revision != self._match_revision or self._submission_token is None:
             return
         was_solved = self.session.solved

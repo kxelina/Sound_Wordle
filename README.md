@@ -1,31 +1,25 @@
-# Sound_Wordle
+# Sound Detective
 
-**Sound Detective — Every sound leaves a trace.**
+A sound-making game about **synthesis** and **audio effects**. Listen to a sound,
+adjust the controls, and see how close your answer is.
 
-A desktop sound-construction game built with Python, PySide6 and SuperCollider.
+## What you can play
 
-- **T01–T09:** recreate timbres with harmonics, ADSR, filters, delay and reverb.
-- **Sound Wordle:** build hidden sounds from witness clues, with unlimited submissions and free hints.
-  W01/W02 cover a signal and a melody. W03/W04 cover rain and bird-like chirps,
-  W05 a plucked string-like note, and W06 radio static. W07 is an original two-note doorbell; W08 reconstructs a rhythm with a required silent beat. W09 builds a hollow electronic tone using harmonic faders and grouped, multi-solution requirements.
-  **Every Sound Wordle case, W01–W09, shows green/amber/gray feedback after a submission.** Piano-roll cases W02/W07 show note colors for rhythm and pitch, and W08 shows note colors for rhythm; the other cases show colored feature tiles. Pitch-stage green requires exact pitch and timing (position and duration); amber means both are in range but at least one is not exact; gray means at least one needs more work.
-- **T09 · The Extra Knock:** use one short source event and Delay to reconstruct fading repeats, with an optional ungraded cause question.
-- **Free composition:** Piano/Violin/Guitar/synth timbres, C2–C6 chords, extendable bars, eight meters, editable room/hall/echo presets and WAV export.
-- **M01 music restoration:** included as code/configuration; song recordings are local-only and are not distributed here.
-- English and Traditional Chinese interfaces, edit history, progress saves and WAV export.
-- A five-step interactive tutorial and persistent first-clear reviews with audio comparisons.
-- Category difficulties with 2/4/5 controls, equipment-directed hints, auto-updating loop auditions and an exportable evidence cabinet.
-- Optional local anonymous playtest logs; no participant data is uploaded.
-- Submission-to-submission score changes and improvement/setback summaries, plus gold control/device outlines for eligible clues. Scores, hint gates and hidden-target rules remain unchanged.
+- **Timbre Cases (T01–T09):** recreate sounds with harmonics, envelopes, filters,
+  delay, and reverb.
+- **Sound Wordle (W01–W09):** follow clues to build hidden sounds. Submit as often as
+  you like and use free hints.
 
-- Enlarged equipment pages with directly clickable labelled tape machines, one Help / guidance action and compact Undo/Redo/Submit/Restart controls. Editable tempo is shown above the free-composition piano roll.
+For simple instructions on playing the game, read the
+[English / 繁體中文 Player Guide](SoundDetective/docs/PLAYER_GUIDE.md).
 
-[Full English / 繁體中文 player guide](SoundDetective/README.md)
+## Run the game
 
-## Run from source on Windows
+Install **Python 3.11** and **SuperCollider** first.
 
-Install **Python 3.11** and **SuperCollider** (the development machine uses 3.14.1).
-From the repository folder, run PowerShell:
+### Windows
+
+From PowerShell in the project folder:
 
 ```powershell
 cd SoundDetective
@@ -34,18 +28,10 @@ py -3.11 -m venv .venv
 .\.venv\Scripts\python.exe -m sound_detective.play
 ```
 
-After creating the environment, you can use the Python entry above or **SoundDetective.exe**.
-M01's local recordings are optional for startup: missing or unusable assets disable that
-case while all synthesized challenges and free composition remain available.
-The public offline installer can be built without those recordings using `--public`;
-recordings and bundled installers are excluded from this source repository.
-SuperCollider is invoked automatically; it does not need to be opened manually.
+### Linux
 
-## Run from source on Linux
-
-Install **Python 3.11**, **SuperCollider**, and the system packages required by
-PySide6's Qt Multimedia backend using your distribution's package manager. In a
-terminal, from the repository root:
+Install Python 3.11, SuperCollider, and the system packages needed by PySide6. Then
+run these commands from the project folder:
 
 ```bash
 cd SoundDetective
@@ -54,77 +40,28 @@ python3.11 -m venv .venv
 bash run-linux.sh
 ```
 
-The launcher uses the project `.venv` (or an existing `venv`) and starts the
-same Python game entry point as the Windows launcher. It also accepts
-`--check`, `--smoke-test`, `--diagnose`, and `--diagnostics`; for example,
-`bash run-linux.sh --check` verifies dependencies, game files and SuperCollider.
-Install SuperCollider before running checks or the game; Linux executables are
-discovered as `sclang` and `scsynth` from `PATH` or `SOUND_DETECTIVE_SC_DIR`.
-The Windows `.exe` launcher and offline installer remain Windows-only.
+The launch check can verify the setup before starting the game:
 
-Choose **Learn to play** for isolated exercises in listening, Release, H2, chirp editing
-and practice submission. Fresh players are offered the lesson on Start Game.
-Cleared cases unlock a first-clear review with starting/answer/target auditions,
-component progress, reference controls and available time/history. Music completion
-keeps full-song playback; open that review manually.
-
-The environments, temporary renders, user progress and bundled runtimes are excluded from Git.
-Read [environment notes](SoundDetective/docs/ENVIRONMENT.md) for engine path configuration.
-
-## Tests and records
-
-After installing the dependencies, run the source-only Wordle and piano-roll checks from the repository root:
-
-```powershell
-.\SoundDetective\.venv\Scripts\python.exe -m pytest SoundDetectiveDevelopment/test_submission_guidance.py SoundDetectiveDevelopment/test_wire_ghost.py SoundDetectiveDevelopment/test_after_hours.py SoundDetectiveDevelopment/test_learning_tools.py SoundDetectiveDevelopment/test_player_journey.py SoundDetectiveDevelopment/test_sound_categories.py SoundDetectiveDevelopment/test_note_dragging.py -q
+```bash
+cd SoundDetective
+bash run-linux.sh --check
 ```
 
-These checks include actual SuperCollider rendering. Some additional music-restoration
-checks in `test_features.py` require the local M01 assets. Earlier full local validation
-results are documented in [VALIDATION.md](SoundDetectiveDevelopment/VALIDATION.md);
-they should not be confused with a perceptual study or results on another computer.
+## Run tests
 
-Validation records include a source checkout without M01 recordings and local checks
-with those assets present. See the dated validation notes for exact counts and scope.
+`pytest` is separate from the game's requirements. Install it once in the project's
+virtual environment, then run the focused gameplay checks from the repository folder:
 
-[Architecture](SoundDetective/docs/ARCHITECTURE.md) ·
-[AI assistance and references](SoundDetective/docs/AI_ASSISTANCE.md)
+```bash
+SoundDetective/.venv/bin/python -m pip install pytest
+SoundDetective/.venv/bin/python -m pytest SoundDetectiveDevelopment/test_submission_guidance.py SoundDetectiveDevelopment/test_wire_ghost.py SoundDetectiveDevelopment/test_after_hours.py SoundDetectiveDevelopment/test_learning_tools.py SoundDetectiveDevelopment/test_player_journey.py SoundDetectiveDevelopment/test_sound_categories.py SoundDetectiveDevelopment/test_note_dragging.py -q
+```
 
----
+Some music-related tests require audio files that are not included in this repository.
 
-## 繁體中文
+## More information
 
-**Sound Detective：每個聲音都留下線索。**
-
-這是一款使用 Python、PySide6 與 SuperCollider 的桌面聲音合成遊戲。
-
-- **T01–T09 音色案件：**調整諧波、ADSR、濾波、回聲與混響來還原聲音。
-- **Sound Wordle：**依證人口供製作隱藏聲音，不限提交，提示免費。
-  W01/W02 為信號及旋律；W03/W04 為小雨及鳥鳴般哨音；W05 為撥弦音；W06 為收音機雜音。
-  **所有 Sound Wordle 案件 W01–W09 提交後都會顯示綠、琥珀、灰色回饋。**W02、W07 以音符顏色顯示節奏與音高；W08 以音符顏色顯示節奏；其他案件則以特徵方塊顯示。音高階段的綠色代表音高與節奏（起點、長度）均正確；琥珀色代表兩者都在接近範圍內但至少一項尚未完全正確；灰色代表至少一項仍需調整。
-- **自由創作：**可選鋼琴／小提琴／吉他合成音色，C2–C6 旋律和弦、增加小節、八種拍號、可編輯的空間效果及 WAV 匯出。
-- **M01 音樂修復：**保留程式與設定，原曲及證物錄音僅保存在本機。
-
-新增 T09「多出來的一聲」、W07「會說話的門鈴」及 W08「空白的一拍」，不需要歌曲素材，各自保存進度並支援首次作品收藏。另有 W09「電線裡的幽靈」，用諧波推桿和群組能量規則接受多組合理答案。
-
-[完整玩家指南：英文及繁體中文](SoundDetective/README.md)
-
-Windows 使用者安裝 Python 3.11 與 SuperCollider 後，依上方 PowerShell 指令建立環境，
-並使用 `python -m sound_detective.play` 啟動原始碼版本。Linux 開發方式請見上方
-Linux 指令。
-環境建立後，也可以使用原生 `SoundDetective.exe`。缺少或無法驗證 M01 音源時，只有歌曲案件暫不可玩，其他合成挑戰與自由創作仍可啟動。此倉庫不提供原曲錄音或完整執行環境；可用 `--public` 建立不帶歌曲的離線安裝包。
-
-Linux 開發者可在終端執行 `cd SoundDetective`，再依上方 Linux 指令建立 `.venv`、
-安裝 `requirements-linux.txt`，並執行 `bash run-linux.sh`。此啟動器使用系統的
-SuperCollider；Windows `.exe` 與離線安裝包仍僅支援 Windows。
-
-主選單「新手練習」提供獨立的五步操作教程，新玩家第一次開始遊戲時會獲得引導。通關後可查看首次結案復盤，比較起點、答案與目標聲音，查看分項進度及參考設定。音樂修復仍保留完整原曲播放，復盤手動開啟。
-
-分類聲音另有入門／標準／進階難度、設備引導、循環更新試聽及首次作品收藏；可選擇啟用本機匿名試玩記錄。
-
-設備頁已放大操作區，直接點擊標有用途的錄音機試聽；幫助與設備引導統一入口，提交／重新挑戰與復原／重做共用底部操作列。自由創作從音樂工作室案件板進入，可調 BPM 顯示在卷簾上方。
-
-[開發測試與驗證紀錄](SoundDetectiveDevelopment/VALIDATION.md) ·
-[外部資源及 AI 輔助紀錄](SoundDetective/docs/AI_ASSISTANCE.md)
-
-新增提交前後的分數差與改善／退步摘要，以及提示控制和設備的金色描邊。音色診斷門檻、隱藏目標和原計分規則保持不變。
+- [Player Guide](SoundDetective/docs/PLAYER_GUIDE.md)
+- [Environment setup](SoundDetective/docs/ENVIRONMENT.md)
+- [Architecture](SoundDetective/docs/ARCHITECTURE.md)
+- [Test and validation notes](SoundDetectiveDevelopment/VALIDATION.md)

@@ -14,7 +14,7 @@ from sound_detective.audio.preview import PreviewAudio
 from sound_detective.game.edit_history import EditHistory
 from sound_detective.game.cases import load_campaign
 from sound_detective.game.parameters import PARAMETERS
-from sound_detective.ui.device_panel import ToneDevicePanel, MusicDevicePanel
+from sound_detective.ui.device_panel import ToneDevicePanel
 from sound_detective.ui.hidden_sound import HiddenSoundWindow
 from sound_detective.ui.melody import MelodyWindow
 from sound_detective.game.melody import Draft, GridNote, MelodyPattern
@@ -129,74 +129,6 @@ def test_free_and_challenge_histories(app, tmp_path):
         w.edit_bar.undo()
         assert w.session.current == original
         assert w.session.free == free
-    finally: w.close()
-
-
-def test_music_versions_range_loop_and_stale(app, tmp_path):
-    p, r = Player(), Renderer()
-    w = MusicDevicePanel(save_path=tmp_path/'m.json', player=p, renderer=r)
-    try:
-        original = w.session.settings
-        w.effects_editor.controls['filter_enabled'].setChecked(True)
-        assert w.session.settings != original
-        w._check_repair()
-        assert w._comparison_delta > 0
-        w.edit_bar.undo()
-        assert w.session.settings == original
-        w.edit_bar.redo()
-        w._pin_version()
-        pinned = w.session.settings
-        w.effects_editor.controls['cutoff_hz'].setValue(1800)
-        w._language = 'zh-Hant'
-        w._translate()
-        assert '設定已修改' in w.comparison_feedback.text()
-        w._restore_edit(w._reference_settings)
-        assert w.session.settings == pinned
-        w.edit_bar.undo()
-        assert w.session.settings != pinned
-        w.range_start.setValue(1)
-        w.range_end.setValue(3)
-        w.loop_preview.setChecked(True)
-        w._play_current()
-        revision = w._revision
-        assert r.requests[-1][2]['selection'] == (1, 3)
-        w._ready(revision-1, PreviewAudio(w.case.evidence, w.case.evidence, True))
-        assert not p.items
-        w._ready(revision, PreviewAudio(w.case.evidence, w.case.evidence, True))
-        assert p.items[0].loop
-        w._play_versions()
-        w._ready(w._revision, PreviewAudio(w.case.evidence, w.case.evidence, True))
-        assert not p.items
-        w._ready(w._revision, PreviewAudio(w.case.evidence, w.case.evidence, True))
-        assert [i.label for i in p.items] == ['before', 'after']
-        assert not any(i.loop for i in p.items)
-        w.stop()
-        assert not p.items
-        assert w.session.attempts == 0
-        # A cleared stage is a history boundary; undo cannot edit a locked device.
-        from sound_detective.audio.models import SoundSettings
-        from sound_detective.game.music_repair import RepairSettings
-        from sound_detective.game.music_cases import MusicSettings
-        from dataclasses import replace
-        fx = replace(w.session.settings.repair.estimates, filter=w.case.initial_effects.filter)
-        w.session.settings = MusicSettings(w.session.settings.corrections, RepairSettings(fx))
-        w._sync_controls()
-        w._submit()
-        assert w.session.stage == 'delay'
-        assert not w.edit_bar.stack.can_undo
-        assert w.session.attempts == 1
-    finally: w.close()
-
-
-def test_bad_range_does_not_play(app, tmp_path):
-    w = MusicDevicePanel(save_path=tmp_path/'m.json', player=Player(), renderer=Renderer())
-    try:
-        w.range_start.setValue(4)
-        w.range_end.setValue(3)
-        w._play_current()
-        assert w._revision is None
-        assert not w.player.items
-        assert '0.1' in w.status.text()
     finally: w.close()
 
 

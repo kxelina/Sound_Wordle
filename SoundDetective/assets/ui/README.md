@@ -9,4 +9,4 @@
 
 Qt 另外繪製文字、描邊及互動控件，畫中的電表和波形是美術。音色案件及 W01/W02 挑戰使用偵探房間；M01 與自由創作使用錄音室。語言共用同一套圖片。
 
-[遊戲操作](../../README.md) · [AI 使用記錄](../../docs/AI_ASSISTANCE.md)
+[遊戲操作](../../docs/PLAYER_GUIDE.md) · [AI 使用記錄](../../docs/AI_ASSISTANCE.md)

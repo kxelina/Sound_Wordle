@@ -8,7 +8,7 @@
 
 ## 離線安裝包
 
-`release/SoundDetective-Public-Setup.exe` 是可分享的公開試玩安裝包，附帶相同 Python／依賴／SuperCollider，但排除 `source/` 錄音及 `M01-evidence.wav`。原生 EXE 和啟動診斷已將歌曲案件視為可選內容；缺少或無法驗證 M01 素材時，只停用該案件。必要程式、合成關卡、場景或引擎缺失仍會阻止啟動並顯示診斷。
+`release/SoundDetective-Public-Setup.exe` 是可分享的公開試玩安裝包，附帶相同 Python／依賴／SuperCollider，但排除 `source/` 錄音及 `M01-evidence.wav`。M01 已不在一般選單中；啟動檢查只驗證目前遊戲所需的程式、關卡、場景和引擎。
 
 `release/SoundDetective-Setup.exe` 是完整安裝包，附帶 Python 3.11、目前依賴、SuperCollider、遊戲素材和本機音源；不包含玩家存檔、暫存、測試與開發工具。不需要在目標電腦另外安裝 Python 或 SuperCollider。
 
@@ -29,15 +29,11 @@
 .venv/Scripts/python.exe -B launcher/package_release.py --sc-dir 'C:/Program Files/SuperCollider-3.14.1' --refresh --base-installer release/SoundDetective-Setup.exe --output release/SoundDetective-Public-Setup.exe --public
 ```
 
-公開版與完整版本使用同一份檔案選擇邏輯；封裝清單記錄 `public_build` 和 `recorded_music_included`。公開版仍包含 M01 的程式、JSON 與校音圖，方便具備相符本機素材時使用。`--music-studio` 檢查需要這些素材；一般啟動及 `--check` 不要求它們。
+公開版與完整版本使用同一份檔案選擇邏輯；封裝清單記錄 `public_build` 和 `recorded_music_included`。公開版目前仍包含 M01 程式、JSON 與校音圖，但 M01 啟動選項已移除；相關舊檔會在後續清理步驟中處理。一般啟動及 `--check` 不要求本機錄音。
 
 安裝器原始碼為 `launcher/Installer.cs`；封裝清單和雜湊由 `launcher/package_release.py` 產生。安裝後只需完整資料夾，無需開發機器上的路徑。
 
-```powershell
-.\SoundDetective.exe --music-studio
-```
-
-此參數直接繼續 M01；自由創作位於主遊戲案件板的 Music Studio 分類。啟動器不依賴外部工作目錄，中文及空格路徑可用。
+啟動器不依賴外部工作目錄，中文及空格路徑可用。
 
 Windows 的 SuperCollider 冷啟動在較深的安裝路徑可能失敗。聲音引擎啟動時優先採用系統提供的短路徑別名，實際執行的仍是該安裝內的同一份程式；沒有短路徑別名的磁碟會保留原路徑，建議選擇較短的安裝位置。
 
@@ -50,7 +46,6 @@ Windows 的 SuperCollider 冷啟動在較深的安裝路徑可能失敗。聲音
 ```powershell
 .\SoundDetective.exe --check
 .\SoundDetective.exe --smoke-test
-.\SoundDetective.exe --smoke-test --music-studio
 .\SoundDetective.exe --diagnose
 .\SoundDetective.exe --diagnostics
 ```
@@ -59,4 +54,4 @@ Windows 的 SuperCollider 冷啟動在較深的安裝路徑可能失敗。聲音
 
 `--diagnose` 將各項成功／失敗及處理方法寫入 `.runtime/diagnostics-latest.json`，失敗回傳非零。`--diagnostics` 開啟可讀、可匯出的診斷視窗。主選單 Settings 也有相同入口；正常啟動檢查到缺少必要檔案或引擎會顯示診斷。缺少音訊輸出屬警告，不會破壞存檔。
 
-[環境](ENVIRONMENT.md) · [主說明](../README.md)
+[環境](ENVIRONMENT.md) · [專案 README](../../README.md)

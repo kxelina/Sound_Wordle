@@ -32,4 +32,4 @@
 
 測試原始碼與舊驗證輸出已移出現有遊戲目錄，不再宣稱現有目錄能直接執行原 pytest 套件。EXE 自帶的 `--check`／`--smoke-test` 仍可使用。`.runtime` 的必要快取與日誌將在下一次遊戲執行時自動建立。
 
-[遊戲操作](../README.md) · [環境](ENVIRONMENT.md)
+[遊戲操作](PLAYER_GUIDE.md) · [環境](ENVIRONMENT.md)

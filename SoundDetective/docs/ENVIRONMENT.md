@@ -8,10 +8,9 @@ Windows 開發環境使用本專案 `.python/` 的 CPython 3.11.15、`.venv/`、
 
 ```powershell
 .venv/Scripts/python.exe -m sound_detective.play
-.venv/Scripts/python.exe -m sound_detective.play --music-studio
 ```
 
-音樂工作室裡可選 M01 或自由創作；預設主入口保留主選單。單獨的 `sound_detective.wordle`、`sound_detective.melody`、`sound_detective.music_case` 設備視窗仍保留。
+一般啟動會開啟主選單。M01 音樂修復不再有獨立啟動方式；`sound_detective.wordle` 和 `sound_detective.melody` 開發視窗仍保留。
 
 若無法找到音頻引擎，設定 `SOUND_DETECTIVE_SC_DIR` 為含 `sclang.exe`、`scsynth.exe` 的 SuperCollider 安裝資料夾。不需要手動啟動 SC。
 
@@ -45,4 +44,4 @@ py -3.11 -m venv .venv
 
 安裝需可取得對應套件；目前這台電腦的環境已完整保留，不需要重裝。`.python/` 和 `.venv/` 都不能當成測試垃圾刪除。
 
-[EXE 啟動器](EXE_LAUNCHER.md) · [遊戲操作](../README.md)
+[EXE 啟動器](EXE_LAUNCHER.md) · [遊戲操作](PLAYER_GUIDE.md)

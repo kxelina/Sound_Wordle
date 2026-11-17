@@ -1,33 +1,16 @@
 # 目前遊戲架構
 
-此目錄已整理為目前遊戲的執行程式與必要資源；舊設計、開發測試及试听輸出已清理。素材與玩家存檔使用同一套來源，沒有建立另一份遊戲副本。
+目前主選單提供音色案件（T01–T09）和 Sound Wordle（W01–W09）。遊戲由桌面介面協調案件、提示、聲音預覽和本機進度保存。
 
-## 入口與介面
+## 主要程式流程
 
-- `SoundDetective.exe` → `launcher.py` → `play.py` → `ui/studio.py`。
-- `ui/studio_scenes.py` 管理偵探房間／錄音室的背景及對齊的點擊區。
-- `ui/case_board.py` 提供音色案件、Music Studio 和 Sound Wordle。自由創作使用既有 W02 session 內的獨立 free 草稿。
-- `ui/device_panel.py` 將現有案件控制器嵌入工作室；`ui/melody.py`、`ui/hidden_sound.py`、`ui/music_case.py` 處理各模式。
-- `ui/audio_bench.py` 雖有舊開發名稱，仍是音色案件共用父類，因此保留其程式；獨立測試台入口已移除。
+- `sound_detective/play.py` 啟動 Qt 應用程式，並建立 `ui/studio.py` 的工作室。
+- `ui/case_board.py` 顯示案件；`ui/device_panel.py` 顯示音色案件，Sound Wordle 則由 `ui/hidden_sound.py`、`ui/melody.py` 和 `ui/sound_categories.py` 負責。
+- `game/` 保存案件規則、提交進度、提示與分數；`game/storage.py` 將玩家進度安全寫入本機 JSON 檔案。
+- `audio/preview.py` 在背景產生及比較預覽；`audio/sc_client.py` 呼叫 SuperCollider，`audio/playback.py` 控制播放。
+- [Mermaid 架構圖](ARCHITECTURE_DIAGRAM.md) 以圖示呈現這些主要模組及其互動。
 
-## 音訊
-
-- `audio/sc_client.py` 呼叫系統 `sclang`、`scsynth`；`supercollider/` 三個腳本生成聲音。
-- `audio/preview.py` 與 `audio/music_preview.py` 在背景生成、取消及快取；`audio/playback.py` 負責 Qt 播放、停止及音量。
-- `audio/music_render.py` 和 `audio/music_source.py` 從舊示例工具整理出遊戲實際需要的渲染與解碼函式；函式行為保持原樣，現在不依賴示例檔案。
-- `audio/matching.py`、`clue_features.py` 保留實際聲學分析；`game/progress.py` 提供方向明確的還原進度。
-
-## 關卡與保存
-
-- `content/cases/` 八個音色案件，`content/music_cases/` M01、證物和錄音校音圖。
-- `game/hidden_sound.py`、`game/melody.py` 定義 W01／W02 與自由創作；`game/music_cases.py` 管理先效果後音高的修復步驟。
-- `game/storage.py` 原子寫入與損壞檔備份；`userdata/` 的現有檔案全部保留。
-- `game/edit_history.py` 與 `ui/edit_history.py` 統一管理有界編輯歷史、連續操作合併與嵌入場景快捷鍵；只記錄設定／旋律，不回滾遊戲進度。W02 與 free 分開持有歷史，音樂過關步驟是歷史邊界。
-- 音樂試聽選區在 `MusicPreviewRenderer` 背景工作中裁切實際渲染的聆聽音檔；前後版本共用相同選區，排隊完成後 A/B，版本檢查／播放不增加提交。
-- `diagnostics.py` 逐項收集雙語診斷；`ui/diagnostics.py` 背景檢查及報告匯出。離線安裝包由 `launcher/package_release.py`、`Installer.cs` 建置，入口兼容開發 `.venv` 與安裝 `runtime`。
-- 圖像、聲音及預製證物不能由快取代替；`.runtime/` 可在下次執行時重新產生。
-
-[遊戲說明](../README.md) · [清理紀錄](CLEANUP.md)
+[玩家指南](PLAYER_GUIDE.md) · [清理紀錄](CLEANUP.md)
 
 ## 2026-10-21：分類聲源工作台
 

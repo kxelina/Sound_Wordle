@@ -10,7 +10,6 @@ from PySide6.QtGui import QFont,QFontDatabase
 from PySide6.QtTest import QTest
 from PySide6.QtWidgets import QApplication
 from sound_detective.ui.studio import StudioWindow
-from sound_detective.game.availability import music_availability
 from sound_detective.audio.sc_client import find_executable
 
 app=QApplication([])
@@ -52,17 +51,11 @@ with TemporaryDirectory(dir=out) as directory:
         before=c.session.hints;click(c.hint_button);assert c.session.hints==min(3,before+1) and c.device_kind=='synth'
         click(c.deck.display);wait(lambda:bool(errors) or c.player.state=='playing');assert not errors,errors
         click(c.deck.stop);wait(lambda:c.player.state=='stopped')
-    music=music_availability().available
-    if music:
-        c=activate('M01');before=c.session.settings
-        click(c.check_repair_button)
-        assert c.device_kind=='synth' and c.session.stage=='filter' and c.session.settings==before
-        screenshot('M01')
-    assert w.open_free_composition();w._show_page('desk');w._activate_device('synth');app.processEvents();c=w.controller
+    assert w._accept_case('W02');w.controller._set_mode('free');w._show_page('desk');w._activate_device('synth');app.processEvents();c=w.controller
     assert c.tempo_panel.isVisible() and not c.deck.reference_frame.isVisible()
     c.tempo.setValue(126);assert c.session.current.tempo==126
     screenshot('FREE')
-    report={'volume':0,'game_root':str(GAME),'python_executable':sys.executable,'optional_music_checked':music,
+    report={'volume':0,'game_root':str(GAME),'python_executable':sys.executable,
         'sclang':str(find_executable('sclang.exe')),'scsynth':str(find_executable('scsynth.exe')),
         'layout_only':'--layout-only' in sys.argv,'errors':errors}
     assert not errors,errors

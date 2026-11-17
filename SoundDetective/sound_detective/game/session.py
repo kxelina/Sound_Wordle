@@ -129,6 +129,7 @@ class SessionState:
             raise ValueError("Inconsistent focused score")
         if not result.diagnostics or any(code not in CLUES for code in result.diagnostics):
             raise ValueError("Invalid diagnosis codes")
+        # Score the settings captured at submit time, not any later UI state.
         settings = self._pending[1]
         progress = grade_progress(self.case, settings)
         record = AttemptRecord(self.run, self.attempt_count + 1, self.case.parameters(settings),

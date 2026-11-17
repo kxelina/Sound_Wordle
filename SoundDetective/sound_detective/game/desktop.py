@@ -34,9 +34,12 @@ class DesktopPreferences:
             raise ValueError("Invalid window size")
         if abs(data["width"] / data["height"] - 16 / 9) > .01:
             raise ValueError("Window size must use the desktop aspect ratio")
-        if data["active_case"] is not None and data["active_case"] not in CASE_IDS:
+        active_case = None if data["active_case"] == "M01" else data["active_case"]
+        if active_case is not None and active_case not in CASE_IDS:
             raise ValueError("Invalid active case")
-        return cls(**{key: value for key, value in data.items() if key != "schema_version"})
+        values = {key: value for key, value in data.items() if key != "schema_version"}
+        values["active_case"] = active_case
+        return cls(**values)
 
 
 class DesktopStore:
@@ -51,7 +54,8 @@ class DesktopStore:
         try:
             if self.path.stat().st_size > 8192:
                 raise ValueError("Desktop preferences too large")
-            return DesktopPreferences.from_dict(json.loads(self.path.read_text(encoding="utf-8")))
+            data = json.loads(self.path.read_text(encoding="utf-8"))
+            preferences = DesktopPreferences.from_dict(data)
         except (OSError, ValueError, TypeError):
             try:
                 SessionStore(self.path).preserve_invalid()
@@ -60,6 +64,12 @@ class DesktopStore:
                 self.blocked = True
                 self.warning = "save_error"
             return DesktopPreferences()
+        if data["active_case"] == "M01":
+            try:
+                atomic_json_write(self.path, preferences.to_dict())
+            except OSError:
+                self.warning = "save_error"
+        return preferences
 
     def save(self, preferences):
         if self.blocked:

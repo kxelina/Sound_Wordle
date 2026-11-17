@@ -27,7 +27,7 @@ class EvidenceStore:
 
     @staticmethod
     def _validate(record,variant):
-        if record.kind=='music' or record.clips['final'] is None:raise ValueError('Only completed synthetic sounds can be collected')
+        if record.clips['final'] is None:raise ValueError('Only completed synthetic sounds can be collected')
         if variant not in DIFFICULTIES or record.kind!='source' and variant!='advanced':raise ValueError('Invalid evidence difficulty')
 
     def remember(self,record,variant='advanced'):

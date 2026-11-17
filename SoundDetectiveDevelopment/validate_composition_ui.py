@@ -24,7 +24,7 @@ def wait(predicate,seconds=90):
     assert predicate(),'Timed out waiting for composition audio'
 with TemporaryDirectory(dir=out) as folder:
     w=StudioWindow(progress_dir=Path(folder),animation_ms=0);w.resize(1280,720);w.volume_slider.setValue(0);w.show();app.processEvents()
-    assert w.open_free_composition();w._show_page('desk');w._activate_device('synth');app.processEvents();c=w.controller
+    assert w._accept_case('W02');w.controller._set_mode('free');w._show_page('desk');w._activate_device('synth');app.processEvents();c=w.controller
     errors=[];c.renderer.failed.connect(lambda _,e:errors.append(e));c.player.error.connect(errors.append)
     def point(widget,p):return w.view.mapFromScene(w.device_proxy.mapToScene(QPointF(widget.mapTo(w.device_proxy.widget(),p.toPoint()))))
     def click(widget):QTest.mouseClick(w.view.viewport(),Qt.MouseButton.LeftButton,pos=point(widget,QPointF(widget.rect().center())));app.processEvents()

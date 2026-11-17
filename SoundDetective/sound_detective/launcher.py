@@ -18,7 +18,6 @@ def check_environment():
     from PySide6 import QtMultimedia  # Include the actual native playback module.
     from .audio.sc_client import ROOT, find_executable, supercollider_executable_names
     from .game.cases import load_campaign
-    from .game.availability import music_availability
     from .ui.studio_scenes import SCENES
 
     for filename in {name for scene in SCENES.values() for name in (scene.room_art, scene.desk_art)}:
@@ -31,14 +30,13 @@ def check_environment():
     melodies=load_melody_cases()
     from .game.sound_categories import load_source_cases
     source_cases = load_source_cases()
-    music = music_availability()
     return {"project": str(ROOT), "python": sys.version.split()[0], "python_executable": sys.executable,
-            "pyside": qt_version, "timbre_cases": len(cases), "music_case": music.case_id if music.available else None,
-            "optional_music": music.to_dict(), "category_cases": len(source_cases),"melody_cases":len(melodies),
+            "pyside": qt_version, "timbre_cases": len(cases),
+            "category_cases": len(source_cases),"melody_cases":len(melodies),
             "supercollider": {name: str(find_executable(name)) for name in supercollider_executable_names()}}
 
 
-def smoke_test(music):
+def smoke_test():
     # Only the explicit developer check uses offscreen widgets, muted audio and
     # temporary progress. The normal EXE delegates unchanged to play.main().
     os.environ["QT_QPA_PLATFORM"] = "offscreen"
@@ -56,14 +54,11 @@ def smoke_test(music):
     with TemporaryDirectory(prefix="exe-check-", dir=directory) as temporary:
         window = StudioWindow(progress_dir=Path(temporary), animation_ms=0)
         window.volume_slider.setValue(0)
-        if music and not window.open_music_studio():
-            window.close()
-            raise RuntimeError("The music studio could not be opened")
         window.show()
         app.processEvents()
         state = {"page": window.page, "scene": window.scene_key, "visible": window.isVisible(),
                  "language": window.language, "isolated_progress": True}
-        assert state["page"] == ("room" if music else "menu")
+        assert state["page"] == "menu"
         QTimer.singleShot(500, window.close)
         code = app.exec()
         if not window._closed:
@@ -75,7 +70,6 @@ def smoke_test(music):
 
 def main(argv=None):
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--music-studio", action="store_true")
     checks = parser.add_mutually_exclusive_group()
     checks.add_argument("--check", action="store_true", help="Check dependencies, engine and game assets")
     checks.add_argument("--smoke-test", action="store_true", help="Check actual GUI startup without user saves or speaker output")
@@ -103,7 +97,7 @@ def main(argv=None):
         if args.check or args.smoke_test:
             report = check_environment()
             if args.smoke_test:
-                report["ui"] = smoke_test(args.music_studio)
+                report["ui"] = smoke_test()
             print(json.dumps(report, ensure_ascii=False), flush=True)
             print("SOUND_DETECTIVE_LAUNCH_CHECK_OK", flush=True)
             return 0
@@ -115,7 +109,7 @@ def main(argv=None):
             DiagnosticsDialog(report=report).exec()
             return 1
         from .play import main as play
-        return play(["--music-studio"] if args.music_studio else [])
+        return play([])
     except Exception:
         traceback.print_exc()
         return 1

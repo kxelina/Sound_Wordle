@@ -4,18 +4,16 @@ from pathlib import Path
 import time
 
 from PySide6.QtCore import QEvent, QEasingCurve, QPointF, QRectF, Qt, QTimer, QVariantAnimation, Signal
-from PySide6.QtGui import QColor, QPainter, QPainterPath, QPen, QPixmap
+from PySide6.QtGui import QColor, QPainter, QPainterPath, QPen, QPixmap, QWheelEvent
 from PySide6.QtWidgets import (
-    QFrame, QGraphicsBlurEffect, QGraphicsItem, QGraphicsPathItem,
-    QGraphicsScene, QGraphicsView, QHBoxLayout, QLabel, QMainWindow,
+    QAbstractScrollArea, QFrame, QGraphicsBlurEffect, QGraphicsItem, QGraphicsPathItem,
+    QGraphicsProxyWidget, QGraphicsScene, QGraphicsView, QHBoxLayout, QLabel, QMainWindow,
     QPushButton, QSlider, QVBoxLayout, QWidget, QApplication,
 )
 
 from ..audio.sc_client import ROOT
 from ..game.desktop import DesktopStore, window_sizes
 from ..game.cases import load_campaign
-from ..game.music_cases import load_music_case
-from ..game.availability import music_availability
 from ..game.player_journey import JourneyStore
 from ..game.evidence import EvidenceStore
 from ..game.catalog import MELODY_IDS,SOURCE_IDS
@@ -209,6 +207,31 @@ class OfficeView(QGraphicsView):
         super().resizeEvent(event)
         self.fitInView(self.sceneRect(), Qt.AspectRatioMode.KeepAspectRatio)
 
+    def wheelEvent(self,event):
+        position=event.position().toPoint()
+        scene_position=self.mapToScene(position)
+        for item in self.items(position):
+            while item is not None and not isinstance(item,QGraphicsProxyWidget):
+                item=item.parentItem()
+            if not isinstance(item,QGraphicsProxyWidget) or item.widget() is None:
+                continue
+            proxy_position=item.mapFromScene(scene_position)
+            areas=[area for area in item.widget().findChildren(QAbstractScrollArea)
+                   if area.isVisible() and item.subWidgetRect(area).contains(proxy_position)]
+            if not areas:
+                continue
+            area=min(areas,key=lambda current:current.viewport().width()*current.viewport().height())
+            viewport=area.viewport()
+            viewport_rect=item.subWidgetRect(viewport)
+            forwarded=QWheelEvent(
+                proxy_position-viewport_rect.topLeft(),event.globalPosition(),event.pixelDelta(),
+                event.angleDelta(),event.buttons(),event.modifiers(),event.phase(),event.inverted(),
+                event.source(),event.pointingDevice())
+            QApplication.sendEvent(viewport,forwarded)
+            event.accept()
+            return
+        super().wheelEvent(event)
+
     def viewportEvent(self, event):
         if event.type() == QEvent.Type.ToolTip and show_scene_help(self, event):
             return True
@@ -220,7 +243,7 @@ class StudioWindow(QMainWindow):
     hotspot_activated = Signal(str)
     volume_changed = Signal(float)
 
-    def __init__(self, *, progress_dir=None, animation_ms=520, tone_factory=None, music_factory=None, wordle_factory=None, melody_factory=None):
+    def __init__(self, *, progress_dir=None, animation_ms=520, tone_factory=None, wordle_factory=None, melody_factory=None):
         super().__init__()
         self.progress_dir = Path(progress_dir or ROOT / "userdata")
         self.store = DesktopStore(self.progress_dir / "desktop-preferences.json")
@@ -229,7 +252,7 @@ class StudioWindow(QMainWindow):
         self.source_journeys={}
         self.evidence_store=EvidenceStore(self.progress_dir/'evidence-cabinet.json')
         for record in self.journey.reviews.values():
-            if record.kind!='music' and record.clips['final'] is not None:self.evidence_store.remember(record)
+            if record.clips['final'] is not None:self.evidence_store.remember(record)
         self.cabinet_panel=self.cabinet_proxy=None
         self._cabinet_return='room'
         self._has_prior_play = any(self.progress_dir.glob('T*.json')) or any((self.progress_dir/'wordle').glob('W*.json')) or any((self.progress_dir/'music').glob('M*.json'))
@@ -249,15 +272,10 @@ class StudioWindow(QMainWindow):
         self.animation_ms = animation_ms
         self.controller = self.device_proxy = None
         self.current_device = "synth"
-        self._tone_factory, self._music_factory = tone_factory, music_factory
+        self._tone_factory = tone_factory
         self._wordle_factory = wordle_factory
         self._melody_factory = melody_factory
         self.cases = load_campaign()
-        try:
-            self.music = load_music_case(verify=False)
-        except (OSError, ValueError, TypeError, KeyError):
-            self.music = None
-        self.music_status = music_availability()
         self.view = OfficeView(self)
         self.setCentralWidget(self.view)
         scene = self.view.scene()
@@ -281,9 +299,8 @@ class StudioWindow(QMainWindow):
         self._build_menu()
         self._build_settings()
         self._build_room_chrome()
-        self.board = CaseBoard(self.cases, self.music, self.progress_dir, music_status=self.music_status)
+        self.board = CaseBoard(self.cases, self.progress_dir)
         self.board.accepted.connect(self._accept_case)
-        self.board.free_requested.connect(self.open_free_composition)
         self.board.dismissed.connect(lambda: self._show_page("room"))
         self.board_proxy = self._proxy(self.board, 100, 86, 1080, 550)
         self.device_hotspots = {}
@@ -667,7 +684,7 @@ class StudioWindow(QMainWindow):
     def _tutorial_finished(self,completed):
         self._show_page('room' if completed else self._tutorial_return)
         if completed:
-            self.board.open(self.preferences.active_case,self.language,free_composition=self.free_composition)
+            self.board.open(self.preferences.active_case,self.language)
             self._show_page('board')
 
     def _flush_device_time(self):
@@ -720,15 +737,14 @@ class StudioWindow(QMainWindow):
             key=(controller.case.id,getattr(controller.case,'difficulty','advanced'))
             self._clear_submission_feedback[key]=getattr(getattr(controller,'submission_feedback',None),'payload',None)
         record=store.remember(build_debrief(controller.case,controller.session,seconds=seconds))
-        if record.kind!='music' and record.clips['final'] is not None:
+        if record.clips['final'] is not None:
             self.evidence_store.remember(record,getattr(controller.case,'difficulty','advanced'))
         self.room_review.setEnabled(True)
-        if not controller.case.id.startswith('M'):
-            completed_current=controller.session.current
-            completed_case=controller.case
-            # A rapid edit after submitting should keep the player at the desk.
-            QTimer.singleShot(0,lambda:self.open_review() if not self._closed and self.controller is controller
-                and controller.case is completed_case and self.page=='device' and controller.session.current==completed_current else None)
+        completed_current=controller.session.current
+        completed_case=controller.case
+        # A rapid edit after submitting should keep the player at the desk.
+        QTimer.singleShot(0,lambda:self.open_review() if not self._closed and self.controller is controller
+            and controller.case is completed_case and self.page=='device' and controller.session.current==completed_current else None)
 
     def open_review(self):
         if not self._review_available():return False
@@ -756,7 +772,7 @@ class StudioWindow(QMainWindow):
     def _leave_review(self):self._show_page(self._review_return)
 
     def _review_cases(self):
-        self.board.open(self.preferences.active_case,self.language,free_composition=self.free_composition)
+        self.board.open(self.preferences.active_case,self.language)
         self._show_page('board')
 
     def _animate_room(self, value):
@@ -788,7 +804,7 @@ class StudioWindow(QMainWindow):
             play_widget_click(self, key)
             self.hotspot_activated.emit(key)
             if key == "board":
-                self.board.open(self.preferences.active_case, self.language, free_composition=self.free_composition)
+                self.board.open(self.preferences.active_case, self.language)
                 self._show_page("board")
             else:
                 if self.animation_ms:
@@ -809,20 +825,6 @@ class StudioWindow(QMainWindow):
         self._show_page("room")
         return True
 
-    def open_music_studio(self):
-        """Resume the authored music case in its dedicated room."""
-        return self.music is not None and self._accept_case(self.music.id)
-
-    def open_free_composition(self):
-        if not self._load_case("W02"):
-            self.board.note.setText(TEXT[self.language]["case_error"])
-            return False
-        self.preferences.active_case = "W02"
-        self.controller._set_mode("free")
-        self._save_preferences()
-        self._show_page("room")
-        return True
-
     def _melody_mode_changed(self, mode):
         if self.preferences.active_case == "W02" and self.controller and self.controller.case.id == "W02":
             self._show_page(self.page)
@@ -830,7 +832,7 @@ class StudioWindow(QMainWindow):
     def _load_case(self, case_id):
         if self.controller and self.controller.case.id == case_id:
             return True
-        from .device_panel import ToneDevicePanel, MusicDevicePanel
+        from .device_panel import ToneDevicePanel
         try:
             if case_id.startswith("T"):
                 case = next(case for case in self.cases if case.id == case_id)
@@ -857,14 +859,10 @@ class StudioWindow(QMainWindow):
                     language=self.language, volume=self.preferences.volume/100, embedded=True,difficulty=None)
                 candidate.device_requested.connect(self._wordle_device)
             else:
-                if self.music is None or self.music.id != case_id:
-                    return False
-                self.music.verify_assets()
-                candidate = (self._music_factory or MusicDevicePanel)(case=self.music,
-                    save_path=self.progress_dir / "music" / f"{case_id}.json", language=self.language, volume=self.preferences.volume / 100)
-                candidate.device_requested.connect(self._music_device)
+                return False
         except (OSError, ValueError, TypeError, KeyError, RuntimeError, StopIteration):
             return False
+        # Keep the current case alive until the replacement has loaded successfully.
         if self.controller:
             self._flush_device_time()
             self.controller.close()
@@ -913,12 +911,6 @@ class StudioWindow(QMainWindow):
 
     def _wordle_device(self, device):
         if self.page == "device" and (self.preferences.active_case or "").startswith("W"):
-            self.current_device = device
-            self.controller.present_device(device)
-            self._show_page("device")
-
-    def _music_device(self, device):
-        if self.page == "device" and (self.preferences.active_case or "").startswith("M"):
             self.current_device = device
             self.controller.present_device(device)
             self._show_page("device")

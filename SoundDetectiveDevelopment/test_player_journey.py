@@ -17,7 +17,6 @@ from PySide6.QtWidgets import QApplication
 from sound_detective.audio.preview import PreviewAudio
 from sound_detective.audio.models import SoundSettings
 from sound_detective.audio.matching import MatchResult
-from sound_detective.game.availability import music_availability
 from sound_detective.game.debrief import Debrief,build_debrief
 from sound_detective.game.player_journey import JourneyStore
 from sound_detective.game.sound_categories import SourceSession,load_source_cases
@@ -37,15 +36,23 @@ def app():
     return result
 
 
-def test_music_is_optional_but_core_content_is_required(tmp_path):
+def test_music_studio_launch_option_is_not_supported():
+    from sound_detective.launcher import main as launcher_main
+    from sound_detective.play import main as play_main
+    for entry_point in (launcher_main, play_main):
+        with pytest.raises(SystemExit):
+            entry_point(['--music-studio'])
+
+
+def test_missing_music_assets_do_not_affect_core_diagnostics(tmp_path):
     from sound_detective.diagnostics import collect_diagnostics
     import shutil
     for name in ('content','assets','supercollider'):
         shutil.copytree(GAME/name,tmp_path/name,ignore=shutil.ignore_patterns('M01-evidence.wav'))
-    assert not music_availability(root=tmp_path).available
+    (tmp_path/'supercollider/music_example_player.scd').unlink()
     report=collect_diagnostics(root=tmp_path,probe_audio=False)
     assert report['ok']
-    assert next(c for c in report['checks'] if c['code']=='optional_music')['status']=='warning'
+    assert 'optional_music' not in {c['code'] for c in report['checks']}
     assert next(c for c in report['checks'] if c['code']=='content')['status']=='ok'
     (tmp_path/'assets/audio/ui-click.wav').unlink()
     report=collect_diagnostics(root=tmp_path,probe_audio=False)
@@ -206,11 +213,50 @@ def test_journey_invalid_backup_and_independent_case_file(tmp_path):
     with pytest.raises(ValueError):Debrief.from_dict(data)
 
 
+def test_journey_migration_removes_only_m01_review(tmp_path):
+    import json
+
+    case=load_source_cases()[0]
+    record=build_debrief(case,source_solution(case))
+    tutorial=JourneyStore(tmp_path/'seed.json').tutorial
+    tutorial.update(step=2,dismissed=True)
+    timings={case.id:{'seconds':18.5,'complete':True},
+             'M01':{'seconds':24.0,'complete':True}}
+    m01={'case_id':'M01','kind':'music','retired':True}
+    path=tmp_path/'journey.json'
+    path.write_text(json.dumps({'schema_version':1,'tutorial':tutorial,
+        'reviews':{'M01':m01,case.id:record.to_dict()},'timings':timings}),'utf-8')
+
+    store=JourneyStore(path)
+    saved=json.loads(path.read_text('utf-8'))
+    assert store.warning==''
+    assert store.reviews=={case.id:record}
+    assert store.tutorial==tutorial and store.timings==timings
+    assert set(saved['reviews'])=={case.id}
+    assert saved['tutorial']==tutorial and saved['timings']==timings
+
+
+def test_m01_review_migration_keeps_original_if_write_fails(tmp_path,monkeypatch):
+    import json
+    from sound_detective.game import player_journey
+
+    path=tmp_path/'journey.json'
+    original=json.dumps({'schema_version':1,'tutorial':JourneyStore(tmp_path/'seed.json').tutorial,
+        'reviews':{'M01':{}},'timings':{}})
+    path.write_text(original,'utf-8')
+    def fail_write(*args,**kwargs):raise OSError('disk full')
+    monkeypatch.setattr(player_journey,'atomic_json_write',fail_write)
+
+    store=JourneyStore(path)
+    assert store.warning=='save_error'
+    assert path.read_text('utf-8')==original
+
+
 def test_debrief_playback_is_read_only_cancellable_and_bilingual(app,tmp_path):
     case=load_source_cases()[0];session=source_solution(case);saved=copy.deepcopy(session.to_dict())
     record=build_debrief(case,session)
-    tone,source,music,player=Renderer(),Renderer(),Renderer(),Player()
-    panel=DebriefPanel(tone_renderer=tone,source_renderer=source,music_renderer=music,player=player)
+    tone,source,player=Renderer(),Renderer(),Player()
+    panel=DebriefPanel(tone_renderer=tone,source_renderer=source,player=player)
     panel.resize(1180,610);panel.show()
     try:
         panel.load(record,case);panel.play(('initial','final','target'))
@@ -259,7 +305,8 @@ def test_studio_auto_review_free_mode_and_first_snapshot(app,tmp_path):
         assert w.page=='device'
         assert w.open_review() and w.debrief_panel.record.to_dict()==saved
         w._review_cases();assert w.page=='board'
-        assert w.open_free_composition()
+        assert w._accept_case('W02')
+        w.controller._set_mode('free')
         assert not w._review_available() and not w.open_review()
     finally:w.close();app.processEvents()
     assert JourneyStore(journey_path).reviews['W04'].to_dict()==saved
@@ -278,40 +325,6 @@ def test_tone_signal_opens_new_review(app,tmp_path):
         assert w.page=='review'
         assert w.debrief_panel.record.case_id=='T01'
         assert w.journey.reviews['T01'].clips['final']['settings']==c.case.reference.to_dict()
-    finally:w.close();app.processEvents()
-
-
-def test_music_clear_keeps_full_song_loop_and_review_is_manual(app,tmp_path):
-    from dataclasses import replace
-    from sound_detective.ui.device_panel import MusicDevicePanel
-    from sound_detective.game.music_cases import MusicSettings
-    from sound_detective.game.music_repair import RepairSettings
-    if not music_availability().available:pytest.skip('Requires local M01 recordings')
-    factory=lambda **kwargs:MusicDevicePanel(**kwargs,player=Player(),renderer=Renderer())
-    w=StudioWindow(progress_dir=tmp_path,animation_ms=0,music_factory=factory)
-    try:
-        assert w.open_music_studio()
-        w._show_page('desk');w._activate_device('synth');c=w.controller
-        while not c.session.solved:
-            settings=c.session.settings;stage=c.session.stage
-            if stage=='pitch':settings=MusicSettings(tuple(-r.cents for r in c.case.regions),settings.repair)
-            else:settings=MusicSettings(settings.corrections,RepairSettings(replace(settings.repair.estimates,**{stage:getattr(c.case.initial_effects,stage)})))
-            c.session.settings=settings;c._sync_controls();c._submit()
-        app.processEvents()
-        assert w.page=='device' and c.player.items[0].loop
-        assert 'M01' in w.journey.reviews
-        assert w.open_review() and w.page=='review'
-        assert not c.player.items
-        panel=w.debrief_panel
-        assert panel.record.kind=='music'
-        # Three serial renderer jobs, followed by one sequential player queue.
-        panel.music_renderer.close()
-        panel.music_renderer=Renderer()
-        panel.music_renderer.ready.connect(lambda revision,data:panel._ready(panel.music_renderer,revision,data))
-        panel.player.close();panel.player=Player()
-        panel.play(('initial','final','target'))
-        for _ in range(3):panel.music_renderer.ready.emit(panel._revision,PreviewAudio(Path('x'),Path('x'),False))
-        assert len(panel.player.items)==3
     finally:w.close();app.processEvents()
 
 

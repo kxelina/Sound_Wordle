@@ -48,7 +48,7 @@ def collect_diagnostics(*, root=None, probe_audio=True):
         from .ui.studio_scenes import SCENES
         files = [root/'assets/ui'/name for scene in SCENES.values() for name in (scene.room_art, scene.desk_art)]
         files += [root/'assets/audio/ui-click.wav'] + [root/'supercollider'/name for name in
-            ('synth.scd', 'engine.scd', 'music_example_player.scd')]
+            ('synth.scd', 'engine.scd')]
         missing = [str(p.relative_to(root)) for p in files if not p.is_file()]
         if missing:
             raise FileNotFoundError(', '.join(missing))
@@ -61,17 +61,6 @@ def collect_diagnostics(*, root=None, probe_audio=True):
     check('content', assets, 'Levels, scene art and audio files', '關卡、場景與音源',
           'Reinstall the game files, scene art and synthesized case definitions.',
           '重新安裝遊戲程式、場景圖片與合成案件設定。')
-
-    def optional_music():
-        from .game.availability import music_availability
-        result = music_availability(root=root)
-        if not result.available:
-            raise ValueError('M01 unavailable; all synthesized cases and free composition remain playable. / '
-                             'M01 暫不可玩；合成案件與自由創作仍可使用。 '+result.reason)
-        return result.to_dict()
-    check('optional_music', optional_music, 'Optional recorded-music case', '可選的錄音歌曲案件',
-          'Continue playing the other modes. Supply the configured local M01 assets only if needed.',
-          '可繼續其他玩法；需要 M01 時才提供對應的本機音源。', warning=True)
 
     for name in ('userdata', '.runtime'):
         def writable(name=name):

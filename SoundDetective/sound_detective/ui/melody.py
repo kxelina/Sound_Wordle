@@ -63,6 +63,7 @@ TEXT = {
         "guess_pitch": "Pitch guess · {notes}\nGreen = exact pitch and timing; amber = pitch and timing are close, but not both exact; gray = pitch or timing needs work. Adjust note pitch, position, or length, then submit again.",
         "guess_note": "Note {number}: {status}",
         "guess_status": ("exact", "close", "needs work"),
+        "guess_unsubmitted": "New notes have no feedback until they are submitted.",
         "free_help": "Choose any pitches and rhythm. All sound controls are available; no score or attempt penalty.",
         "lesson_note": "Generic teaching pair; this is not the hidden target.",
         "error": "Audio error: {message}", "saved_bad": "Unreadable W02 progress backed up; starting a new draft.",
@@ -99,6 +100,7 @@ TEXT = {
         "guess_pitch": "音高猜測 · {notes}\n綠色＝音高與節奏都正確；琥珀色＝音高與節奏接近，但至少一項尚未完全正確；灰色＝音高或節奏需要調整。修改音符音高、起點或長度後再提交。",
         "guess_note": "第 {number} 音：{status}",
         "guess_status": ("正確", "接近", "需調整"),
+        "guess_unsubmitted": "新增音符尚未提交，因此沒有回饋。",
         "free_help": "音高、節奏自由編排；全部音色控制已開放，不評分、不計次。",
         "lesson_note": "一般教學對比，並非隱藏的目標旋律。",
         "error": "音訊錯誤：{message}", "saved_bad": "無法讀取的 W02 進度已備份，開始新草稿。",
@@ -541,19 +543,22 @@ class MelodyWindow(QMainWindow):
         self._apply_wordle_feedback()
 
     def _apply_wordle_feedback(self):
-        self.piano.roll.feedback_marks = ()
         guess = self._guess_feedback
         if self.session.mode == "free" or not guess or guess[1] not in (0, 1):
+            self.piano.roll.feedback_marks = ()
             self.piano.roll.update()
             return
         draft, stage = guess
-        marks = self._wordle_marks(draft, stage)
-        self.piano.roll.feedback_marks = marks
+        if self.session.challenge == draft:
+            self.piano.roll.feedback_marks = self._wordle_marks(draft, stage)
+        marks = self.piano.roll.feedback_marks
         self.piano.roll.update()
         states = {"correct": 0, "close": 1, "wrong": 2}
         details = " · ".join(self.t("guess_note").format(
             number=index + 1, status=self.t("guess_status")[states[mark]])
-            for index, mark in enumerate(marks))
+            for index, mark in enumerate(marks) if mark != "unscored")
+        if "unscored" in marks:
+            details = " · ".join(filter(None, (details, self.t("guess_unsubmitted"))))
         message = self.t("guess_rhythm" if stage == 0 else "guess_pitch").format(notes=details)
         self.feedback.setText(f"{self.feedback.text()}\n{message}")
         self.feedback.setToolTip(self.feedback.text())
@@ -666,6 +671,7 @@ class MelodyWindow(QMainWindow):
 
     def _submit(self):
         was_solved = self.session.solved
+        # Keep feedback tied to the exact stage and draft being submitted.
         submitted_stage, submitted_draft = self.session.focus, self.session.challenge
         self.stop()
         try:

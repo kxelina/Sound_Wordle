@@ -7,7 +7,6 @@ from PySide6.QtGui import QColor, QPainter, QPainterPath, QPen
 from PySide6.QtWidgets import QLabel, QWidget, QPushButton, QGroupBox, QVBoxLayout,QScrollArea,QFrame,QLayout
 
 from .case_one import CaseWindow
-from .music_case import MusicCaseWindow
 from .hardware import PlaybackDeck,InlineChoices
 
 
@@ -92,7 +91,6 @@ class ToneDevicePanel(CaseWindow):
         super().__init__(**kwargs)
         self.editor.use_hardware_controls()
         self.deck = PlaybackDeck(self.play_a, self.play_b, self.stop_button, self.play_ab,compact=True)
-        self.target_group.setMaximumWidth(430)
         self.target_group.layout().addWidget(self.deck)
         self.player.state_changed.connect(self.deck.set_state)
         self.plot = AudioTraces()
@@ -124,6 +122,8 @@ class ToneDevicePanel(CaseWindow):
             if self.investigation_box:note_layout.insertWidget(note_layout.count()-1,self.investigation_box)
         from .device_layout import compact_workspace
         compact_workspace(self,(self.compare_button,self.restart_button),(self.action_row,self.volume_row))
+        if self.case.id.startswith('T'):
+            self.target_group.setMaximumWidth(430)
         self.shortcut.setEnabled(False)
         self.centralWidget().layout().setContentsMargins(10,8,10,6)
         for widget in (self.title, self.progress, self.language, self.volume,
@@ -193,9 +193,22 @@ class ToneDevicePanel(CaseWindow):
 
     def _show_match(self):
         super()._show_match()
+        self._fit_notes()
         self._translate_theory()
         if hasattr(self, "plot"):
             self._update_plot()
+
+    def _fit_notes(self):
+        if hasattr(self,'note_scroll'):
+            notes=self.note_scroll.widget()
+            layout=notes.layout()
+            for label in (self.subtitle,self.target_info,self.score,self.submission_feedback,self.clue,self.review):
+                width=max(1,label.width())
+                height=label.heightForWidth(width) if label.hasHeightForWidth() else label.sizeHint().height()
+                label.setMinimumHeight(max(0,height))
+            layout.invalidate()
+            layout.activate()
+            notes.setMinimumHeight(layout.sizeHint().height())
 
     def _matched(self,revision,result):
         before=self.session.attempt_count
@@ -216,54 +229,3 @@ class ToneDevicePanel(CaseWindow):
                 pass
         self.plot.clear("本次提交達 75 分後，可查看這次比較的音訊圖表；重新開啟案件後請再提交。" if self._language == "zh-Hant" else
                         "Submit 75+ to inspect this comparison's audio traces. Submit again after reopening a case.")
-
-
-class MusicDevicePanel(MusicCaseWindow):
-    def __init__(self, **kwargs):
-        super().__init__(**kwargs)
-        self.effects_editor.use_hardware_controls()
-        self.deck_stop = QPushButton()
-        self.deck_stop.setObjectName("music_deck_stop")
-        self.deck_stop.clicked.connect(self.stop)
-        self.deck = PlaybackDeck(self.play_evidence,self.play_current,self.deck_stop,compact=True,
-            reference_titles=('Distorted clip','扭曲的證物'),current_titles=('Your restoration','你的還原'))
-        self.clue_group.layout().addWidget(self.deck)
-        notes=self.clue_scroll.widget().layout()
-        for widget in (self.result,self.stage_banner,self.rules):notes.insertWidget(0,widget)
-        self.clue_group.layout().insertWidget(self.clue_group.layout().count()-1,self.check_repair_button)
-        from .device_layout import compact_workspace
-        compact_workspace(self,(self.submit_button,self.restart_button,self.reveal_button),(self.action_row,self.footer))
-        self.goto_button.hide()
-        self.ab_version_button.hide()
-        self.player.state_changed.connect(self.deck.set_state)
-        self.shortcut.setEnabled(False)
-        self.centralWidget().layout().setContentsMargins(10,8,10,6)
-        for widget in (self.title, self.language, self.volume, self.volume_label, self.device):
-            widget.hide()
-        self.present_device("synth")
-        self._translate()
-
-    def _translate(self):
-        super()._translate()
-        if hasattr(self, "deck"):
-            self.deck.translate(self._language)
-            from .hover_help import set_help
-            set_help(self.deck.display, "music_current", self._language)
-            self.deck_stop.setText("■ 停止" if self._language == "zh-Hant" else "■ Stop")
-            set_help(self.deck_stop, "stop", self._language)
-            self.present_device(getattr(self, "device_kind", "synth"))
-            from .device_layout import help_caption
-            help_caption(self.check_repair_button,self._language)
-            self.goto_button.hide()
-
-    def present_device(self, device):
-        self.device_kind = device
-        stage = self.session.stage
-        current_device = stage if stage in ("delay", "reverb") else "synth"
-        current = device == current_device and not self.session.solved
-        self.tabs.setVisible(True)
-        self.tabs.setTabVisible(0, current and stage == "pitch")
-        self.tabs.setTabVisible(1, current and stage in ("filter", "delay", "reverb"))
-        self.tabs.setTabVisible(2, True)
-        self.effects_editor.show_groups({stage} if current else set())
-        self.tabs.setCurrentIndex(0 if current and stage == "pitch" else 1 if current else 2)

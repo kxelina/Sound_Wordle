@@ -196,8 +196,8 @@ def test_collection_validates_snapshots_preserves_first_and_recovers(tmp_path):
 
 def test_cabinet_readonly_export_and_cancel(app,tmp_path):
     store=EvidenceStore(tmp_path/'cabinet.json');store.remember(solved_record(CASES[1]))
-    tone,source,music,player=Renderer(),Renderer(),Renderer(),Player()
-    panel=EvidencePanel(store,CASES,tone_renderer=tone,source_renderer=source,music_renderer=music,player=player)
+    tone,source,player=Renderer(),Renderer(),Player()
+    panel=EvidencePanel(store,CASES,tone_renderer=tone,source_renderer=source,player=player)
     panel.resize(1180,610);panel.show();app.processEvents()
     wav=tmp_path/'generated.wav';wav.write_bytes(b'test pipeline output')
     try:

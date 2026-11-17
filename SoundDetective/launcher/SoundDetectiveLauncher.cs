@@ -22,12 +22,11 @@ internal static class SoundDetectiveLauncher
         string logPath = null;
         try
         {
-            bool music = false, check = false, smoke = false, diagnose = false, diagnostics = false;
+            bool check = false, smoke = false, diagnose = false, diagnostics = false;
             foreach (string argument in args)
             {
                 switch (argument)
                 {
-                    case "--music-studio": music = true; break;
                     case "--check": check = true; break;
                     case "--smoke-test": smoke = true; break;
                     case "--diagnose": diagnose = true; break;
@@ -56,7 +55,7 @@ internal static class SoundDetectiveLauncher
                 ProcessStartInfo start = new ProcessStartInfo();
                 start.FileName = python;
                 start.WorkingDirectory = root;
-                start.Arguments = "-B -m sound_detective.launcher" + (music ? " --music-studio" : "") +
+                start.Arguments = "-B -m sound_detective.launcher" +
                     (check ? " --check" : "") + (smoke ? " --smoke-test" : "") +
                     (diagnose ? " --diagnose" : "") + (diagnostics ? " --diagnostics" : "");
                 start.UseShellExecute = false;

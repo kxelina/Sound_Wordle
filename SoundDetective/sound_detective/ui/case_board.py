@@ -6,7 +6,7 @@ from PySide6.QtWidgets import QButtonGroup, QFrame, QGridLayout, QHBoxLayout, QL
 from ..game.storage import SessionStore
 from ..game.hidden_sound import load_hidden_case, load_hidden_session
 from ..game.melody import load_melody_cases, load_melody_session
-from ..game.catalog import MELODY_IDS
+from ..game.catalog import WORDLE_IDS, MELODY_IDS
 from ..game.sound_categories import CATEGORIES, load_source_cases, load_source_session
 from ..game.source_learning import selected_difficulty,source_path,with_difficulty,DIFFICULTIES
 from .hover_help import set_help
@@ -14,22 +14,18 @@ from .hover_help import set_help
 
 class CaseBoard(QFrame):
     accepted = Signal(str)
-    free_requested = Signal()
     dismissed = Signal()
 
-    def __init__(self, cases, music, progress_dir, *, music_status=None):
+    def __init__(self, cases, progress_dir):
         super().__init__()
         self.setObjectName("panel")
-        self.cases, self.music, self.progress_dir = cases, music, progress_dir
-        self.music_status = music_status
+        self.cases, self.progress_dir = cases, progress_dir
         self.wordle = load_hidden_case()
         self.melody_cases={case.id:case for case in load_melody_cases()}
         self.melody = self.melody_cases['W02']
         self.source_cases = load_source_cases()
         self.category = "all"
         self.language, self.mode, self.selected = "en", "tone", None
-        self.music_room = False
-        self.free_composition = False
         layout = QVBoxLayout(self)
         layout.setContentsMargins(28, 24, 28, 24)
         layout.setSpacing(16)
@@ -39,11 +35,10 @@ class CaseBoard(QFrame):
         modes = QHBoxLayout()
         group = QButtonGroup(self)
         self.mode_buttons = {}
-        for key in ("tone", "music", "wordle"):
+        for key in ("tone", "wordle"):
             button = QPushButton()
             button.setObjectName(f"mode_{key}")
             button.setCheckable(True)
-            button.setVisible(key != "music")
             group.addButton(button)
             button.clicked.connect(lambda checked=False, mode=key: self.set_mode(mode))
             modes.addWidget(button)
@@ -88,11 +83,9 @@ class CaseBoard(QFrame):
         row.addWidget(self.accept_button)
         layout.addLayout(row)
 
-    def open(self, active_case, language, *, free_composition=False):
-        self.free_composition = free_composition
-        self.music_room = bool(free_composition or active_case and active_case.startswith("M"))
-        self.mode = "wordle" if self.music_room or active_case and active_case.startswith("W") else "tone"
-        self.selected = None if self.music_room else active_case
+    def open(self, active_case, language):
+        self.mode = "wordle" if active_case in WORDLE_IDS else "tone"
+        self.selected = active_case if active_case in (*WORDLE_IDS, *(case.id for case in self.cases)) else None
         self.category = "all"
         self.translate(language)
 
@@ -103,6 +96,8 @@ class CaseBoard(QFrame):
         self.refresh()
 
     def set_mode(self, mode):
+        if mode not in self.mode_buttons:
+            return
         if mode != self.mode:
             self.mode, self.selected = mode, None
         self.refresh()
@@ -112,16 +107,15 @@ class CaseBoard(QFrame):
         zh = language == "zh-Hant"
         self.heading.setText("案件板" if zh else "Case Board")
         self.mode_buttons["tone"].setText("音色還原" if zh else "Timbre Cases")
-        self.mode_buttons["music"].setText("音樂工作室" if zh else "Music Studio")
         self.mode_buttons["wordle"].setText("聲音重建" if zh else "Sound Wordle")
         for key,button in self.category_buttons.items():
             button.setText(CATEGORIES[key][zh])
             set_help(button, "source_category", language)
-        self.back_button.setText(("返回錄音室" if zh else "Back to studio") if self.music_room else ("返回房間" if zh else "Back to office"))
+        self.back_button.setText("返回房間" if zh else "Back to office")
         self.accept_button.setText("接受案件" if zh else "Accept case")
         for key, button in self.mode_buttons.items():
             set_help(button, f"mode_{key}", language)
-        set_help(self.back_button, "back_composition_room" if self.free_composition else "back_music_room" if self.music_room else "back_room", language)
+        set_help(self.back_button, "back_room", language)
         set_help(self.accept_button, "accept", language)
         self.refresh()
 
@@ -136,7 +130,7 @@ class CaseBoard(QFrame):
         self.category_row.setVisible(self.mode == "wordle")
         for key,button in self.category_buttons.items():
             button.setChecked(key == self.category)
-        available = self.cases if self.mode == "tone" else (self.wordle, self.melody, *self.source_cases,*tuple(self.melody_cases.values())[1:]) if self.mode == "wordle" else ((self.music,) if self.music else ())
+        available = self.cases if self.mode == "tone" else (self.wordle, self.melody, *self.source_cases,*tuple(self.melody_cases.values())[1:])
         if self.mode == "wordle" and self.category != "all":
             available = tuple(case for case in available if getattr(case,"category","classic") == self.category)
         if self.mode == "wordle":
@@ -171,37 +165,11 @@ class CaseBoard(QFrame):
                     status += f" · {session.attempts} " + ("次提交" if zh else "submissions")
                 except (OSError, ValueError, TypeError, KeyError):
                     status = "進度待恢復" if zh else "Progress needs recovery"
-            else:
-                # Opening the board never discloses accepted song answers.
-                path = self.progress_dir / "music" / f"{case.id}.json"
-                try:
-                    import json
-                    from ..game.music_cases import MusicSession
-                    data = json.loads(path.read_text("utf-8")) if path.exists() else None
-                    if data and MusicSession.from_dict(data["session"], case).first_clear:
-                        status = "已完成" if zh else "Cleared"
-                except (OSError, ValueError, TypeError, KeyError):
-                    pass
-                if not case.source.is_file() or not case.evidence.is_file() or self.music_status is not None and not self.music_status.available:
-                    status = "本機音源暫不可用" if zh else "Local audio unavailable"
-                    button.setEnabled(False)
             button.setText(f"{case.id}\n{case.title[self.language]}\n\n{status}")
             set_help(button, "case_card", self.language)
             button.clicked.connect(lambda checked=False, key=case.id: self.select(key))
             self.cards_layout.addWidget(button, index // 4, index % 4)
             self.cards[case.id] = button
-        if self.mode == "music":
-            button = QPushButton("自由創作\n\n編寫旋律、調整音色與效果\n不評分 · 獨立草稿" if zh else
-                                 "Free composition\n\nWrite melodies, shape timbre and effects\nNo grading · separate draft")
-            button.setObjectName("free_composition_card")
-            button.setCheckable(True)
-            button.setChecked(self.selected == "FREE")
-            button.setMinimumHeight(140)
-            set_help(button, "free_card", self.language)
-            button.clicked.connect(lambda: self.select("FREE"))
-            index = len(available)
-            self.cards_layout.addWidget(button, index // 4, index % 4)
-            self.cards["FREE"] = button
         self.mode_buttons[self.mode].setChecked(True)
         self.accept_button.setEnabled(self.selected in self.cards and self.cards[self.selected].isEnabled())
         self.note.setText(("選擇案件並接受後，返回工作桌開始調查。" if zh else
@@ -210,22 +178,17 @@ class CaseBoard(QFrame):
         if self.mode == "wordle":
             self.note.setText("依口供合成聲音；W09 電線裡的幽靈位於噪聲與電子類，門鈴與節奏位於信號與旋律類。不限提交、免費提示，目標於通關後揭曉。" if zh else
                               "Build from witness clues. Find W09 Wire Ghost under Noise / electronics, or doorbell and rhythm cases under Signals / melody. Unlimited submissions; targets unlock after solving.")
-        elif self.mode == "music":
-            self.note.setText("選擇音樂修復案件或自由創作，接受後進入音樂工作室；創作不評分，草稿獨立儲存。" if zh else
-                              "Choose a restoration case or free composition, then accept to enter the music studio. Free drafts are saved separately, without grading.")
-            if self.music_status is not None and not self.music_status.available:
-                self.note.setText("M01 需要另外提供本機歌曲素材；目前可以選擇自由創作，或切換至音色案件與聲音重建。" if zh else
-                                  "M01 needs separately supplied local music assets. Free composition, Timbre Cases and Sound Wordle remain available.")
 
     def select(self, case_id):
+        selected_button = self.cards.get(case_id)
+        if selected_button is None or not selected_button.isEnabled():
+            self.accept_button.setEnabled(self.selected in self.cards and self.cards[self.selected].isEnabled())
+            return
         self.selected = case_id
         for key, button in self.cards.items():
             button.setChecked(key == case_id)
-        self.accept_button.setEnabled(True)
+        self.accept_button.setEnabled(selected_button.isEnabled())
 
     def _accept(self):
         if self.accept_button.isEnabled():
-            if self.selected == "FREE":
-                self.free_requested.emit()
-            else:
-                self.accepted.emit(self.selected)
+            self.accepted.emit(self.selected)

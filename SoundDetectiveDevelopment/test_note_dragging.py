@@ -149,7 +149,8 @@ def test_embedded_scene_keeps_low_notes_visible_and_draggable(app, tmp_path):
     w.volume_slider.setValue(0)
     w.show()
     try:
-        assert w.open_free_composition()
+        assert w._accept_case('W02')
+        w.controller._set_mode('free')
         w._show_page('desk')
         w._activate_device('synth')
         c = w.controller

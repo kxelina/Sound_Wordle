@@ -40,7 +40,7 @@ def native(folder,option):
     log=files.pop().read_text('utf-8');assert 'SOUND_DETECTIVE_LAUNCH_CHECK_OK' in log
     result=next(json.loads(line) for line in log.splitlines() if line.startswith('{"project"'))
     assert Path(result['python_executable']).is_relative_to(folder/'runtime')
-    assert not result['optional_music']['available']
+    assert 'optional_music' not in result and 'music_case' not in result
     assert all(Path(value).is_relative_to(folder/'engine') for value in result['supercollider'].values())
     report['checks'].append({'root':str(folder),'option':option,'result':result})
     print(option,'OK',flush=True)

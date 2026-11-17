@@ -49,14 +49,6 @@ def validate_clip(clip):
             raise ValueError('Review phrase is too long')
     elif clip.get('type') == 'source' and set(clip) == {'type','patch'}:
         SourcePatch.from_dict(clip['patch'])
-    elif clip.get('type') == 'music' and set(clip) == {'type','settings'}:
-        data = clip['settings']
-        if not isinstance(data,dict) or set(data)!={'corrections','repair'} or not isinstance(data['corrections'],list) or len(data['corrections'])>64:
-            raise ValueError('Invalid music review')
-        from .music_repair import RepairSettings
-        RepairSettings.from_dict(data['repair'])
-        for value in data['corrections']:
-            bounded('correction',value,-600,600)
     else:
         raise ValueError('Unsupported review clip')
 
@@ -76,7 +68,7 @@ class Debrief:
     note: tuple = ('','')
 
     def __post_init__(self):
-        if self.case_id not in CASE_IDS or self.kind not in ('tone','source','melody','music'):
+        if self.case_id not in CASE_IDS or self.kind not in ('tone','source','melody'):
             raise ValueError('Invalid review case')
         if type(self.attempts) is not int or not 0<=self.attempts<=10**9:
             raise ValueError('Invalid review attempts')
@@ -95,10 +87,10 @@ class Debrief:
             raise ValueError('Invalid review roles')
         for clip in self.clips.values():
             validate_clip(clip)
-        expected='source' if self.kind=='source' else 'music' if self.kind=='music' else 'tone'
+        expected='source' if self.kind=='source' else 'tone'
         if self.clips['target'] is None or any(clip is not None and clip['type']!=expected for clip in self.clips.values()):
             raise ValueError('Review audio type does not match the case')
-        if (self.kind=='music')!=(self.case_id=='M01') or (self.kind=='melody')!=(self.case_id in MELODY_IDS):
+        if (self.kind=='melody')!=(self.case_id in MELODY_IDS):
             raise ValueError('Review kind does not match the case')
         if (self.kind=='source')!=(self.case_id in SOURCE_IDS):
             raise ValueError('Review source kind does not match the case')
@@ -199,15 +191,4 @@ def build_debrief(case,session,*,seconds=None):
                         '訊號來源：風格化老式遊戲機。奇數高次諧波帶來空心感，適量高次能量讓它比純哨音豐富。多組推桿比例可以符合要求。')
             note=tuple(conclusion[i]+' '+note[i] for i in range(2))
         return Debrief(cid,'source',case.title,record['number'] if record else session.attempts,('Highest clue tier: '+str(session.hints),'最高提示層級：'+str(session.hints)),seconds,before,after,clips,rows,note)
-    if cid=='M01':
-        from .music_cases import MusicSettings
-        from .music_repair import RepairSettings,initial_estimates,check_repair
-        initial=MusicSettings((0,)*len(case.regions),RepairSettings(initial_estimates()))
-        final=session.render_settings()
-        before={m.group:100*m.fraction for m in check_repair(case,initial).modules}
-        after={m.group:100*m.fraction for m in check_repair(case,final).modules}
-        clip=lambda s:{'type':'music','settings':s.to_dict()}
-        clips={'initial':clip(initial),'final':clip(final),'target':clip(final)}
-        note=('Completed repair stages lock in their recovered sound. The graph shows the starting and completed component estimates; intermediate submission scores were not retained. The target audition uses the original excerpt.','已完成的修復步驟會固定還原結果；圖表顯示起點與結案的分項估計，沒有補造未保留的中途提交分數。目標試聽使用原曲片段。')
-        return Debrief(cid,'music',case.title,session.attempts,hint,seconds,before,after,clips,(),note)
     raise ValueError('Unknown review case')

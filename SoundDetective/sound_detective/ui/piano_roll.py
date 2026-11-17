@@ -108,6 +108,7 @@ class PianoRoll(QWidget):
 
     def set_pattern(self, pattern):
         self.cancel_drag()
+        self.feedback_marks = self._remap_feedback(pattern)
         self.pattern = pattern
         self.view_start=min(self.view_start,max(0,self.steps-1)) if self.free else 0
         if self.free:self.view_start=self.view_start//self.pattern.steps_per_bar*self.pattern.steps_per_bar
@@ -156,12 +157,27 @@ class PianoRoll(QWidget):
         notes[self.selection] = note
         return self.commit(notes, note)
 
+    def _remap_feedback(self, pattern, replaced=None):
+        """Keep marks with their notes instead of letting indices shift after edits."""
+        if not self.feedback_marks:
+            return ()
+        marks_by_note = dict(zip(self.pattern.notes, self.feedback_marks))
+        unmatched_old = [note for note in self.pattern.notes if note not in pattern.notes]
+        unmatched_new = [note for note in pattern.notes if note not in marks_by_note]
+        if len(unmatched_old) == len(unmatched_new):
+            marks_by_note.update(zip(unmatched_new, (marks_by_note[note] for note in unmatched_old)))
+        if replaced and replaced[0] not in pattern.notes and replaced[1] in pattern.notes:
+            marks_by_note[replaced[1]] = marks_by_note.get(replaced[0], "unscored")
+        return tuple(marks_by_note.get(note, "unscored") for note in pattern.notes)
+
     def commit(self, notes, selected=None):
         try:
             pattern = self._make_pattern(notes)
         except ValueError:
             self.rejected.emit()
             return False
+        previous = self.pattern.notes[self.selection] if 0 <= self.selection < len(self.pattern.notes) else None
+        self.feedback_marks = self._remap_feedback(pattern, (previous, selected) if previous and selected else None)
         self.pattern = pattern
         self.selection = pattern.notes.index(selected) if selected in pattern.notes else -1
         self.changed.emit(pattern)
@@ -214,7 +230,8 @@ class PianoRoll(QWidget):
             rect = self.note_rect(note)
             invalid = candidate is not None and index == self.selection and not self._valid_candidate(candidate)
             painter.setPen(QPen(QColor("#fff0b5" if index == self.selection else "#ad9159"), 2 if index == self.selection else 1))
-            mark_colors = {"correct": "#347a50", "close": "#a87824", "wrong": "#58635e"}
+            mark_colors = {"correct": "#347a50", "close": "#a87824", "wrong": "#58635e",
+                           "unscored": "#4f7865"}
             color = "#a25042" if invalid else mark_colors.get(
                 self.feedback_marks[index] if index < len(self.feedback_marks) else "",
                 "#9c7e42" if index == self.selection else "#4f7865")
