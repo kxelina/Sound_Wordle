@@ -258,7 +258,8 @@ def set_help(widget, key, language, *, suffix=""):
 
 def apply_window_help(owner, mode, language):
     from ..audio.ui_sounds import bind_volume, bind_tab_clicks
-    bind_volume(owner)
+    if not getattr(owner, "independent_playback_volume", False):
+        bind_volume(owner)
     if hasattr(owner, 'edit_bar'):
         owner.edit_bar.translate(language)
     for attribute, key in (COMMON | WINDOWS[mode]).items():

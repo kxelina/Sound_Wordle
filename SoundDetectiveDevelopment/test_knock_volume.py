@@ -33,6 +33,43 @@ def test_trim_is_t09_only_and_does_not_change_case_data():
     assert CASE.revision==1
 
 
+def test_t09_output_volume_is_visible_and_updates_playback(app,tmp_path):
+    from sound_detective.ui.studio import StudioWindow
+    w=StudioWindow(progress_dir=tmp_path,animation_ms=0)
+    w.resize(1280,720);w.show();app.processEvents()
+    try:
+        assert w._accept_case('T09')
+        w._show_page('desk');w._activate_device('delay');app.processEvents()
+        panel=w.controller
+        assert panel.volume.isVisible()
+        assert panel.volume_label.isVisible() and panel.volume_value.isVisible()
+        initial_case_volume=panel.volume.value()
+        w.volume_slider.setValue(42)
+        assert panel.volume.value()==initial_case_volume
+        master_volume=w.preferences.volume
+        panel.volume.setValue(80)
+        assert panel.player._output.volume()==pytest.approx(.8)
+        assert panel.session.volume==.8 and panel.volume_value.text()=='80%'
+        assert w.preferences.volume==master_volume
+        assert w.volume_slider.value()==master_volume
+        from sound_detective.audio.ui_sounds import widget_volume
+        assert widget_volume(panel.compare_button)==pytest.approx(master_volume/100)
+        assert 'T09 audio only' in panel.volume.toolTip()
+    finally:w.close();app.processEvents()
+
+
+def test_master_volume_still_controls_other_timbre_cases(app,tmp_path):
+    from sound_detective.ui.studio import StudioWindow
+    w=StudioWindow(progress_dir=tmp_path,animation_ms=0)
+    w.resize(1280,720);w.show();app.processEvents()
+    try:
+        assert w._accept_case('T01')
+        w._show_page('desk');w._activate_device('synth');app.processEvents()
+        w.volume_slider.setValue(60)
+        assert w.controller.volume.value()==60
+    finally:w.close();app.processEvents()
+
+
 @pytest.mark.parametrize('cid',['T01','T09'])
 def test_all_audition_buttons_and_comparison_use_the_same_profile(app,tmp_path,cid):
     case=next(c for c in load_campaign() if c.id==cid);renderer=Renderer()
@@ -43,6 +80,53 @@ def test_all_audition_buttons_and_comparison_use_the_same_profile(app,tmp_path,c
             assert renderer.requests[-1][2].get('playback_rms',.1)==(.18 if cid=='T09' else .1)
         assert not w.session.attempt_count
     finally:w.close()
+
+
+@pytest.mark.parametrize('language',['en','zh-Hant'])
+def test_t09_evidence_and_selected_theory_text_fit_or_scroll(app,tmp_path,language):
+    from sound_detective.ui.studio import StudioWindow
+    w=StudioWindow(progress_dir=tmp_path,animation_ms=0)
+    try:
+        w.resize(1280,720);w.show();app.processEvents()
+        assert w._accept_case('T09')
+        w._show_page('desk');w._activate_device('delay');app.processEvents()
+        c=w.controller
+        w.preferences.language=language;w._translate();app.processEvents()
+        assert c.investigation_box.parentWidget() is c.current_group
+        for index in range(len(CASE.investigation['options'])):
+            c._choose_theory(index);app.processEvents()
+            for label in (c.question,c.theory_feedback):
+                assert label.height()>=label.heightForWidth(label.width())
+            box=c.investigation_box
+            assert box.height()>=box.heightForWidth(box.width())
+            assert box.geometry().bottom()<=c.current_group.contentsRect().bottom()
+            assert box.geometry().bottom()<=c.editor.geometry().top()
+    finally:w.close();app.processEvents()
+
+
+@pytest.mark.parametrize('language',['en','zh-Hant'])
+def test_timbre_submission_text_rows_do_not_overlap_after_refresh(app,tmp_path,language):
+    from sound_detective.ui.studio import StudioWindow
+    w=StudioWindow(progress_dir=tmp_path,animation_ms=0)
+    try:
+        w.resize(1280,720);w.show();app.processEvents()
+        assert w._accept_case('T09')
+        w._show_page('desk');w._activate_device('delay');app.processEvents()
+        c=w.controller
+        w.preferences.language=language;w._translate();app.processEvents()
+        c.score.setText('Submission 2 · reconstruction 21.6 / 100\nKeep investigating')
+        c.submission_feedback.setText(
+            'Previous → now: 18.4 → 21.6 (+3.2)\nMost improved: Delay')
+        c.submission_feedback.show()
+        app.processEvents()
+        assert c.score.height()>=c.score.heightForWidth(c.score.width())
+        assert c.submission_feedback.height()>=c.submission_feedback.heightForWidth(
+            c.submission_feedback.width())
+        rows=(c.subtitle,c.target_info,c.score,c.submission_feedback,c.clue,c.review)
+        visible=[label for label in rows if label.isVisible()]
+        for current,following in zip(visible,visible[1:]):
+            assert current.geometry().bottom() < following.geometry().top()
+    finally:w.close();app.processEvents()
 
 
 def test_review_and_collected_export_share_the_t09_profile(app,tmp_path):

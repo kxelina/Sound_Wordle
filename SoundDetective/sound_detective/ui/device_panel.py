@@ -4,7 +4,7 @@ import numpy as np
 import soundfile as sf
 from PySide6.QtCore import QPointF, QRectF, Qt,QTimer,Signal
 from PySide6.QtGui import QColor, QPainter, QPainterPath, QPen
-from PySide6.QtWidgets import QLabel, QWidget, QPushButton, QGroupBox, QVBoxLayout,QScrollArea,QFrame,QLayout
+from PySide6.QtWidgets import QLabel, QWidget, QPushButton, QGroupBox, QHBoxLayout,QVBoxLayout,QScrollArea,QFrame,QLayout
 
 from .case_one import CaseWindow
 from .hardware import PlaybackDeck,InlineChoices
@@ -90,6 +90,9 @@ class ToneDevicePanel(CaseWindow):
         self._plot_sources = None
         super().__init__(**kwargs)
         self.editor.use_hardware_controls()
+        self.target_info.setMinimumHeight(6*self.target_info.fontMetrics().lineSpacing())
+        self.score.setMinimumHeight(3*self.score.fontMetrics().lineSpacing())
+        self.submission_feedback.reserve_lines(2)
         self.deck = PlaybackDeck(self.play_a, self.play_b, self.stop_button, self.play_ab,compact=True)
         self.target_group.layout().addWidget(self.deck)
         self.player.state_changed.connect(self.deck.set_state)
@@ -119,7 +122,6 @@ class ToneDevicePanel(CaseWindow):
             self.note_scroll.setMinimumHeight(0);self.note_scroll.setWidget(notes)
             self.help_button=QPushButton();self.help_button.clicked.connect(self._help_and_focus)
             left.addWidget(self.note_scroll,1);left.addWidget(self.help_button);left.addWidget(self.deck)
-            if self.investigation_box:note_layout.insertWidget(note_layout.count()-1,self.investigation_box)
         from .device_layout import compact_workspace
         compact_workspace(self,(self.compare_button,self.restart_button),(self.action_row,self.volume_row))
         if self.case.id.startswith('T'):
@@ -129,6 +131,14 @@ class ToneDevicePanel(CaseWindow):
         for widget in (self.title, self.progress, self.language, self.volume,
                        self.volume_label, self.volume_value, self.device, self.note):
             widget.hide()
+        if self.case.id=='T09':
+            volume_row=QHBoxLayout()
+            volume_row.addWidget(self.volume_label)
+            volume_row.addWidget(self.volume,1)
+            volume_row.addWidget(self.volume_value)
+            self.target_group.layout().addLayout(volume_row)
+            for widget in (self.volume_label,self.volume,self.volume_value):
+                widget.show()
         self.present_device("synth")
         self._translate()
 
@@ -158,10 +168,17 @@ class ToneDevicePanel(CaseWindow):
         text=data['options'][self.theory_index]['feedback'][lang] if self.theory_index>=0 else ''
         if self.session.first_pass:text=data['completion'][lang]
         self.theory_feedback.setText(text)
+        self.investigation_box.updateGeometry()
 
     def _translate(self):
         super()._translate()
         self.subtitle.setText(self.subtitle.text().replace("match score", "reconstruction progress").replace("匹配分數", "還原進度"))
+        if self.case.id=='T09':
+            self.volume_label.setText('Knock playback volume' if self._language=='en' else '敲擊聲播放音量')
+            self.volume.setToolTip(
+                'Changes T09 audio only; Master Volume still controls interface sounds.'
+                if self._language=='en' else
+                '只調整 T09 音訊；主音量仍控制介面音效。')
         if hasattr(self, "deck"):
             self.deck.translate(self._language)
         self._translate_theory()
@@ -199,16 +216,17 @@ class ToneDevicePanel(CaseWindow):
             self._update_plot()
 
     def _fit_notes(self):
-        if hasattr(self,'note_scroll'):
-            notes=self.note_scroll.widget()
-            layout=notes.layout()
-            for label in (self.subtitle,self.target_info,self.score,self.submission_feedback,self.clue,self.review):
-                width=max(1,label.width())
-                height=label.heightForWidth(width) if label.hasHeightForWidth() else label.sizeHint().height()
-                label.setMinimumHeight(max(0,height))
-            layout.invalidate()
-            layout.activate()
-            notes.setMinimumHeight(layout.sizeHint().height())
+        if not hasattr(self,'note_scroll'):
+            return
+        notes=self.note_scroll.widget()
+        layout=notes.layout()
+        for label in (self.subtitle,self.target_info,self.score,self.submission_feedback,self.clue,self.review):
+            width=max(1,label.width())
+            height=label.heightForWidth(width) if label.hasHeightForWidth() else label.sizeHint().height()
+            label.setMinimumHeight(max(label.minimumHeight(),height))
+        layout.invalidate()
+        layout.activate()
+        notes.setMinimumHeight(layout.sizeHint().height())
 
     def _matched(self,revision,result):
         before=self.session.attempt_count

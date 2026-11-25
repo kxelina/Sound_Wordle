@@ -887,7 +887,8 @@ class StudioWindow(QMainWindow):
         candidate.setStyleSheet(STYLE)
         candidate.hide()
         candidate.language.setCurrentIndex(0 if self.language == "en" else 1)
-        candidate.volume.setValue(self.preferences.volume)
+        if not getattr(candidate, "independent_playback_volume", False):
+            candidate.volume.setValue(self.preferences.volume)
         if hasattr(candidate, "_clock_timer"):
             candidate._clock_timer.stop()
         body = candidate.takeCentralWidget()
@@ -998,7 +999,7 @@ class StudioWindow(QMainWindow):
             bus.set_volume(value / 100)
         self.volume_label.setText(f"{value}%")
         self.volume_changed.emit(value / 100)
-        if self.controller:
+        if self.controller and not getattr(self.controller, "independent_playback_volume", False):
             self.controller.volume.setValue(value)
         self._save_preferences()
 

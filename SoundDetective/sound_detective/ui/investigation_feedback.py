@@ -57,10 +57,15 @@ class SubmissionFeedback(QLabel):
         self.setStyleSheet('font-size: 12px; color: #bdcbb5;')
         self.hide()
         self.payload=None
+        self._reserved_lines=1
+
+    def reserve_lines(self,count):
+        self._reserved_lines=count
+        self.setMinimumHeight(count*self.fontMetrics().lineSpacing()+4)
 
     def setText(self,text):
         super().setText(text)
-        lines=text.count('\n')+1 if text else 0
+        lines=max(self._reserved_lines,text.count('\n')+1) if text else 0
         self.setMinimumHeight(min(62,lines*self.fontMetrics().lineSpacing()+4) if lines else 0)
 
     def show_scores(self,current=None,previous=None,**options):

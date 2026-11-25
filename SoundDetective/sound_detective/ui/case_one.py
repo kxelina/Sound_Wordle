@@ -95,6 +95,7 @@ class CaseWindow(AudioBench):
     def __init__(self, *, case=None, save_path=None, player=None, renderer=None):
         self._initializing = True
         self._load_progress(case or load_case(ROOT / "content/cases/T01.json"), save_path)
+        self.independent_playback_volume = self.case.id == "T09"
         self._submission_token = None
         super().__init__(player=player, renderer=renderer)
         self.resize(1280, 720)
